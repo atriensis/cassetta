@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Testing & Linting
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Environment
+.env
+.env.local
+
+# Claude Code (may contain credentials)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+data/
+
+# Briefs
+inbox/
