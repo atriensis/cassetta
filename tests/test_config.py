@@ -79,7 +79,7 @@ class TestConfigValidation:
         config = load_config()
         assert config.storage_path == "./data"
         assert config.default_ttl == 0
-        # LimitsConfig defaults live in core/docs/CONFIG.md (brief 513).
+        # LimitsConfig defaults live in docs/CONFIG.md (brief 513).
         assert config.limits.per_file_max is None
         assert config.limits.max_inline_size == 102400
 

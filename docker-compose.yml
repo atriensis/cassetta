@@ -1,0 +1,33 @@
+# Cassetta — self-host stack.
+#
+#   cp .env.example .env      # then set CASSETTA_SETUP_TOKEN
+#   docker compose up -d
+#   curl http://localhost:16001/health
+#
+# Configuration is read from `.env`. Compose loads that same file for `${CASSETTA_PORT}`
+# interpolation below, so the host port is set in one place.
+
+services:
+  cassetta:
+    build:
+      context: .
+    image: cassetta:local
+    container_name: cassetta
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      # Host port is configurable; the in-container port is fixed at 16001.
+      # To bind loopback only, replace with "127.0.0.1:${CASSETTA_PORT:-16001}:16001".
+      - "${CASSETTA_PORT:-16001}:16001"
+    volumes:
+      # Stored files. Back this up.
+      - ./data:/data
+      # API key store — deliberately outside the storage tree so key files never appear
+      # in a `/files/` listing or get served as user data. Back this up too.
+      - ./data.keys:/data.keys
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:16001/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3

@@ -30,7 +30,7 @@ _RATE_UNIT_NORMALISE = {
 class LimitsConfig:
     """Configuration for :class:`CoreLimitsPolicy`.
 
-    See ``core/docs/CONFIG.md`` for the env-var mapping and the
+    See ``docs/CONFIG.md`` for the env-var mapping and the
     semantic meaning of each field. Loaded via :func:`load_limits_config`.
     """
 

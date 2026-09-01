@@ -1,4 +1,4 @@
-"""Shared fixtures for ``core/tests/rate_limit/`` (Brief 531)."""
+"""Shared fixtures for ``tests/rate_limit/`` (Brief 531)."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class MetricCall:
 class RecordingMetricsProvider:
     """In-memory ``MetricsProvider`` that captures every call.
 
-    Mirrors the helper used by ``core/tests/auth/conftest.py`` (Brief 529)
+    Mirrors the helper used by ``tests/auth/conftest.py`` (Brief 529)
     so the rate-limit tests can assert on emitted counters without
     cross-importing from a sibling test module.
     """

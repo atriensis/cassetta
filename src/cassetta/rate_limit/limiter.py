@@ -14,7 +14,7 @@ Brief 531 — Operational resilience. The module owns:
   the MCP ``cassetta_broadcast`` tool body (the per-tool-call boundary
   that the HTTP-level decorator cannot reach).
 
-The module is owned by ``core/``; ``cloud/`` reaches it via
+The module is owned by the open core; ``cloud/`` reaches it via
 ``request.app.state.limiter`` only — no ``cloud → core`` import of any
 internal symbol is needed beyond this module's public re-exports
 (Constitution V).

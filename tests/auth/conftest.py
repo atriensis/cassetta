@@ -1,4 +1,4 @@
-"""Shared fixtures for ``core/tests/auth/`` (Brief 529)."""
+"""Shared fixtures for ``tests/auth/`` (Brief 529)."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ class MetricCall:
 class RecordingMetricsProvider:
     """In-memory ``MetricsProvider`` that captures every call.
 
-    Mirrors the helper used by ``core/tests/test_metrics.py``; duplicated
+    Mirrors the helper used by ``tests/test_metrics.py``; duplicated
     here so the auth tests do not cross-import from a sibling test
     module. Implements the structural ``MetricsProvider`` Protocol from
     ``cassetta.protocols.metrics``.

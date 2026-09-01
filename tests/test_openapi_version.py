@@ -2,7 +2,7 @@
 
 FastAPI's ``app.version`` flows into the generated OpenAPI document's
 ``info.version`` field. The hardcoded ``"0.1.0"`` baked into
-``core/src/cassetta/app.py`` made ``/openapi.json`` and ``/capabilities``
+``src/cassetta/app.py`` made ``/openapi.json`` and ``/capabilities``
 disagree about the running version. After the fix, both surfaces must
 report ``cassetta.__version__``.
 """
