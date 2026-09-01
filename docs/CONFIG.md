@@ -129,8 +129,7 @@ Introduced by brief 513. Environment variables are parsed by
 `LimitsConfig` dataclass that parameterises `CoreLimitsPolicy` (the
 default `LimitsPolicy` implementation).
 
-See `specs/513-peek-and-limits-policy/contracts/core-limits-policy.md`
-for the semantic contract.
+See "Cap fields" below for the semantic contract.
 
 ### Cap fields
 
@@ -173,6 +172,5 @@ in this release.
 `LimitsPolicy` is distinct from `AccessPolicy`, but brief 513 also
 introduces a new `"peek"` access action verb used by the
 `cassetta_peek` MCP tool and the two `/peek` REST endpoints. The
-default access policy allows it unconditionally. See
-`specs/504-rbac-invites/data-model.md` §"Resource → action matrix"
-for the shape of the action taxonomy in custom policies.
+default access policy allows it unconditionally. Custom policies
+receive the same verb through the `AccessPolicy` protocol.

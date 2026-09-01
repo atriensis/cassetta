@@ -243,10 +243,6 @@ rm -rf "$CASSETTA_STORAGE_PATH/data"
 systemctl start cassetta
 ```
 
-The Ansible role at `infra/ansible/roles/cassetta/` can be extended with a
-one-shot task gated on `cassetta_wipe_data=true` for operator convenience;
-that change is not required for the upgrade to work.
-
 ## Azure Blob Migration
 
 Azure Blob bundle support ships in a follow-up brief. On the current

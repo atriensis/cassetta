@@ -1,8 +1,8 @@
 # Glossary
 
 Project vocabulary, terms only. Alphabetical. For *why* the architecture is shaped
-this way, see [`docs/adr/`](adr/); for the rules, the
-[constitution](../.specify/memory/constitution.md).
+this way, see [`docs/adr/`](adr/) — [ADR 001](adr/001-three-layer-architecture.md)
+carries the three-layer rules the rest of the vocabulary assumes.
 
 - **§VII** — Constitution Principle VII, the three-layer architecture (Layer 1
   abstractions / Layer 2 product logic / Layer 3 vendor backends). See

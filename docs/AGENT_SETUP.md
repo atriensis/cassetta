@@ -266,7 +266,7 @@ Pass `--no-compress` for already-compressed payloads (e.g. `.mp4`,
 
 See `docs/CLIENT_SETUP.md` for the full CLI reference
 (exit codes, rotation-safe credentials, etc.) and
-`specs/514-upload-flow/quickstart.md` for a hands-on walkthrough.
+`docs/REST_API.md` § "Workflow B" for a hands-on walkthrough.
 
 ### Things you MUST NOT do (brief 514)
 
@@ -395,8 +395,7 @@ messages:
   human-readable phrase naming the failed constraint.
 
 Programmatic clients should discriminate on the prefix / `error`
-field, not the exact suffix wording. See
-`specs/513-peek-and-limits-policy/contracts/rejection-wire-format.md`.
+field, not the exact suffix wording.
 
 ## Things you MUST NOT do
 

@@ -10,6 +10,10 @@ survived that move, and each has a guard here:
 * a README quickstart documenting an API the server does not serve;
 * a deployment surface that is either missing or still built for the whole workspace.
 
+A fifth guard catches the same defect spelled differently: a pointer into a directory that
+stayed behind in the monorepo (``specs/…``, ``deploy/helm/…``) is just as broken as a ``core/``
+path, and reads to an outside contributor as a repository with missing parts.
+
 A fourth guard keeps the private half's environment variables out of ``.env.example``. Per
 Constitution V this repository has *no knowledge* of cloud features, so even a commented-out
 "cloud-only" line is the leak, not a courtesy.
@@ -161,4 +165,60 @@ def test_env_example_carries_no_cloud_vars() -> None:
     leaked = [name for name in _CLOUD_ENV_VARS if name in text]
     assert not leaked, ".env.example names variables of the private cloud repository: " + ", ".join(
         repr(name) for name in leaked
+    )
+
+
+# Repository-relative references in prose. A pointer is checked when it names one of these roots
+# (or climbs out of the tree with ``../``) — enough to catch ``specs/513-…`` and
+# ``../deploy/helm/…``, the two forms this repository actually shipped, without flagging every
+# slash in a sentence. Anchors, URLs and bare fragments are not paths and are skipped.
+_REPO_PATH_ROOTS = ("src/", "docs/", "tests/", "specs/", "deploy/", "infra/", "contracts/",
+                    "scripts/", "../")
+# Paths that look repo-relative but are illustrative — a path in the *reader's* bundle, not a
+# pointer into this repository. Named explicitly so the exception is visible rather than bought
+# by dropping ``src/`` from the roots and losing every real ``src/`` pointer with it.
+_ILLUSTRATIVE_PATHS = frozenset({"src/main.py", "./src/main.py"})
+_BACKTICKED_RE = re.compile(r"`([^`\n]+)`")
+_MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+
+
+def _looks_like_repo_path(token: str) -> bool:
+    return token.startswith(_REPO_PATH_ROOTS)
+
+
+def _prose_files() -> list[Path]:
+    return [REPO_ROOT / name for name in _SHIPPED_FILES] + sorted(
+        (REPO_ROOT / "docs").rglob("*.md")
+    )
+
+
+def test_no_dangling_repo_links() -> None:
+    """Every repository-relative pointer in shipped prose resolves to something present.
+
+    The ``core/`` guard above catches the residue that is spelled as a stale prefix. This one
+    catches the residue spelled as a *destination*: ``specs/513-peek-and-limits-policy/`` and
+    ``../deploy/helm/cassetta/README.md`` both survived the split as pointers into directories
+    that did not come across, so the published documentation sent readers to a tree only the
+    private repository can see.
+    """
+    dangling: list[str] = []
+    for doc in _prose_files():
+        text = doc.read_text(encoding="utf-8")
+        candidates = {m.group(1) for m in _BACKTICKED_RE.finditer(text)}
+        candidates |= {m.group(1) for m in _MD_LINK_RE.finditer(text)}
+        for raw in candidates:
+            token = raw.split("#", 1)[0].strip().rstrip(".,;:)")
+            if not token or "://" in token or not _looks_like_repo_path(token):
+                continue
+            if token in _ILLUSTRATIVE_PATHS:
+                continue
+            # Backticked paths are repo-root-relative by convention here; a markdown link may be
+            # relative to its own file. Accept either resolution before calling it dangling.
+            if (REPO_ROOT / token).exists() or (doc.parent / token).exists():
+                continue
+            dangling.append(f"{doc.relative_to(REPO_ROOT)} -> {token}")
+
+    assert not dangling, (
+        "shipped documentation points at paths that do not exist in this repository:\n  "
+        + "\n  ".join(sorted(dangling))
     )
