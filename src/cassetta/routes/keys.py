@@ -37,7 +37,10 @@ def _policy_kind_fields(policy: AccessPolicy) -> tuple[str, str]:
 
 
 async def _enforce(
-    request: Request, identity: Identity, resource: str, action: str,
+    request: Request,
+    identity: Identity,
+    resource: str,
+    action: str,
     metrics: MetricsProvider | None = None,
 ) -> None:
     policy = _get_policy(request)
@@ -46,18 +49,20 @@ async def _enforce(
         # safe_emit; policy_kind derived from policy.kind.
         field_kind, tag_kind = _policy_kind_fields(policy)
         safe_emit(
-            logger, logging.INFO, "policy.denied",
+            logger,
+            logging.INFO,
+            "policy.denied",
             identity_label=identity.label,
             identity_extra=identity.extra or None,
-            resource=resource, action=action, result="denied",
+            resource=resource,
+            action=action,
+            result="denied",
             detail={"policy_kind": field_kind},
             metric_name="cassetta.policy.decisions",
             metric_tags={"result": "denied", "policy_kind": tag_kind},
             metrics=metrics,
         )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 
 @router.post("/setup", status_code=201)
@@ -72,14 +77,16 @@ async def setup(
     try:
         raw_key, info = await key_store.setup(body.label)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
 
     safe_emit(
-        logger, logging.INFO, "key.created",
+        logger,
+        logging.INFO,
+        "key.created",
         identity_label=identity.label,
-        resource=f"keys:{body.label}", action="create", result="ok",
+        resource=f"keys:{body.label}",
+        action="create",
+        result="ok",
         detail={"setup": True},
         metric_name="cassetta.keys.operations",
         metric_tags={"action": "create"},
@@ -110,17 +117,20 @@ async def create_key(
     await _enforce(request, identity, f"keys:{body.label}", "create", metrics)
     try:
         raw_key, info = await key_store.create_key(
-            body.label, user_id=body.user_id,
+            body.label,
+            user_id=body.user_id,
         )
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
 
     safe_emit(
-        logger, logging.INFO, "key.created",
+        logger,
+        logging.INFO,
+        "key.created",
         identity_label=identity.label,
-        resource=f"keys:{body.label}", action="create", result="ok",
+        resource=f"keys:{body.label}",
+        action="create",
+        result="ok",
         metric_name="cassetta.keys.operations",
         metric_tags={"action": "create"},
         metrics=metrics,
@@ -173,14 +183,16 @@ async def rotate_key(
     try:
         raw_key, info = await key_store.rotate_key(label)
     except KeyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
     safe_emit(
-        logger, logging.INFO, "key.rotated",
+        logger,
+        logging.INFO,
+        "key.rotated",
         identity_label=identity.label,
-        resource=f"keys:{label}", action="rotate", result="ok",
+        resource=f"keys:{label}",
+        action="rotate",
+        result="ok",
         metric_name="cassetta.keys.operations",
         metric_tags={"action": "rotate"},
         metrics=metrics,
@@ -213,14 +225,16 @@ async def revoke_key(
     try:
         await key_store.revoke_key(label)
     except KeyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
     safe_emit(
-        logger, logging.INFO, "key.revoked",
+        logger,
+        logging.INFO,
+        "key.revoked",
         identity_label=identity.label,
-        resource=f"keys:{label}", action="revoke", result="ok",
+        resource=f"keys:{label}",
+        action="revoke",
+        result="ok",
         metric_name="cassetta.keys.operations",
         metric_tags={"action": "revoke"},
         metrics=metrics,

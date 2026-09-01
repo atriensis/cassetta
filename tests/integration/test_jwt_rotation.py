@@ -23,7 +23,9 @@ def _mint(key: bytes, exp_offset: int = 300) -> str:
         "recipient": "alice",
         "mode": "inline",
         "manifest": {"file_count": 0, "files": []},
-        "iat": now, "nbf": now, "exp": now + exp_offset,
+        "iat": now,
+        "nbf": now,
+        "exp": now + exp_offset,
     }
     return jwt_tokens.sign(claims, key=key)
 

@@ -24,7 +24,10 @@ class RequestIdMiddleware:
         self.app = app
 
     async def __call__(
-        self, scope: Scope, receive: Receive, send: Send,
+        self,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
     ) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
@@ -56,9 +59,7 @@ class RequestIdMiddleware:
             app_state: Any = scope.get("app")
             state = getattr(app_state, "state", None)
             backends = getattr(state, "backends", None) if state else None
-            metrics = (
-                getattr(backends, "metrics_provider", None) if backends else None
-            )
+            metrics = getattr(backends, "metrics_provider", None) if backends else None
 
             if metrics is not None:
                 duration = time.monotonic() - start
@@ -77,7 +78,9 @@ class RequestIdMiddleware:
                 # ``observe`` for the same reason.
                 try:
                     metrics.observe(
-                        "cassetta.request.duration_seconds", duration, tags=tags,
+                        "cassetta.request.duration_seconds",
+                        duration,
+                        tags=tags,
                     )
                 except Exception:
                     pass

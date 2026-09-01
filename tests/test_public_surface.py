@@ -172,8 +172,7 @@ def test_env_example_carries_no_cloud_vars() -> None:
 # (or climbs out of the tree with ``../``) — enough to catch ``specs/513-…`` and
 # ``../deploy/helm/…``, the two forms this repository actually shipped, without flagging every
 # slash in a sentence. Anchors, URLs and bare fragments are not paths and are skipped.
-_REPO_PATH_ROOTS = ("src/", "docs/", "tests/", "specs/", "deploy/", "infra/", "contracts/",
-                    "scripts/", "../")
+_REPO_PATH_ROOTS = ("src/", "docs/", "tests/", "specs/", "deploy/", "infra/", "contracts/", "scripts/", "../")
 # Paths that look repo-relative but are illustrative — a path in the *reader's* bundle, not a
 # pointer into this repository. Named explicitly so the exception is visible rather than bought
 # by dropping ``src/`` from the roots and losing every real ``src/`` pointer with it.
@@ -187,9 +186,7 @@ def _looks_like_repo_path(token: str) -> bool:
 
 
 def _prose_files() -> list[Path]:
-    return [REPO_ROOT / name for name in _SHIPPED_FILES] + sorted(
-        (REPO_ROOT / "docs").rglob("*.md")
-    )
+    return [REPO_ROOT / name for name in _SHIPPED_FILES] + sorted((REPO_ROOT / "docs").rglob("*.md"))
 
 
 def test_no_dangling_repo_links() -> None:

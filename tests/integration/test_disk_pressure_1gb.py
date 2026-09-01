@@ -33,7 +33,7 @@ import pytest
 # Scale the full 1 GiB probe down for CI; the Pi smoke runs the full variant
 # out-of-band (documented in the task list).
 FILE_SIZE_BYTES = 256 * 1024 * 1024  # 256 MiB
-SLACK_BYTES = 32 * 1024 * 1024       # 32 MiB buffering slack
+SLACK_BYTES = 32 * 1024 * 1024  # 32 MiB buffering slack
 REQUIRED_FREE_BYTES = 1024 * 1024 * 1024  # need >=1 GiB free to run
 
 
@@ -86,7 +86,9 @@ def _allow_large_per_file(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_batch_upload_disk_pressure_bounded(
     _allow_large_per_file: None,
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h, tmp_path: Path,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
+    tmp_path: Path,
 ) -> None:
     client, _ = core_app_small_inline
     app = client._transport.app  # type: ignore[attr-defined]
@@ -115,15 +117,18 @@ async def test_batch_upload_disk_pressure_bounded(
     sid = await h.mcp_init(client, api_key=sender)
 
     init_result = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "big.tgz",
+            "to": "alice:main",
+            "path": "big.tgz",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": payload_name, "size": FILE_SIZE_BYTES}],
             },
         },
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
     init_body = _json.loads(init_result["content"][0]["text"])
     assert init_body["mode"] == "batch", init_body

@@ -69,7 +69,10 @@ class FileKeyStore:
         return raw_key, info
 
     async def create_key(
-        self, label: str, *, user_id: str | None = None,
+        self,
+        label: str,
+        *,
+        user_id: str | None = None,
     ) -> tuple[str, KeyInfo]:
         """Create a new API key with the given label.
 
@@ -112,7 +115,7 @@ class FileKeyStore:
                     created_at=datetime.fromisoformat(k.created_at),
                     is_active=k.is_active,
                 )
-        prefix = raw_key[:len(KEY_PREFIX) + KEY_PREFIX_LEN] if len(raw_key) > len(KEY_PREFIX) else raw_key
+        prefix = raw_key[: len(KEY_PREFIX) + KEY_PREFIX_LEN] if len(raw_key) > len(KEY_PREFIX) else raw_key
         logger.info("key.validate.failed: key_prefix='%s', reason=not_found", prefix)
         return None
 

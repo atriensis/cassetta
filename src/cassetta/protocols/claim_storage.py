@@ -73,7 +73,8 @@ class ClaimStorage(Protocol):
         ...
 
     async def iter_active_by_bundle_path(
-        self, ttl_s: int,
+        self,
+        ttl_s: int,
     ) -> Mapping[str, str]:
         """Build ``{bundle_path: jti}`` of non-expired claims."""
         ...

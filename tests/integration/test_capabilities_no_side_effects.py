@@ -30,11 +30,14 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 async def _init(client: httpx.AsyncClient) -> str:
     resp = await client.post(
         "/mcp/",
-        json=_jsonrpc("initialize", {
-            "protocolVersion": "2025-03-26",
-            "capabilities": {},
-            "clientInfo": {"name": "no-side-effects", "version": "1.0.0"},
-        }),
+        json=_jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "no-side-effects", "version": "1.0.0"},
+            },
+        ),
         headers=MCP_HEADERS,
     )
     assert resp.status_code == 200
@@ -74,7 +77,8 @@ def _snapshot_dir(root: str) -> str:
 
 @pytest.mark.asyncio
 async def test_100_capabilities_calls_leave_storage_untouched(
-    client: httpx.AsyncClient, storage_dir: str,
+    client: httpx.AsyncClient,
+    storage_dir: str,
 ) -> None:
     sid = await _init(client)
 

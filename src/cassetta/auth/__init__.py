@@ -32,10 +32,9 @@ def __getattr__(name: str) -> Any:
     """
     if name in {"FileKeyStore", "KeyStore"}:
         from cassetta.backends.filesystem import keystore as _ks
+
         return _ks.FileKeyStore
-    raise AttributeError(
-        f"module 'cassetta.auth' has no attribute {name!r}"
-    )
+    raise AttributeError(f"module 'cassetta.auth' has no attribute {name!r}")
 
 
 __all__ = [

@@ -23,7 +23,8 @@ def _unwrap(result: dict) -> dict:
 
 @pytest.mark.asyncio
 async def test_send_init_inline_response_shape(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "contract")
@@ -31,7 +32,8 @@ async def test_send_init_inline_response_shape(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     resp = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
             "to": "alice:main",
             "path": "notes.md",
@@ -40,7 +42,8 @@ async def test_send_init_inline_response_shape(
                 "files": [{"name": "a.txt", "size": 3}],
             },
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     body = _unwrap(resp)
     assert body.keys() == {"bundle_id", "mode", "inline_token", "expires_at"}
@@ -52,7 +55,9 @@ async def test_send_init_inline_response_shape(
 
 @pytest.mark.asyncio
 async def test_send_init_batch_response_shape(
-    core_app: tuple[httpx.AsyncClient, str], h, monkeypatch: pytest.MonkeyPatch,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Force batch mode by shrinking the inline threshold before creating the app.
     import os
@@ -66,7 +71,8 @@ async def test_send_init_batch_response_shape(
         sid = await h.mcp_init(client, api_key=sender_key)
 
         resp = await h.mcp_call(
-            client, "cassetta_send_init",
+            client,
+            "cassetta_send_init",
             {
                 "to": "alice:main",
                 "path": "large.bin",
@@ -75,7 +81,8 @@ async def test_send_init_batch_response_shape(
                     "files": [{"name": "large.bin", "size": 500}],
                 },
             },
-            sid=sid, api_key=sender_key,
+            sid=sid,
+            api_key=sender_key,
         )
     finally:
         del os.environ["CASSETTA_MAX_INLINE_SIZE"]
@@ -89,7 +96,11 @@ async def test_send_init_batch_response_shape(
     # instead (still a valid contract assertion).
     if body["mode"] == "batch":
         assert body.keys() == {
-            "bundle_id", "mode", "upload_url", "batch_token", "expires_at",
+            "bundle_id",
+            "mode",
+            "upload_url",
+            "batch_token",
+            "expires_at",
         }
         assert body["upload_url"].startswith("http://localhost:16001/upload/")
         assert "%2F" in body["upload_url"], "bundle_path must be URL-encoded"
@@ -102,7 +113,8 @@ async def test_send_init_batch_response_shape(
 
 @pytest.mark.asyncio
 async def test_send_init_rejects_invalid_manifest(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "reject")
@@ -110,7 +122,9 @@ async def test_send_init_rejects_invalid_manifest(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     body = {
-        "jsonrpc": "2.0", "id": 5, "method": "tools/call",
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "tools/call",
         "params": {
             "name": "cassetta_send_init",
             "arguments": {

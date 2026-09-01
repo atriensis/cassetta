@@ -108,8 +108,7 @@ def load_limits_config() -> LimitsConfig:
     """
     if "CASSETTA_MAX_FILE_SIZE" in os.environ:
         print(
-            "WARNING: CASSETTA_MAX_FILE_SIZE is deprecated; "
-            "use CASSETTA_PER_FILE_MAX. The stale value is ignored.",
+            "WARNING: CASSETTA_MAX_FILE_SIZE is deprecated; use CASSETTA_PER_FILE_MAX. The stale value is ignored.",
             file=sys.stderr,
         )
 
@@ -121,7 +120,9 @@ def load_limits_config() -> LimitsConfig:
     for env_var, field_name in _TTL_ENV_VARS:
         if env_var in os.environ:
             kwargs[field_name] = _parse_ttl(
-                env_var, os.environ[env_var], getattr(defaults, field_name),
+                env_var,
+                os.environ[env_var],
+                getattr(defaults, field_name),
             )
     return LimitsConfig(**kwargs)  # type: ignore[arg-type]
 
@@ -156,8 +157,7 @@ def _parse_rate_limit(env_var: str, raw: str) -> str:
     match = _RATE_LIMIT_PATTERN.match(raw.strip())
     if match is None:
         print(
-            f"ERROR: {env_var} must match '<int>/<unit>' "
-            f"where unit ∈ sec/second/min/minute/hour/hourly, got '{raw}'",
+            f"ERROR: {env_var} must match '<int>/<unit>' where unit ∈ sec/second/min/minute/hour/hourly, got '{raw}'",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -258,8 +258,7 @@ def _load_public_base_url(var_name: str) -> str:
     parts = urlsplit(raw)
     if parts.scheme not in ("http", "https") or not parts.netloc:
         print(
-            f"ERROR: {var_name} must include an http:// or https:// scheme "
-            f"and a non-empty host, got {raw!r}.",
+            f"ERROR: {var_name} must include an http:// or https:// scheme and a non-empty host, got {raw!r}.",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -275,8 +274,7 @@ def load_config() -> AppConfig:
     setup_token_raw = os.environ.get("CASSETTA_SETUP_TOKEN")
     if setup_token_raw is None:
         print(
-            "ERROR: CASSETTA_SETUP_TOKEN is not set. "
-            "Set it to a secret value, or to an empty string for dev mode.",
+            "ERROR: CASSETTA_SETUP_TOKEN is not set. Set it to a secret value, or to an empty string for dev mode.",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -295,8 +293,7 @@ def load_config() -> AppConfig:
         default_ttl = int(ttl_str)
     except ValueError:
         print(
-            f"ERROR: CASSETTA_DEFAULT_TTL must be an integer, "
-            f"got '{ttl_str}'",
+            f"ERROR: CASSETTA_DEFAULT_TTL must be an integer, got '{ttl_str}'",
             file=sys.stderr,
         )
         raise SystemExit(1) from None
@@ -311,22 +308,20 @@ def load_config() -> AppConfig:
     limits = load_limits_config()
 
     allowed_path_chars = os.environ.get(
-        "CASSETTA_ALLOWED_PATH_CHARS", r"a-zA-Z0-9\-_./",
+        "CASSETTA_ALLOWED_PATH_CHARS",
+        r"a-zA-Z0-9\-_./",
     )
 
     # MCP DNS-rebinding protection: comma-separated list of allowed Host
     # header values. Empty (default) means localhost only — set this when
     # the server is reachable from non-loopback hostnames.
     mcp_hosts_raw = os.environ.get("CASSETTA_MCP_ALLOWED_HOSTS", "")
-    mcp_allowed_hosts = tuple(
-        h.strip() for h in mcp_hosts_raw.split(",") if h.strip()
-    )
+    mcp_allowed_hosts = tuple(h.strip() for h in mcp_hosts_raw.split(",") if h.strip())
 
     log_format_raw = os.environ.get("CASSETTA_LOG_FORMAT", "text").lower()
     if log_format_raw not in ("text", "json"):
         print(
-            f"WARNING: CASSETTA_LOG_FORMAT must be 'text' or 'json', "
-            f"got '{log_format_raw}' — falling back to 'text'",
+            f"WARNING: CASSETTA_LOG_FORMAT must be 'text' or 'json', got '{log_format_raw}' — falling back to 'text'",
             file=sys.stderr,
         )
         log_format_raw = "text"
@@ -336,8 +331,7 @@ def load_config() -> AppConfig:
         invite_ttl_seconds = int(invite_ttl_str)
     except ValueError:
         print(
-            f"ERROR: CASSETTA_INVITE_TTL_SECONDS must be an integer, "
-            f"got '{invite_ttl_str}'",
+            f"ERROR: CASSETTA_INVITE_TTL_SECONDS must be an integer, got '{invite_ttl_str}'",
             file=sys.stderr,
         )
         raise SystemExit(1) from None

@@ -63,7 +63,9 @@ class FilesystemClaimStorage:
         lock_path = self._lock_path(claim.bundle_path)
         try:
             lock_fd = os.open(
-                lock_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600,
+                lock_path,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o600,
             )
         except FileExistsError:
             raise BundleClaimedError(claim.bundle_path) from None
@@ -80,7 +82,9 @@ class FilesystemClaimStorage:
         path = self._path(claim.jti)
         try:
             fd = os.open(
-                path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600,
+                path,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o600,
             )
         except FileExistsError:
             with contextlib.suppress(FileNotFoundError):
@@ -112,7 +116,8 @@ class FilesystemClaimStorage:
         if name in current.files_fetched:
             return current
         updated = replace(
-            current, files_fetched=[*current.files_fetched, name],
+            current,
+            files_fetched=[*current.files_fetched, name],
         )
         self._durable_write(updated)
         return updated
@@ -122,7 +127,9 @@ class FilesystemClaimStorage:
         final = self._path(claim.jti)
         tmp = final.with_suffix(".json.tmp")
         fd = os.open(
-            tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600,
+            tmp,
+            os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+            0o600,
         )
         try:
             with os.fdopen(fd, "wb", closefd=True) as f:
@@ -169,7 +176,8 @@ class FilesystemClaimStorage:
                 )
 
     async def iter_active_by_bundle_path(
-        self, ttl_s: int,
+        self,
+        ttl_s: int,
     ) -> Mapping[str, str]:
         now = time.time()
         active: dict[str, str] = {}

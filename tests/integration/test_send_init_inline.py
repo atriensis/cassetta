@@ -28,7 +28,8 @@ def _tool_result_json(result: dict) -> dict:
 
 @pytest.mark.asyncio
 async def test_send_init_inline_full_roundtrip(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "projX")

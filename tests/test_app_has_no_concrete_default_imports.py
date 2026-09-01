@@ -15,11 +15,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-CORE_SRC = (
-    Path(__file__).resolve().parents[1]
-    / "src"
-    / "cassetta"
-)
+CORE_SRC = Path(__file__).resolve().parents[1] / "src" / "cassetta"
 
 _FORBIDDEN: set[str] = {
     "FilesystemBackend",
@@ -52,9 +48,7 @@ def _is_excluded(path: Path) -> bool:
 
 
 def _walk_set() -> list[Path]:
-    return sorted(
-        p for p in CORE_SRC.rglob("*.py") if not _is_excluded(p)
-    )
+    return sorted(p for p in CORE_SRC.rglob("*.py") if not _is_excluded(p))
 
 
 def test_layer2_has_no_concrete_default_names() -> None:
@@ -73,8 +67,5 @@ def test_layer2_has_no_concrete_default_names() -> None:
         "Layer 2 files MUST NOT name concrete Layer 3 default classes. "
         "Move construction to "
         "cassetta.defaults.factory.build_core_defaults:\n"
-        + "\n".join(
-            f"  {path}:{lineno}  {name}"
-            for path, name, lineno in offenders
-        )
+        + "\n".join(f"  {path}:{lineno}  {name}" for path, name, lineno in offenders)
     )

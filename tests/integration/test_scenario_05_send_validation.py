@@ -23,9 +23,7 @@ async def test_scenario_05_send_validation(
         content=b"should fail",
         headers=headers,
     )
-    assert resp.status_code == 410, (
-        f"Expected 410 for legacy PUT send, got {resp.status_code}"
-    )
+    assert resp.status_code == 410, f"Expected 410 for legacy PUT send, got {resp.status_code}"
     body = resp.json()
     assert body == {
         "error": "gone",

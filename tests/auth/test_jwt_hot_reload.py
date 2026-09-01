@@ -75,38 +75,48 @@ def _records(captured: list[logging.LogRecord], event: str) -> list[logging.LogR
 class TestJWTKeySlots:
     def test_constructable_with_required_fields(self) -> None:
         slots = JWTKeySlots(
-            primary=_TEST_KEY_A, secondary=None,
-            last_rotation_ts=None, overlap_ttl_seconds=600,
+            primary=_TEST_KEY_A,
+            secondary=None,
+            last_rotation_ts=None,
+            overlap_ttl_seconds=600,
         )
         assert slots.primary == _TEST_KEY_A
         assert slots.secondary is None
 
     def test_resolve_secondary_returns_initial_until_rotation(self) -> None:
         slots = JWTKeySlots(
-            primary=_TEST_KEY_A, secondary=_TEST_KEY_B,
-            last_rotation_ts=None, overlap_ttl_seconds=600,
+            primary=_TEST_KEY_A,
+            secondary=_TEST_KEY_B,
+            last_rotation_ts=None,
+            overlap_ttl_seconds=600,
         )
         # ``last_rotation_ts is None`` → initial-boot secondary stands.
         assert _resolve_secondary(slots) == _TEST_KEY_B
         assert slots.secondary == _TEST_KEY_B
 
     def test_resolve_secondary_within_window(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         slots = JWTKeySlots(
-            primary=_TEST_KEY_A, secondary=_TEST_KEY_B,
-            last_rotation_ts=100.0, overlap_ttl_seconds=600,
+            primary=_TEST_KEY_A,
+            secondary=_TEST_KEY_B,
+            last_rotation_ts=100.0,
+            overlap_ttl_seconds=600,
         )
         monkeypatch.setattr(time, "monotonic", lambda: 200.0)
         assert _resolve_secondary(slots) == _TEST_KEY_B
         assert slots.secondary == _TEST_KEY_B
 
     def test_resolve_secondary_lazy_drop_after_window(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         slots = JWTKeySlots(
-            primary=_TEST_KEY_A, secondary=_TEST_KEY_B,
-            last_rotation_ts=100.0, overlap_ttl_seconds=600,
+            primary=_TEST_KEY_A,
+            secondary=_TEST_KEY_B,
+            last_rotation_ts=100.0,
+            overlap_ttl_seconds=600,
         )
         monkeypatch.setattr(time, "monotonic", lambda: 700.5)
         assert _resolve_secondary(slots) is None
@@ -129,7 +139,9 @@ class _StubConfig:
     """Minimal stand-in for AppConfig with the fields ``_handle_rotation`` reads."""
 
     def __init__(
-        self, jwt_primary_key: bytes, jwt_secondary_key: bytes | None,
+        self,
+        jwt_primary_key: bytes,
+        jwt_secondary_key: bytes | None,
         overlap_ttl: int = 600,
     ) -> None:
         self.jwt_primary_key = jwt_primary_key
@@ -167,7 +179,9 @@ def stub_app(monkeypatch: pytest.MonkeyPatch) -> _StubApp:
 class TestRotationHappyPath:
     @pytest.mark.asyncio
     async def test_swap_promotes_old_primary_to_secondary(
-        self, stub_app: _StubApp, tmp_path: Path,
+        self,
+        stub_app: _StubApp,
+        tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
         cassetta_log_capture: list[logging.LogRecord],
     ) -> None:
@@ -193,7 +207,9 @@ class TestRotationHappyPath:
 
     @pytest.mark.asyncio
     async def test_byte_identical_rotation_is_noop(
-        self, stub_app: _StubApp, tmp_path: Path,
+        self,
+        stub_app: _StubApp,
+        tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
         cassetta_log_capture: list[logging.LogRecord],
     ) -> None:
@@ -212,11 +228,15 @@ class TestRotationHappyPath:
 class TestRotationFailures:
     @pytest.mark.asyncio
     async def test_missing_file_keeps_slots(
-        self, stub_app: _StubApp, monkeypatch: pytest.MonkeyPatch,
-        cassetta_log_capture: list[logging.LogRecord], tmp_path: Path,
+        self,
+        stub_app: _StubApp,
+        monkeypatch: pytest.MonkeyPatch,
+        cassetta_log_capture: list[logging.LogRecord],
+        tmp_path: Path,
     ) -> None:
         monkeypatch.setenv(
-            "CASSETTA_JWT_KEY_FILE", str(tmp_path / "does-not-exist"),
+            "CASSETTA_JWT_KEY_FILE",
+            str(tmp_path / "does-not-exist"),
         )
         await _handle_rotation(stub_app)  # type: ignore[arg-type]
         assert stub_app.state.jwt_keys.primary == _TEST_KEY_A
@@ -226,8 +246,11 @@ class TestRotationFailures:
 
     @pytest.mark.asyncio
     async def test_empty_file_rejected_as_invalid_material(
-        self, stub_app: _StubApp, monkeypatch: pytest.MonkeyPatch,
-        cassetta_log_capture: list[logging.LogRecord], tmp_path: Path,
+        self,
+        stub_app: _StubApp,
+        monkeypatch: pytest.MonkeyPatch,
+        cassetta_log_capture: list[logging.LogRecord],
+        tmp_path: Path,
     ) -> None:
         empty = tmp_path / "empty"
         empty.write_text("")
@@ -240,7 +263,9 @@ class TestRotationFailures:
 
     @pytest.mark.asyncio
     async def test_unset_path_signals_missing_file(
-        self, stub_app: _StubApp, monkeypatch: pytest.MonkeyPatch,
+        self,
+        stub_app: _StubApp,
+        monkeypatch: pytest.MonkeyPatch,
         cassetta_log_capture: list[logging.LogRecord],
     ) -> None:
         monkeypatch.delenv("CASSETTA_JWT_KEY_FILE", raising=False)
@@ -255,7 +280,9 @@ class TestDisplacement:
 
     @pytest.mark.asyncio
     async def test_second_rotation_displaces_first_secondary(
-        self, stub_app: _StubApp, monkeypatch: pytest.MonkeyPatch,
+        self,
+        stub_app: _StubApp,
+        monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
     ) -> None:
         slots = stub_app.state.jwt_keys
@@ -280,11 +307,14 @@ class TestDisplacement:
 
 class TestOverlapTtlValidation:
     def test_warning_when_overlap_too_short(
-        self, cassetta_log_capture: list[logging.LogRecord],
+        self,
+        cassetta_log_capture: list[logging.LogRecord],
     ) -> None:
         config = _StubConfig(_TEST_KEY_A, None, overlap_ttl=200)
         config.limits = type(  # type: ignore[assignment]
-            "L", (), {"download_claim_ttl": 300, "upload_token_ttl": 300},
+            "L",
+            (),
+            {"download_claim_ttl": 300, "upload_token_ttl": 300},
         )
         _validate_overlap_ttl(config)  # type: ignore[arg-type]
         records = _records(cassetta_log_capture, "config_validation_warning")
@@ -298,11 +328,14 @@ class TestOverlapTtlValidation:
         }
 
     def test_silent_when_overlap_satisfies(
-        self, cassetta_log_capture: list[logging.LogRecord],
+        self,
+        cassetta_log_capture: list[logging.LogRecord],
     ) -> None:
         config = _StubConfig(_TEST_KEY_A, None, overlap_ttl=600)
         config.limits = type(  # type: ignore[assignment]
-            "L", (), {"download_claim_ttl": 300, "upload_token_ttl": 300},
+            "L",
+            (),
+            {"download_claim_ttl": 300, "upload_token_ttl": 300},
         )
         _validate_overlap_ttl(config)  # type: ignore[arg-type]
         assert _records(cassetta_log_capture, "config_validation_warning") == []
@@ -315,36 +348,47 @@ class TestOverlapTtlValidation:
 
 class TestMultiWorkerDisabled:
     @pytest.mark.parametrize(
-        "var", ["WEB_CONCURRENCY", "UVICORN_WORKERS", "GUNICORN_WORKERS"],
+        "var",
+        ["WEB_CONCURRENCY", "UVICORN_WORKERS", "GUNICORN_WORKERS"],
     )
     def test_is_single_worker_false(
-        self, monkeypatch: pytest.MonkeyPatch, var: str,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        var: str,
     ) -> None:
         for v in (
-            "WEB_CONCURRENCY", "UVICORN_WORKERS", "GUNICORN_WORKERS",
+            "WEB_CONCURRENCY",
+            "UVICORN_WORKERS",
+            "GUNICORN_WORKERS",
         ):
             monkeypatch.delenv(v, raising=False)
         monkeypatch.setenv(var, "2")
         assert _is_single_worker() is False
 
     def test_is_single_worker_true_default(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         for v in (
-            "WEB_CONCURRENCY", "UVICORN_WORKERS", "GUNICORN_WORKERS",
+            "WEB_CONCURRENCY",
+            "UVICORN_WORKERS",
+            "GUNICORN_WORKERS",
         ):
             monkeypatch.delenv(v, raising=False)
         assert _is_single_worker() is True
 
     @pytest.mark.asyncio
     async def test_init_emits_disabled_event_under_multi_worker(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
         cassetta_log_capture: list[logging.LogRecord],
     ) -> None:
         monkeypatch.setenv("WEB_CONCURRENCY", "2")
         config = _StubConfig(_TEST_KEY_A, None, overlap_ttl=600)
         config.limits = type(  # type: ignore[assignment]
-            "L", (), {"download_claim_ttl": 300, "upload_token_ttl": 300},
+            "L",
+            (),
+            {"download_claim_ttl": 300, "upload_token_ttl": 300},
         )
         app = _StubApp(config)
 
@@ -383,7 +427,8 @@ class TestVerifyPathIntegration:
         )
 
     def test_within_overlap_secondary_still_verifies(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         slots = JWTKeySlots(
             primary=_TEST_KEY_B,
@@ -396,12 +441,15 @@ class TestVerifyPathIntegration:
 
         secondary = _resolve_secondary(slots)
         claims = jwt_tokens.verify(
-            token, primary=slots.primary, secondary=secondary,
+            token,
+            primary=slots.primary,
+            secondary=secondary,
         )
         assert claims["subject"] == "test"
 
     def test_past_overlap_old_token_rejected_lazy_drop(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         slots = JWTKeySlots(
             primary=_TEST_KEY_B,
@@ -420,7 +468,9 @@ class TestVerifyPathIntegration:
 
         with pytest.raises(jwt_tokens.TokenInvalidSignature):
             jwt_tokens.verify(
-                token, primary=slots.primary, secondary=secondary,
+                token,
+                primary=slots.primary,
+                secondary=secondary,
             )
 
 

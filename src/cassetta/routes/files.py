@@ -74,7 +74,10 @@ def _policy_kind_fields(policy: AccessPolicy) -> tuple[str, str]:
 
 
 async def _enforce(
-    request: Request, identity: Identity, resource: str, action: str,
+    request: Request,
+    identity: Identity,
+    resource: str,
+    action: str,
     metrics: MetricsProvider | None = None,
 ) -> None:
     policy = _get_policy(request)
@@ -83,18 +86,20 @@ async def _enforce(
         # safe_emit; policy_kind derived from policy.kind.
         field_kind, tag_kind = _policy_kind_fields(policy)
         safe_emit(
-            logger, logging.INFO, "policy.denied",
+            logger,
+            logging.INFO,
+            "policy.denied",
             identity_label=identity.label,
             identity_extra=identity.extra or None,
-            resource=resource, action=action, result="denied",
+            resource=resource,
+            action=action,
+            result="denied",
             detail={"policy_kind": field_kind},
             metric_name="cassetta.policy.decisions",
             metric_tags={"result": "denied", "policy_kind": tag_kind},
             metrics=metrics,
         )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 
 def _is_expired_by_meta(created_at_iso: str, ttl: int) -> bool:
@@ -119,8 +124,7 @@ async def _evaluate_or_raise(
     file_parts: list[tuple[str, bytes, str | None]],
 ) -> None:
     entries: list[ManifestFile] = [
-        {"name": name, "size": len(data), "mime": explicit}
-        for name, data, explicit in file_parts
+        {"name": name, "size": len(data), "mime": explicit} for name, data, explicit in file_parts
     ]
     manifest: UploadManifest = {"file_count": len(entries), "files": entries}
     ctx = PolicyContext(identity=identity)
@@ -141,7 +145,9 @@ async def _evaluate_or_raise(
             context=file_name,
         )
         struct_log(
-            logger, logging.INFO, "policy.rejection",
+            logger,
+            logging.INFO,
+            "policy.rejection",
             identity_label=identity.label,
             detail={
                 "error": decision["error"],
@@ -161,10 +167,15 @@ async def _evaluate_or_raise(
         total_size = sum(f["size"] for f in entries)
         inline_cap = policy.advertise_limits(ctx).get("max_inline_size")
         reason = _format_reason(
-            "batch_required", "max_inline_size", inline_cap, total_size,
+            "batch_required",
+            "max_inline_size",
+            inline_cap,
+            total_size,
         )
         struct_log(
-            logger, logging.INFO, "policy.rejection",
+            logger,
+            logging.INFO,
+            "policy.rejection",
             identity_label=identity.label,
             detail={
                 "error": "batch_required",
@@ -181,7 +192,9 @@ async def _evaluate_or_raise(
             reason=reason,
         )
     struct_log(
-        logger, logging.DEBUG, "policy.upload_decision",
+        logger,
+        logging.DEBUG,
+        "policy.upload_decision",
         identity_label=identity.label,
         detail={
             "file_count": len(entries),
@@ -217,11 +230,13 @@ async def _write_store_bundle(
         records: list[dict[str, Any]] = []
         for name, data, explicit_mime in files:
             await writer.write_file(name, io.BytesIO(data))
-            records.append({
-                "name": name,
-                "size": len(data),
-                "mime": pick_mime(name, explicit=explicit_mime),
-            })
+            records.append(
+                {
+                    "name": name,
+                    "size": len(data),
+                    "mime": pick_mime(name, explicit=explicit_mime),
+                }
+            )
         meta: dict[str, Any] = {
             "schema_version": SCHEMA_VERSION,
             "bundle_id": bundle_id,
@@ -251,9 +266,7 @@ async def upload_file(
         config = _get_config(request)
         validate_path(path, allowed_chars=config.allowed_path_chars)
     except PathValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     for prefix in RESERVED_PREFIXES:
         if path.startswith(prefix):
@@ -308,7 +321,10 @@ async def upload_file(
     bundle_id = uuid.uuid4().hex
     try:
         await _write_store_bundle(
-            backend, bundle_path, file_parts, bundle_id=bundle_id,
+            backend,
+            bundle_path,
+            file_parts,
+            bundle_id=bundle_id,
         )
     except BundlePathConflictError as exc:
         return JSONResponse(  # type: ignore[return-value]
@@ -321,10 +337,14 @@ async def upload_file(
         )
 
     safe_emit(
-        logger, logging.INFO, "file.uploaded",
+        logger,
+        logging.INFO,
+        "file.uploaded",
         identity_label=identity.label,
         identity_extra=identity.extra or None,
-        resource=f"files:{path}", action="put", result="ok",
+        resource=f"files:{path}",
+        action="put",
+        result="ok",
         detail={"size": total_content_size, "bundle_id": bundle_id},
         metric_name="cassetta.files.operations",
         metric_tags={"action": "put"},
@@ -365,8 +385,11 @@ async def list_files(
             meta = await backend.read_bundle_meta(ref.path)
         except FileNotFoundError:
             struct_log(
-                logger, logging.WARNING, "files.foreign_object",
-                resource="files:*", detail={"path": ref.path},
+                logger,
+                logging.WARNING,
+                "files.foreign_object",
+                resource="files:*",
+                detail={"path": ref.path},
             )
             continue
         created_at_iso = str(meta.get("created_at", ""))
@@ -374,10 +397,7 @@ async def list_files(
             continue
 
         created_dt = datetime.fromisoformat(created_at_iso)
-        files_entries = [
-            FileRecord(name=f["name"], size=int(f["size"]), mime=f["mime"])
-            for f in meta.get("files", [])
-        ]
+        files_entries = [FileRecord(name=f["name"], size=int(f["size"]), mime=f["mime"]) for f in meta.get("files", [])]
         total_size = sum(f.size for f in files_entries)
         remaining = _compute_remaining_ttl(created_at_iso, config.default_ttl)
         display_path = ref.path.removeprefix(f"{STORE_NAMESPACE}/")
@@ -394,10 +414,14 @@ async def list_files(
         )
 
     safe_emit(
-        logger, logging.INFO, "file.listed",
+        logger,
+        logging.INFO,
+        "file.listed",
         identity_label=identity.label,
         identity_extra=identity.extra or None,
-        resource=f"files:{prefix}*", action="list", result="ok",
+        resource=f"files:{prefix}*",
+        action="list",
+        result="ok",
         detail={"count": len(entries)},
         metric_name="cassetta.files.operations",
         metric_tags={"action": "list"},
@@ -418,9 +442,7 @@ async def peek_store_file(
     try:
         validate_path(path)
     except PathValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     await _enforce(request, identity, f"files:{path}", "peek", metrics)
 
@@ -430,7 +452,9 @@ async def peek_store_file(
         meta = await backend.read_bundle_meta(bundle_path)
     except FileNotFoundError as exc:
         struct_log(
-            logger, logging.INFO, "peek.not_found",
+            logger,
+            logging.INFO,
+            "peek.not_found",
             identity_label=identity.label,
             resource=f"files:{path}",
             detail={"path": path, "found": False, "reason": "absent"},
@@ -442,7 +466,9 @@ async def peek_store_file(
 
     if _is_expired_by_meta(str(meta.get("created_at", "")), config.default_ttl):
         struct_log(
-            logger, logging.INFO, "peek.not_found",
+            logger,
+            logging.INFO,
+            "peek.not_found",
             identity_label=identity.label,
             resource=f"files:{path}",
             detail={"path": path, "found": False, "reason": "expired"},
@@ -455,12 +481,17 @@ async def peek_store_file(
     file_count = int(meta.get("file_count", 0))
     total_size = sum(int(f.get("size", 0)) for f in meta.get("files", []))
     safe_emit(
-        logger, logging.DEBUG, "peek.ok",
+        logger,
+        logging.DEBUG,
+        "peek.ok",
         identity_label=identity.label,
         resource=f"files:{path}",
         detail={
-            "path": path, "found": True, "file_count": file_count,
-            "total_size": total_size, "bundle_id": meta.get("bundle_id"),
+            "path": path,
+            "found": True,
+            "file_count": file_count,
+            "total_size": total_size,
+            "bundle_id": meta.get("bundle_id"),
         },
         metric_name="cassetta.files.operations",
         metric_tags={"action": "peek"},
@@ -484,9 +515,7 @@ async def download_file(
     try:
         validate_path(path)
     except PathValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     await _enforce(request, identity, f"files:{path}", "read", metrics)
 
@@ -516,21 +545,27 @@ async def download_file(
     total_size = sum(int(f.get("size", 0)) for f in records)
     entry: DownloadEntry = {"file_count": file_count, "total_size": total_size}
     decision = await limits_policy.evaluate_download(
-        PolicyContext(identity=identity), entry,
+        PolicyContext(identity=identity),
+        entry,
     )
     mode = decision.get("mode")
     struct_log(
-        logger, logging.DEBUG, "download_mode_decision",
+        logger,
+        logging.DEBUG,
+        "download_mode_decision",
         identity_label=identity.label,
-        detail={"bundle_id": meta.get("bundle_id"), "mode": mode,
-                "namespace": "store"},
+        detail={"bundle_id": meta.get("bundle_id"), "mode": mode, "namespace": "store"},
     )
 
     safe_emit(
-        logger, logging.INFO, "file.downloaded",
+        logger,
+        logging.INFO,
+        "file.downloaded",
         identity_label=identity.label,
         identity_extra=identity.extra or None,
-        resource=f"files:{path}", action="get", result="ok",
+        resource=f"files:{path}",
+        action="get",
+        result="ok",
         detail={"file_count": file_count, "bundle_id": meta.get("bundle_id")},
         metric_name="cassetta.files.operations",
         metric_tags={"action": "get"},
@@ -540,8 +575,12 @@ async def download_file(
     if mode == "reference":
         transport = _get_transport(request)
         ref_envelope = build_reference_payload_for_store(
-            config=config, policy=limits_policy, transport=transport,
-            identity=identity, bundle_path=bundle_path, meta=meta,
+            config=config,
+            policy=limits_policy,
+            transport=transport,
+            identity=identity,
+            bundle_path=bundle_path,
+            meta=meta,
             recipient=identity.label,
         )
         safe_emit(
@@ -581,9 +620,7 @@ async def delete_file(
     try:
         validate_path(path)
     except PathValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     await _enforce(request, identity, f"files:{path}", "delete", metrics)
 
@@ -597,10 +634,14 @@ async def delete_file(
         ) from exc
 
     safe_emit(
-        logger, logging.INFO, "file.deleted",
+        logger,
+        logging.INFO,
+        "file.deleted",
         identity_label=identity.label,
         identity_extra=identity.extra or None,
-        resource=f"files:{path}", action="delete", result="ok",
+        resource=f"files:{path}",
+        action="delete",
+        result="ok",
         metric_name="cassetta.files.operations",
         metric_tags={"action": "delete"},
         metrics=metrics,

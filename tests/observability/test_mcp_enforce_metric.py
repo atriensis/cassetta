@@ -15,7 +15,8 @@ _TEST_JWT_KEY_B64 = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
 
 
 async def test_mcp_enforce_denial_increments_policy_decisions(
-    storage_dir, recording_metrics: RecordingMetricsProvider,
+    storage_dir,
+    recording_metrics: RecordingMetricsProvider,
     cassetta_log_capture: CassettaLogCapture,
 ) -> None:
     """An MCP tool call denied by ``_enforce`` increments
@@ -33,12 +34,17 @@ async def test_mcp_enforce_denial_increments_policy_decisions(
         kind: ClassVar[str] = "deny-all"
 
         async def check(
-            self, identity: Identity, resource: str, action: str,
+            self,
+            identity: Identity,
+            resource: str,
+            action: str,
         ) -> bool:
             return False
 
         async def visible_agents(
-            self, identity: Identity, labels: list[str],
+            self,
+            identity: Identity,
+            labels: list[str],
         ) -> list[str]:
             return []
 
@@ -77,14 +83,18 @@ async def test_mcp_enforce_denial_increments_policy_decisions(
             base_url="http://localhost",
         ) as client:
             init = {
-                "jsonrpc": "2.0", "id": 1, "method": "initialize",
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
                 "params": {
-                    "protocolVersion": "2025-03-26", "capabilities": {},
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
                     "clientInfo": {"name": "t", "version": "1"},
                 },
             }
             init_resp = await client.post(
-                "/mcp/", json=init,
+                "/mcp/",
+                json=init,
                 headers={
                     "Accept": "application/json, text/event-stream",
                     "Content-Type": "application/json",
@@ -94,13 +104,17 @@ async def test_mcp_enforce_denial_increments_policy_decisions(
             recording_metrics.calls.clear()
             cassetta_log_capture.clear()
             call = {
-                "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/call",
                 "params": {
-                    "name": "cassetta_list", "arguments": {},
+                    "name": "cassetta_list",
+                    "arguments": {},
                 },
             }
             resp = await client.post(
-                "/mcp/", json=call,
+                "/mcp/",
+                json=call,
                 headers={
                     "Accept": "application/json, text/event-stream",
                     "Content-Type": "application/json",
@@ -118,17 +132,11 @@ async def test_mcp_enforce_denial_increments_policy_decisions(
         await task
 
     policy = recording_metrics.find("cassetta.policy.decisions", "increment")
-    assert any(
-        c.tags
-        and c.tags.get("result") == "denied"
-        and c.tags.get("policy_kind") == "core"
-        for c in policy
-    ), [c.tags for c in policy]
-
-    denied_events = [
-        r for r in cassetta_log_capture.records
-        if getattr(r, "event", None) == "policy.denied"
+    assert any(c.tags and c.tags.get("result") == "denied" and c.tags.get("policy_kind") == "core" for c in policy), [
+        c.tags for c in policy
     ]
+
+    denied_events = [r for r in cassetta_log_capture.records if getattr(r, "event", None) == "policy.denied"]
     assert denied_events
     detail = getattr(denied_events[0], "detail", {}) or {}
     assert detail.get("policy_kind") == "core"

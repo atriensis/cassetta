@@ -19,9 +19,7 @@ def _data_root(storage_dir: str) -> Path:
 
 
 class TestHappyPath:
-    async def test_open_write_commit_two_files(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_open_write_commit_two_files(self, backend: FilesystemBackend, storage_dir: str) -> None:
         writer = await backend.open_bundle_write("store/proj")
 
         await writer.write_file("readme.md", io.BytesIO(b"# Hello"))
@@ -49,9 +47,7 @@ class TestHappyPath:
         assert on_disk["schema_version"] == 1
         assert on_disk["bundle_id"] == "abc123"
 
-    async def test_meta_json_absent_before_commit(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_meta_json_absent_before_commit(self, backend: FilesystemBackend, storage_dir: str) -> None:
         writer = await backend.open_bundle_write("store/pending")
         await writer.write_file("a.txt", io.BytesIO(b"a"))
 
@@ -59,17 +55,17 @@ class TestHappyPath:
         assert bundle_dir.is_dir()
         assert not (bundle_dir / "meta.json").exists()
 
-    async def test_meta_is_written_last(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_meta_is_written_last(self, backend: FilesystemBackend, storage_dir: str) -> None:
         writer = await backend.open_bundle_write("store/order")
         await writer.write_file("a.txt", io.BytesIO(b"aaa"))
         await writer.write_file("b.txt", io.BytesIO(b"bbbb"))
 
-        meta = _valid_meta([
-            ("a.txt", 3, "text/plain"),
-            ("b.txt", 4, "text/plain"),
-        ])
+        meta = _valid_meta(
+            [
+                ("a.txt", 3, "text/plain"),
+                ("b.txt", 4, "text/plain"),
+            ]
+        )
         await writer.commit(meta)
 
         bundle_dir = _data_root(storage_dir) / "store/order"
@@ -81,9 +77,7 @@ class TestHappyPath:
 
 
 class TestAbort:
-    async def test_abort_removes_directory(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_abort_removes_directory(self, backend: FilesystemBackend, storage_dir: str) -> None:
         writer = await backend.open_bundle_write("store/doomed")
         await writer.write_file("x.txt", io.BytesIO(b"xxx"))
         await writer.abort()
@@ -91,18 +85,14 @@ class TestAbort:
         bundle_dir = _data_root(storage_dir) / "store/doomed"
         assert not bundle_dir.exists()
 
-    async def test_abort_is_idempotent(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_abort_is_idempotent(self, backend: FilesystemBackend) -> None:
         writer = await backend.open_bundle_write("store/idem")
         await writer.abort()
         await writer.abort()  # must not raise
 
 
 class TestCrashed:
-    async def test_uncommitted_bundle_not_in_default_listing(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_uncommitted_bundle_not_in_default_listing(self, backend: FilesystemBackend) -> None:
         writer = await backend.open_bundle_write("store/crashed")
         await writer.write_file("x.txt", io.BytesIO(b"x"))
         # Simulate crash: no commit, no abort. The directory and file
@@ -111,24 +101,18 @@ class TestCrashed:
         refs = list(backend.list_bundles("store/"))
         assert all(ref.path != "store/crashed" for ref in refs)
 
-    async def test_uncommitted_bundle_visible_with_include_orphans(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_uncommitted_bundle_visible_with_include_orphans(self, backend: FilesystemBackend) -> None:
         writer = await backend.open_bundle_write("store/crashed2")
         await writer.write_file("x.txt", io.BytesIO(b"x"))
 
-        refs = list(
-            backend.list_bundles("store/", include_orphans=True)
-        )
+        refs = list(backend.list_bundles("store/", include_orphans=True))
         matching = [r for r in refs if r.path == "store/crashed2"]
         assert len(matching) == 1
         assert matching[0].has_meta is False
 
 
 class TestValidation:
-    async def test_empty_bundle_rejected_at_commit(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_empty_bundle_rejected_at_commit(self, backend: FilesystemBackend) -> None:
         writer = await backend.open_bundle_write("store/empty")
         meta = {
             "schema_version": 1,
@@ -143,18 +127,14 @@ class TestValidation:
             await writer.commit(meta)
         await writer.abort()
 
-    async def test_duplicate_filename_rejected_at_write(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_duplicate_filename_rejected_at_write(self, backend: FilesystemBackend) -> None:
         writer = await backend.open_bundle_write("store/dup")
         await writer.write_file("same.txt", io.BytesIO(b"aaa"))
         with pytest.raises(ValueError):
             await writer.write_file("same.txt", io.BytesIO(b"bbb"))
         await writer.abort()
 
-    async def test_size_mismatch_rejected_at_commit(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_size_mismatch_rejected_at_commit(self, backend: FilesystemBackend) -> None:
         writer = await backend.open_bundle_write("store/sizes")
         await writer.write_file("x.txt", io.BytesIO(b"12345"))  # 5 bytes
 
@@ -173,9 +153,7 @@ class TestValidation:
             await writer.commit(meta)
         await writer.abort()
 
-    async def test_schema_version_present(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_schema_version_present(self, backend: FilesystemBackend, storage_dir: str) -> None:
         writer = await backend.open_bundle_write("store/schemaver")
         await writer.write_file("n.txt", io.BytesIO(b"abc"))
         meta = _valid_meta([("n.txt", 3, "text/plain")])
@@ -194,7 +172,5 @@ def _valid_meta(files: list[tuple[str, int, str]]) -> dict[str, object]:
         "created_at": "2026-04-18T16:00:00+00:00",
         "content_type": "application/octet-stream",
         "file_count": len(files),
-        "files": [
-            {"name": n, "size": s, "mime": m} for n, s, m in files
-        ],
+        "files": [{"name": n, "size": s, "mime": m} for n, s, m in files],
     }

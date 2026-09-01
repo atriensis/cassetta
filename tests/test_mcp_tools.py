@@ -37,9 +37,7 @@ def mcp_env(mcp_storage_dir: str) -> None:
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
     os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
 
 
@@ -82,11 +80,14 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 
 
 def _init_msg() -> dict:
-    return _jsonrpc("initialize", {
-        "protocolVersion": "2025-03-26",
-        "capabilities": {},
-        "clientInfo": {"name": "test-client", "version": "1.0.0"},
-    })
+    return _jsonrpc(
+        "initialize",
+        {
+            "protocolVersion": "2025-03-26",
+            "capabilities": {},
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
+    )
 
 
 async def _post(client: httpx.AsyncClient, body: dict, sid: str = "") -> httpx.Response:
@@ -104,7 +105,10 @@ async def _init(client: httpx.AsyncClient) -> str:
 
 
 async def _call(
-    client: httpx.AsyncClient, name: str, args: dict, sid: str = "",
+    client: httpx.AsyncClient,
+    name: str,
+    args: dict,
+    sid: str = "",
 ) -> dict:
     """Call a tool, return result dict."""
     body = _jsonrpc("tools/call", {"name": name, "arguments": args}, req_id=2)
@@ -114,8 +118,12 @@ async def _call(
 
 
 async def _put_bundle(
-    backend: FilesystemBackend, path: str, content: bytes,
-    *, namespace: str = "store", sender: str | None = None,
+    backend: FilesystemBackend,
+    path: str,
+    content: bytes,
+    *,
+    namespace: str = "store",
+    sender: str | None = None,
 ) -> None:
     """Seed a committed bundle in the given namespace (default: store/)."""
     name = path.split("/")[-1]
@@ -151,7 +159,6 @@ async def _put_tar(backend: FilesystemBackend, path: str, content: bytes) -> Non
 
 
 class TestToolDiscovery:
-
     @pytest.mark.asyncio
     async def test_discover_all_tools(self, mcp_app: tuple) -> None:
         _app, client, _backend = mcp_app
@@ -161,10 +168,18 @@ class TestToolDiscovery:
         assert resp.status_code == 200
         tool_names = [t["name"] for t in resp.json()["result"]["tools"]]
         assert sorted(tool_names) == [
-            "cassetta_agents", "cassetta_broadcast", "cassetta_capabilities",
-            "cassetta_delete", "cassetta_get", "cassetta_inbox",
-            "cassetta_list", "cassetta_peek", "cassetta_pick",
-            "cassetta_put", "cassetta_send_init", "cassetta_send_inline",
+            "cassetta_agents",
+            "cassetta_broadcast",
+            "cassetta_capabilities",
+            "cassetta_delete",
+            "cassetta_get",
+            "cassetta_inbox",
+            "cassetta_list",
+            "cassetta_peek",
+            "cassetta_pick",
+            "cassetta_put",
+            "cassetta_send_init",
+            "cassetta_send_inline",
         ]
         assert "cassetta_send" not in tool_names
 
@@ -229,15 +244,20 @@ class TestToolDiscovery:
 
 
 class TestCassettaPut:
-
     @pytest.mark.asyncio
     async def test_put_stores_file(self, mcp_app: tuple) -> None:
         _app, client, backend = mcp_app
         sid = await _init(client)
 
-        result = await _call(client, "cassetta_put", {
-            "path": "test/hello.txt", "content": "Hello World",
-        }, sid)
+        result = await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "test/hello.txt",
+                "content": "Hello World",
+            },
+            sid,
+        )
         assert result.get("isError") is not True
         text = result["content"][0]["text"]
         assert "test/hello.txt" in text
@@ -258,9 +278,15 @@ class TestCassettaPut:
         await _put_tar(backend, "overwrite.txt", b"old content")
         sid = await _init(client)
 
-        result = await _call(client, "cassetta_put", {
-            "path": "overwrite.txt", "content": "new content",
-        }, sid)
+        result = await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "overwrite.txt",
+                "content": "new content",
+            },
+            sid,
+        )
         assert result.get("isError") is not True
 
         handle = await backend.open_bundle_file_read("store/overwrite.txt", "overwrite.txt")
@@ -274,9 +300,15 @@ class TestCassettaPut:
         _app, client, _backend = mcp_app
         sid = await _init(client)
 
-        result = await _call(client, "cassetta_put", {
-            "path": "../etc/passwd", "content": "malicious",
-        }, sid)
+        result = await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "../etc/passwd",
+                "content": "malicious",
+            },
+            sid,
+        )
         assert result["isError"] is True
 
     @pytest.mark.asyncio
@@ -285,12 +317,22 @@ class TestCassettaPut:
         _app, client, _backend = mcp_app
         sid = await _init(client)
 
-        result = await _call(client, "cassetta_put", {
-            "path": "big.txt", "content": "x" * (100 * 1024 + 1),
-        }, sid)
+        result = await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "big.txt",
+                "content": "x" * (100 * 1024 + 1),
+            },
+            sid,
+        )
         assert result["isError"] is True
-        assert result["content"][0]["text"].lower().startswith(
-            "error executing tool cassetta_put: batch_required:",
+        assert (
+            result["content"][0]["text"]
+            .lower()
+            .startswith(
+                "error executing tool cassetta_put: batch_required:",
+            )
         )
 
 
@@ -300,7 +342,6 @@ class TestCassettaPut:
 
 
 class TestCassettaGet:
-
     @pytest.mark.asyncio
     async def test_get_returns_content(self, mcp_app: tuple) -> None:
         _app, client, backend = mcp_app
@@ -324,7 +365,9 @@ class TestCassettaGet:
 
     @pytest.mark.asyncio
     async def test_get_expired_file_returns_error(
-        self, mcp_storage_dir: str, monkeypatch: pytest.MonkeyPatch,
+        self,
+        mcp_storage_dir: str,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Brief 539: set env via monkeypatch (auto-restored) and provide
         # CASSETTA_MCP_ALLOWED_HOSTS ourselves — this test used to free-ride on
@@ -354,7 +397,10 @@ class TestCassettaGet:
             ) as client:
                 sid = await _init(client)
                 result = await _call(
-                    client, "cassetta_get", {"path": "expires.txt"}, sid,
+                    client,
+                    "cassetta_get",
+                    {"path": "expires.txt"},
+                    sid,
                 )
                 assert result["isError"] is True
                 assert "not found" in result["content"][0]["text"].lower()
@@ -366,7 +412,6 @@ class TestCassettaGet:
 
 
 class TestCassettaList:
-
     @pytest.mark.asyncio
     async def test_list_all_files(self, mcp_app: tuple) -> None:
         _app, client, backend = mcp_app
@@ -405,7 +450,9 @@ class TestCassettaList:
 
     @pytest.mark.asyncio
     async def test_list_excludes_expired(
-        self, mcp_storage_dir: str, monkeypatch: pytest.MonkeyPatch,
+        self,
+        mcp_storage_dir: str,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Brief 539: self-sufficient env (see test_get_expired_file_returns_error).
         monkeypatch.setenv("CASSETTA_SETUP_TOKEN", "")
@@ -444,7 +491,6 @@ class TestCassettaList:
 
 
 class TestCassettaDelete:
-
     @pytest.mark.asyncio
     async def test_delete_existing_file(self, mcp_app: tuple) -> None:
         _app, client, backend = mcp_app
@@ -452,11 +498,15 @@ class TestCassettaDelete:
         sid = await _init(client)
 
         result = await _call(
-            client, "cassetta_delete", {"path": "temp/scratch.txt"}, sid,
+            client,
+            "cassetta_delete",
+            {"path": "temp/scratch.txt"},
+            sid,
         )
         assert result.get("isError") is not True
         assert "temp/scratch.txt" in result["content"][0]["text"]
         import pytest as _pytest
+
         with _pytest.raises(FileNotFoundError):
             await backend.read_bundle_meta("store/temp/scratch.txt")
 
@@ -466,7 +516,10 @@ class TestCassettaDelete:
         sid = await _init(client)
 
         result = await _call(
-            client, "cassetta_delete", {"path": "nonexistent.txt"}, sid,
+            client,
+            "cassetta_delete",
+            {"path": "nonexistent.txt"},
+            sid,
         )
         assert result["isError"] is True
         assert "not found" in result["content"][0]["text"].lower()
@@ -478,15 +531,20 @@ class TestCassettaDelete:
 
 
 class TestErrorHandling:
-
     @pytest.mark.asyncio
     async def test_error_no_cloud_mention(self, mcp_app: tuple) -> None:
         _app, client, _backend = mcp_app
         sid = await _init(client)
 
-        result = await _call(client, "cassetta_put", {
-            "path": "../secret", "content": "test",
-        }, sid)
+        result = await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "../secret",
+                "content": "test",
+            },
+            sid,
+        )
         text = result["content"][0]["text"].lower()
         assert "cloud" not in text
         assert "premium" not in text
@@ -507,15 +565,20 @@ class TestErrorHandling:
 
 
 class TestCrossProtocol:
-
     @pytest.mark.asyncio
     async def test_put_via_mcp_get_via_rest(self, mcp_app: tuple) -> None:
         _app, client, _backend = mcp_app
         sid = await _init(client)
 
-        result = await _call(client, "cassetta_put", {
-            "path": "shared/data.json", "content": '{"via": "mcp"}',
-        }, sid)
+        result = await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "shared/data.json",
+                "content": '{"via": "mcp"}',
+            },
+            sid,
+        )
         assert result.get("isError") is not True
 
         resp = await client.get("/files/shared/data.json")
@@ -529,13 +592,17 @@ class TestCrossProtocol:
         _app, client, _backend = mcp_app
 
         resp = await client.put(
-            "/files/shared/rest-data.txt", content=b"stored via REST",
+            "/files/shared/rest-data.txt",
+            content=b"stored via REST",
         )
         assert resp.status_code == 201
 
         sid = await _init(client)
         result = await _call(
-            client, "cassetta_get", {"path": "shared/rest-data.txt"}, sid,
+            client,
+            "cassetta_get",
+            {"path": "shared/rest-data.txt"},
+            sid,
         )
         assert result.get("isError") is not True
         envelope = json.loads(result["content"][0]["text"])

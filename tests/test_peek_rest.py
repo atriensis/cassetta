@@ -8,7 +8,11 @@ from cassetta.protocols.identity import Identity
 
 
 async def _seed_inbox(
-    backend, agent: str, path: str, data: bytes, sender: str | None = None,
+    backend,
+    agent: str,
+    path: str,
+    data: bytes,
+    sender: str | None = None,
 ) -> None:
     """Write a bundle directly via the backend (bypasses alias resolver)."""
     import io
@@ -51,9 +55,7 @@ async def test_peek_inbox_round_trip(client) -> None:  # noqa: ANN001
     # Subsequent list still shows the bundle
     listing = await client.get("/inbox/alice/")
     assert listing.status_code == 200
-    assert any(
-        f["path"] == "notes.md" for f in listing.json().get("files", [])
-    )
+    assert any(f["path"] == "notes.md" for f in listing.json().get("files", []))
 
     # Subsequent pick returns the original bytes (unified inline envelope)
     pick = await client.post("/inbox/alice/notes.md/pick")
@@ -136,7 +138,10 @@ async def test_peek_respects_access_policy(storage_dir: str) -> None:
         kind: ClassVar[str] = "deny-peek"
 
         async def check(
-            self, identity: Identity, resource: str, action: str,
+            self,
+            identity: Identity,
+            resource: str,
+            action: str,
         ) -> bool:
             return action != "peek"
 

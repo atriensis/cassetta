@@ -13,7 +13,10 @@ import pytest
 
 
 async def _mcp_post(
-    client: httpx.AsyncClient, body: dict, sid: str = "", api_key: str = "",
+    client: httpx.AsyncClient,
+    body: dict,
+    sid: str = "",
+    api_key: str = "",
 ) -> httpx.Response:
     headers = {
         "Accept": "application/json, text/event-stream",
@@ -28,7 +31,9 @@ async def _mcp_post(
 
 async def _mcp_init(client: httpx.AsyncClient, api_key: str) -> str:
     body = {
-        "jsonrpc": "2.0", "id": 1, "method": "initialize",
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
         "params": {
             "protocolVersion": "2025-03-26",
             "capabilities": {},
@@ -41,15 +46,21 @@ async def _mcp_init(client: httpx.AsyncClient, api_key: str) -> str:
 
 
 async def _send_init(
-    client: httpx.AsyncClient, sid: str, api_key: str,
-    to: str, path: str = "hello.txt",
+    client: httpx.AsyncClient,
+    sid: str,
+    api_key: str,
+    to: str,
+    path: str = "hello.txt",
 ) -> dict:
     body = {
-        "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
         "params": {
             "name": "cassetta_send_init",
             "arguments": {
-                "to": to, "path": path,
+                "to": to,
+                "path": path,
                 "manifest": {
                     "file_count": 1,
                     "files": [{"name": path, "size": 5}],
@@ -67,7 +78,8 @@ class TestSendInitValidation:
 
     @pytest.mark.asyncio
     async def test_send_to_valid_label(
-        self, auth_client: tuple[httpx.AsyncClient, str],
+        self,
+        auth_client: tuple[httpx.AsyncClient, str],
     ) -> None:
         client, token = auth_client
         resp = await client.post(
@@ -91,7 +103,8 @@ class TestSendInitValidation:
 
     @pytest.mark.asyncio
     async def test_send_to_unknown_label_rejected(
-        self, auth_client: tuple[httpx.AsyncClient, str],
+        self,
+        auth_client: tuple[httpx.AsyncClient, str],
     ) -> None:
         client, token = auth_client
         resp = await client.post(
@@ -112,7 +125,8 @@ class TestSendInitValidation:
 
     @pytest.mark.asyncio
     async def test_send_to_alias_without_colon_accepted_in_core(
-        self, auth_client: tuple[httpx.AsyncClient, str],
+        self,
+        auth_client: tuple[httpx.AsyncClient, str],
     ) -> None:
         client, token = auth_client
         resp = await client.post(

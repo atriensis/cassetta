@@ -17,7 +17,10 @@ async def test_scenario_04_multi_file_bundle(
 
     # 2. Create receiver agent
     key_receiver = await h.create_key(
-        client, key_sender, host="bundle", project="receiver",
+        client,
+        key_sender,
+        host="bundle",
+        project="receiver",
     )
 
     # 3. Send multi-file bundle inline via the Brief 514 flow
@@ -25,9 +28,11 @@ async def test_scenario_04_multi_file_bundle(
     data_bytes = b'{"key": "value"}'
     sid = await h.mcp_init(client, api_key=key_sender)
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "bundle:receiver", "path": "context",
+            "to": "bundle:receiver",
+            "path": "context",
             "manifest": {
                 "file_count": 2,
                 "files": [
@@ -36,12 +41,14 @@ async def test_scenario_04_multi_file_bundle(
                 ],
             },
         },
-        sid=sid, api_key=key_sender,
+        sid=sid,
+        api_key=key_sender,
     )
     body = json.loads(init["content"][0]["text"])
     assert body["mode"] == "inline", body
     result = await h.mcp_call(
-        client, "cassetta_send_inline",
+        client,
+        "cassetta_send_inline",
         {
             "token": body["inline_token"],
             "files": [
@@ -57,7 +64,8 @@ async def test_scenario_04_multi_file_bundle(
                 },
             ],
         },
-        sid=sid, api_key=key_sender,
+        sid=sid,
+        api_key=key_sender,
     )
     assert json.loads(result["content"][0]["text"])["ok"] is True
 

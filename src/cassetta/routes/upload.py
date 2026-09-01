@@ -118,9 +118,7 @@ def _stream_tar_into_writer(
     # value, fall back to the 100 MiB ceiling. Read once outside the
     # loop so the comparison stays predictable.
     effective_per_file_max: int = (
-        config.limits.per_file_max
-        if config.limits.per_file_max is not None
-        else DEFAULT_PER_FILE_MAX
+        config.limits.per_file_max if config.limits.per_file_max is not None else DEFAULT_PER_FILE_MAX
     )
 
     # Get the running loop from the MAIN thread (outside this sync body).
@@ -147,10 +145,7 @@ def _stream_tar_into_writer(
                     constraint="per_file_max",
                     limit=effective_per_file_max,
                     observed=info.size,
-                    reason=(
-                        f"per_file_max: max_bytes={effective_per_file_max} "
-                        f"actual_bytes={info.size}"
-                    ),
+                    reason=(f"per_file_max: max_bytes={effective_per_file_max} actual_bytes={info.size}"),
                 )
             src = tf.extractfile(info)
             if src is None:
@@ -163,7 +158,8 @@ def _stream_tar_into_writer(
             if len(data) != declared_size:
                 raise _ManifestViolation("wrong_size", name)
             fut = asyncio.run_coroutine_threadsafe(
-                writer.write_file(name, io.BytesIO(data)), loop,
+                writer.write_file(name, io.BytesIO(data)),
+                loop,
             )
             fut.result()
             seen.add(name)
@@ -231,7 +227,9 @@ async def upload_bundle(
     tar_mode = "r|gz" if content_encoding == "gzip" else "r|"
 
     struct_log(
-        logger, logging.INFO, "upload_stream_start",
+        logger,
+        logging.INFO,
+        "upload_stream_start",
         detail={
             "bundle_id": bundle_id,
             "mode": "batch",
@@ -264,7 +262,10 @@ async def upload_bundle(
         bytes_total = await anyio.to_thread.run_sync(
             functools.partial(
                 _stream_tar_into_writer,
-                reader, writer, manifest_files, tar_mode,
+                reader,
+                writer,
+                manifest_files,
+                tar_mode,
                 config=config,
             ),
         )
@@ -277,7 +278,9 @@ async def upload_bundle(
             pass
         await writer.abort()
         struct_log(
-            logger, logging.WARNING, "upload_manifest_violation",
+            logger,
+            logging.WARNING,
+            "upload_manifest_violation",
             detail={
                 "bundle_id": bundle_id,
                 "violation": exc.reason,
@@ -285,7 +288,9 @@ async def upload_bundle(
             },
         )
         struct_log(
-            logger, logging.WARNING, "upload_rollback",
+            logger,
+            logging.WARNING,
+            "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": exc.reason},
         )
         # Brief 533 FR-002 + FR-004: rejected + manifest_violations{reason}.
@@ -315,7 +320,9 @@ async def upload_bundle(
             pass
         await writer.abort()
         struct_log(
-            logger, logging.WARNING, "upload_rollback",
+            logger,
+            logging.WARNING,
+            "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "tar_parse_error"},
         )
         # Brief 533 FR-002 / SC-022: mid-stream archive failure → result=error.
@@ -336,7 +343,9 @@ async def upload_bundle(
             pass
         await writer.abort()
         struct_log(
-            logger, logging.WARNING, "upload_rollback",
+            logger,
+            logging.WARNING,
+            "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "limits_rejection"},
         )
         # Brief 533 SC-022: per-file-max from brief 531 firing mid-stream
@@ -355,7 +364,9 @@ async def upload_bundle(
             pass
         await writer.abort()
         struct_log(
-            logger, logging.WARNING, "upload_rollback",
+            logger,
+            logging.WARNING,
+            "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "exception"},
         )
         # Brief 533: any other mid-stream failure → result=error.
@@ -380,7 +391,9 @@ async def upload_bundle(
     except Exception:
         await writer.abort()
         struct_log(
-            logger, logging.WARNING, "upload_rollback",
+            logger,
+            logging.WARNING,
+            "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "commit_failed"},
         )
         # Brief 533: commit failure → result=error.
@@ -392,7 +405,9 @@ async def upload_bundle(
         raise
 
     struct_log(
-        logger, logging.INFO, "upload_stream_complete",
+        logger,
+        logging.INFO,
+        "upload_stream_complete",
         detail={"bundle_id": bundle_id, "bytes_transferred": bytes_total},
     )
     # Brief 533 FR-002 + FR-003: success → ok + upload.bytes (untagged).

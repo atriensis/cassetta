@@ -92,7 +92,9 @@ def _validate_overlap_ttl(config: AppConfig) -> None:
     )
     if overlap < min_required:
         struct_log(
-            _logger, logging.WARNING, "config_validation_warning",
+            _logger,
+            logging.WARNING,
+            "config_validation_warning",
             detail={
                 "field": "jwt_key_overlap_ttl",
                 "value": overlap,
@@ -127,7 +129,9 @@ async def _handle_rotation(app: FastAPI) -> None:
 
     if not file_path:
         struct_log(
-            _logger, logging.ERROR, "jwt.key_rotation_failed",
+            _logger,
+            logging.ERROR,
+            "jwt.key_rotation_failed",
             detail={"reason": "missing_file", "path": file_path},
         )
         return
@@ -137,19 +141,25 @@ async def _handle_rotation(app: FastAPI) -> None:
             raw = fh.read()
     except FileNotFoundError:
         struct_log(
-            _logger, logging.ERROR, "jwt.key_rotation_failed",
+            _logger,
+            logging.ERROR,
+            "jwt.key_rotation_failed",
             detail={"reason": "missing_file", "path": file_path},
         )
         return
     except PermissionError:
         struct_log(
-            _logger, logging.ERROR, "jwt.key_rotation_failed",
+            _logger,
+            logging.ERROR,
+            "jwt.key_rotation_failed",
             detail={"reason": "permission_denied", "path": file_path},
         )
         return
     except OSError:
         struct_log(
-            _logger, logging.ERROR, "jwt.key_rotation_failed",
+            _logger,
+            logging.ERROR,
+            "jwt.key_rotation_failed",
             detail={"reason": "read_error", "path": file_path},
         )
         return
@@ -157,7 +167,9 @@ async def _handle_rotation(app: FastAPI) -> None:
     new_key = _decode_key_material(raw)
     if new_key is None:
         struct_log(
-            _logger, logging.ERROR, "jwt.key_rotation_failed",
+            _logger,
+            logging.ERROR,
+            "jwt.key_rotation_failed",
             detail={"reason": "invalid_key_material", "path": file_path},
         )
         return
@@ -178,7 +190,9 @@ async def _handle_rotation(app: FastAPI) -> None:
         seconds=slots.overlap_ttl_seconds,
     )
     struct_log(
-        _logger, logging.INFO, "jwt.key_rotated",
+        _logger,
+        logging.INFO,
+        "jwt.key_rotated",
         detail={
             "rotated_at": rotated_at.isoformat(),
             "previous_kid": _kid_prefix(previous_primary),
@@ -229,7 +243,9 @@ def init_jwt_hot_reload(app: FastAPI) -> None:
 
     if not _is_single_worker():
         struct_log(
-            _logger, logging.INFO, "jwt.hot_reload_disabled",
+            _logger,
+            logging.INFO,
+            "jwt.hot_reload_disabled",
             detail={"reason": "multi_worker"},
         )
         return
@@ -241,6 +257,8 @@ def init_jwt_hot_reload(app: FastAPI) -> None:
         # operator-facing signal as the multi-worker case so dashboards
         # surface the absence of hot-reload.
         struct_log(
-            _logger, logging.INFO, "jwt.hot_reload_disabled",
+            _logger,
+            logging.INFO,
+            "jwt.hot_reload_disabled",
             detail={"reason": "signal_handler_unavailable"},
         )

@@ -43,10 +43,7 @@ def _format_reason(
 ) -> str:
     """Human-readable suffix for ``LimitsRejection``. Tests only assert the prefix."""
     if error == "batch_required":
-        return (
-            "bundle exceeds max inline size; batch transport is not "
-            "available yet (see brief 514)"
-        )
+        return "bundle exceeds max inline size; batch transport is not available yet (see brief 514)"
     if constraint == "per_bundle_file_count_max":
         return f"bundle has {observed} files; per_bundle_file_count_max is {limit}"
     if constraint == "per_bundle_total_max":
@@ -99,14 +96,18 @@ class CoreLimitsPolicy:
         self._config = config
 
     async def evaluate_upload(
-        self, ctx: PolicyContext, manifest: UploadManifest,
+        self,
+        ctx: PolicyContext,
+        manifest: UploadManifest,
     ) -> UploadDecision:
         # Delegates to the shared pure helper (FR-020) so server and
         # client pre-check paths share a single source of truth.
         return check_manifest_against_limits(manifest, self.advertise_limits(ctx))
 
     async def evaluate_download(
-        self, ctx: PolicyContext, entry: DownloadEntry,
+        self,
+        ctx: PolicyContext,
+        entry: DownloadEntry,
     ) -> DownloadDecision:
         total_size = int(entry.get("total_size", 0))
         inline_max = self._config.max_inline_size
@@ -115,7 +116,9 @@ class CoreLimitsPolicy:
         else:
             decision = {"mode": "reference", "reason": None}
         struct_log(
-            logger, logging.DEBUG, "policy.download_decision",
+            logger,
+            logging.DEBUG,
+            "policy.download_decision",
             identity_label=ctx.identity.label,
             detail={
                 "file_count": int(entry.get("file_count", 0)),

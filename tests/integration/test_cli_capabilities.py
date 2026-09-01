@@ -19,7 +19,9 @@ from cassetta.mcp_server import configure as configure_mcp
 
 
 def _patch_httpx_for_asgi(
-    monkeypatch: pytest.MonkeyPatch, app: Any, base_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+    app: Any,
+    base_url: str,
 ) -> None:
     """Route httpx.AsyncClient through the ASGI app so the CLI's one-shot
     GET hits our in-process server without a real socket."""
@@ -59,12 +61,14 @@ async def running_app(env_setup: None) -> AsyncIterator[Any]:
 
 
 def test_cli_capabilities_happy_path(
-    running_app: Any, monkeypatch: pytest.MonkeyPatch,
+    running_app: Any,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_httpx_for_asgi(monkeypatch, running_app, "http://localhost:16001")
     runner = CliRunner()
     result = runner.invoke(
-        cli_app, ["capabilities", "--url", "http://localhost:16001"],
+        cli_app,
+        ["capabilities", "--url", "http://localhost:16001"],
     )
     assert result.exit_code == 0, result.output
     out = result.output
@@ -96,18 +100,22 @@ def test_cli_capabilities_network_failure_exits_1(
 
 
 def test_cli_capabilities_http_error_exits_2(
-    running_app: Any, monkeypatch: pytest.MonkeyPatch,
+    running_app: Any,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A non-2xx response maps to exit 2."""
+
     # Route httpx via an ASGI app that always returns 500.
     async def _fake_app(scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":  # pragma: no cover
             return
-        await send({
-            "type": "http.response.start",
-            "status": 500,
-            "headers": [(b"content-type", b"application/json")],
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 500,
+                "headers": [(b"content-type", b"application/json")],
+            }
+        )
         await send({"type": "http.response.body", "body": b'{"error":"oops"}'})
 
     real_cls = httpx.AsyncClient
@@ -120,6 +128,7 @@ def test_cli_capabilities_http_error_exits_2(
     monkeypatch.setattr(httpx, "AsyncClient", _factory)
     runner = CliRunner()
     result = runner.invoke(
-        cli_app, ["capabilities", "--url", "http://stub"],
+        cli_app,
+        ["capabilities", "--url", "http://stub"],
     )
     assert result.exit_code == 2, result.output

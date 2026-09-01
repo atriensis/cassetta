@@ -39,22 +39,27 @@ async def _seed_inbox(backend, recipient: str, path: str, content: bytes) -> str
     writer = await backend.open_bundle_write(bundle_path)
     bundle_id = uuid.uuid4().hex
     try:
-        records = [{
-            "name": path,
-            "size": len(content),
-            "mime": pick_mime(path, explicit=None),
-        }]
+        records = [
+            {
+                "name": path,
+                "size": len(content),
+                "mime": pick_mime(path, explicit=None),
+            }
+        ]
         await writer.write_file(records[0]["name"], io.BytesIO(content))
         from datetime import UTC, datetime
-        await writer.commit({
-            "schema_version": 1,
-            "bundle_id": bundle_id,
-            "sender": None,
-            "created_at": datetime.now(UTC).isoformat(),
-            "content_type": "application/octet-stream",
-            "file_count": 1,
-            "files": records,
-        })
+
+        await writer.commit(
+            {
+                "schema_version": 1,
+                "bundle_id": bundle_id,
+                "sender": None,
+                "created_at": datetime.now(UTC).isoformat(),
+                "content_type": "application/octet-stream",
+                "file_count": 1,
+                "files": records,
+            }
+        )
         return bundle_id
     except Exception:
         await writer.abort()
@@ -71,7 +76,8 @@ async def download_app(storage_dir, recording_metrics):
     _set_env(storage_dir)
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -79,7 +85,10 @@ async def download_app(storage_dir, recording_metrics):
 
 
 def _mint_download_token(
-    config, bundle_path: str, name: str, recipient: str,
+    config,
+    bundle_path: str,
+    name: str,
+    recipient: str,
 ) -> str:
     now = int(time.time())
     claims = {
@@ -96,7 +105,8 @@ def _mint_download_token(
 
 
 async def test_success_increments_ok_and_bytes(
-    download_app, recording_metrics: RecordingMetricsProvider,
+    download_app,
+    recording_metrics: RecordingMetricsProvider,
 ) -> None:
     """SC-023 — success: result=ok + download.bytes."""
     app, config, backends = download_app
@@ -105,12 +115,7 @@ async def test_success_increments_ok_and_bytes(
 
     bundle_path = "inbox/alice/doc.txt"
     token = _mint_download_token(config, bundle_path, "doc.txt", "alice")
-    url = (
-        "/download/"
-        + urllib.parse.quote(bundle_path, safe="")
-        + "/"
-        + urllib.parse.quote("doc.txt", safe="")
-    )
+    url = "/download/" + urllib.parse.quote(bundle_path, safe="") + "/" + urllib.parse.quote("doc.txt", safe="")
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
         base_url="http://localhost",
@@ -133,7 +138,8 @@ async def test_success_increments_ok_and_bytes(
 
 
 async def test_bundle_gone_and_name_not_in_manifest_collapse_to_not_found(
-    download_app, recording_metrics: RecordingMetricsProvider,
+    download_app,
+    recording_metrics: RecordingMetricsProvider,
 ) -> None:
     """SC-024 — both bundle_gone and name_not_in_manifest map to result=not_found."""
     app, config, backends = download_app
@@ -141,12 +147,7 @@ async def test_bundle_gone_and_name_not_in_manifest_collapse_to_not_found(
     # Case A: bundle_gone — bundle never created.
     bundle_path = "inbox/alice/ghost.txt"
     token = _mint_download_token(config, bundle_path, "ghost.txt", "alice")
-    url_a = (
-        "/download/"
-        + urllib.parse.quote(bundle_path, safe="")
-        + "/"
-        + urllib.parse.quote("ghost.txt", safe="")
-    )
+    url_a = "/download/" + urllib.parse.quote(bundle_path, safe="") + "/" + urllib.parse.quote("ghost.txt", safe="")
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
@@ -164,7 +165,8 @@ async def test_bundle_gone_and_name_not_in_manifest_collapse_to_not_found(
 
 
 async def test_identity_mismatch_increments_identity_mismatch_only(
-    storage_dir, recording_metrics: RecordingMetricsProvider,
+    storage_dir,
+    recording_metrics: RecordingMetricsProvider,
 ) -> None:
     """SC-025 — JWT recipient != identity label → result=identity_mismatch;
     ZERO cassetta.auth.failures{source=download}.
@@ -180,7 +182,8 @@ async def test_identity_mismatch_increments_identity_mismatch_only(
     os.environ["CASSETTA_SETUP_TOKEN"] = "auth-token"
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -189,12 +192,7 @@ async def test_identity_mismatch_increments_identity_mismatch_only(
     await _seed_inbox(backends.backend, "alice", "secret.txt", content)
     bundle_path = "inbox/alice/secret.txt"
     token = _mint_download_token(config, bundle_path, "secret.txt", "alice")
-    url = (
-        "/download/"
-        + urllib.parse.quote(bundle_path, safe="")
-        + "/"
-        + urllib.parse.quote("secret.txt", safe="")
-    )
+    url = "/download/" + urllib.parse.quote(bundle_path, safe="") + "/" + urllib.parse.quote("secret.txt", safe="")
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
@@ -211,17 +209,14 @@ async def test_identity_mismatch_increments_identity_mismatch_only(
         assert resp.status_code == 403
 
     ops = recording_metrics.find("cassetta.download.operations", "increment")
-    assert any(
-        c.tags and c.tags.get("result") == "identity_mismatch" for c in ops
-    )
+    assert any(c.tags and c.tags.get("result") == "identity_mismatch" for c in ops)
     auth_failures = recording_metrics.find("cassetta.auth.failures", "increment")
-    assert not auth_failures, (
-        "identity mismatch is authorisation, not authentication"
-    )
+    assert not auth_failures, "identity mismatch is authorisation, not authentication"
 
 
 async def test_jwt_expired_increments_auth_failures_only(
-    download_app, recording_metrics: RecordingMetricsProvider,
+    download_app,
+    recording_metrics: RecordingMetricsProvider,
 ) -> None:
     """SC-026 — expired JWT → brief-529 auth.failures emission;
     ZERO cassetta.download.operations.
@@ -241,12 +236,7 @@ async def test_jwt_expired_increments_auth_failures_only(
         "exp": now - 3600,
     }
     token = jwt_tokens.sign(claims, key=config.jwt_primary_key)
-    url = (
-        "/download/"
-        + urllib.parse.quote(bundle_path, safe="")
-        + "/"
-        + urllib.parse.quote("doc.txt", safe="")
-    )
+    url = "/download/" + urllib.parse.quote(bundle_path, safe="") + "/" + urllib.parse.quote("doc.txt", safe="")
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
@@ -261,13 +251,10 @@ async def test_jwt_expired_increments_auth_failures_only(
 
     auth_failures = recording_metrics.find("cassetta.auth.failures", "increment")
     assert any(
-        c.tags and c.tags.get("source") == "download"
-        and c.tags.get("reason") == "jwt_expired"
-        for c in auth_failures
+        c.tags and c.tags.get("source") == "download" and c.tags.get("reason") == "jwt_expired" for c in auth_failures
     ), [c.tags for c in auth_failures]
     download_ops = recording_metrics.find(
-        "cassetta.download.operations", "increment",
+        "cassetta.download.operations",
+        "increment",
     )
-    assert not download_ops, (
-        "JWT auth failure MUST NOT increment cassetta.download.operations"
-    )
+    assert not download_ops, "JWT auth failure MUST NOT increment cassetta.download.operations"

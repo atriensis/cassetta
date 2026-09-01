@@ -17,7 +17,9 @@ import pytest
 
 def _call_raw(h, client, name, args, sid, api_key):
     body = {
-        "jsonrpc": "2.0", "id": 99, "method": "tools/call",
+        "jsonrpc": "2.0",
+        "id": 99,
+        "method": "tools/call",
         "params": {"name": name, "arguments": args},
     }
     return h.mcp_post(client, body, sid=sid, api_key=api_key)
@@ -37,7 +39,8 @@ def _extract_text(payload: dict) -> str:
 
 @pytest.mark.asyncio
 async def test_send_inline_success(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "inline-ok")
@@ -45,26 +48,31 @@ async def test_send_inline_success(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "ok.md",
+            "to": "alice:main",
+            "path": "ok.md",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "a.txt", "size": 3}],
             },
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     init_body = json.loads(init["content"][0]["text"])
     token = init_body["inline_token"]
 
     send = await h.mcp_call(
-        client, "cassetta_send_inline",
+        client,
+        "cassetta_send_inline",
         {
             "token": token,
             "files": [{"name": "a.txt", "content": "abc", "encoding": "utf8"}],
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     body = json.loads(send["content"][0]["text"])
     assert body == {"bundle_id": init_body["bundle_id"], "ok": True}
@@ -72,7 +80,8 @@ async def test_send_inline_success(
 
 @pytest.mark.asyncio
 async def test_send_inline_extra_file_rejected(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "inline-extra")
@@ -80,19 +89,24 @@ async def test_send_inline_extra_file_rejected(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "note.md",
+            "to": "alice:main",
+            "path": "note.md",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "a.txt", "size": 3}],
             },
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     token = json.loads(init["content"][0]["text"])["inline_token"]
     resp = await _call_raw(
-        h, client, "cassetta_send_inline",
+        h,
+        client,
+        "cassetta_send_inline",
         {
             "token": token,
             "files": [
@@ -100,7 +114,8 @@ async def test_send_inline_extra_file_rejected(
                 {"name": "rogue.bin", "content": "x", "encoding": "utf8"},
             ],
         },
-        sid, sender_key,
+        sid,
+        sender_key,
     )
     text = _extract_text(resp.json())
     assert "manifest_violation" in text
@@ -109,7 +124,8 @@ async def test_send_inline_extra_file_rejected(
 
 @pytest.mark.asyncio
 async def test_send_inline_wrong_size_rejected(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "inline-size")
@@ -117,24 +133,30 @@ async def test_send_inline_wrong_size_rejected(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "note2.md",
+            "to": "alice:main",
+            "path": "note2.md",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "a.txt", "size": 3}],
             },
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     token = json.loads(init["content"][0]["text"])["inline_token"]
     resp = await _call_raw(
-        h, client, "cassetta_send_inline",
+        h,
+        client,
+        "cassetta_send_inline",
         {
             "token": token,
             "files": [{"name": "a.txt", "content": "abcdef", "encoding": "utf8"}],
         },
-        sid, sender_key,
+        sid,
+        sender_key,
     )
     text = _extract_text(resp.json())
     assert "manifest_violation" in text
@@ -143,7 +165,8 @@ async def test_send_inline_wrong_size_rejected(
 
 @pytest.mark.asyncio
 async def test_send_inline_missing_file_rejected(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "inline-miss")
@@ -151,9 +174,11 @@ async def test_send_inline_missing_file_rejected(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "note3.md",
+            "to": "alice:main",
+            "path": "note3.md",
             "manifest": {
                 "file_count": 2,
                 "files": [
@@ -162,16 +187,20 @@ async def test_send_inline_missing_file_rejected(
                 ],
             },
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     token = json.loads(init["content"][0]["text"])["inline_token"]
     resp = await _call_raw(
-        h, client, "cassetta_send_inline",
+        h,
+        client,
+        "cassetta_send_inline",
         {
             "token": token,
             "files": [{"name": "a.txt", "content": "abc", "encoding": "utf8"}],
         },
-        sid, sender_key,
+        sid,
+        sender_key,
     )
     text = _extract_text(resp.json())
     assert "manifest_violation" in text
@@ -180,7 +209,8 @@ async def test_send_inline_missing_file_rejected(
 
 @pytest.mark.asyncio
 async def test_send_inline_bad_signature_rejected(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "inline-sig")
@@ -188,12 +218,15 @@ async def test_send_inline_bad_signature_rejected(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     resp = await _call_raw(
-        h, client, "cassetta_send_inline",
+        h,
+        client,
+        "cassetta_send_inline",
         {
             "token": "not.a.real.jwt",
             "files": [{"name": "a.txt", "content": "abc", "encoding": "utf8"}],
         },
-        sid, sender_key,
+        sid,
+        sender_key,
     )
     text = _extract_text(resp.json())
     assert "unauthenticated" in text
@@ -201,7 +234,8 @@ async def test_send_inline_bad_signature_rejected(
 
 @pytest.mark.asyncio
 async def test_send_inline_bad_base64_reports_encoding(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Brief 541: invalid base64 content → ``missing_or_bad_encoding``, not ``wrong_size``."""
     client, _ = core_app
@@ -210,23 +244,29 @@ async def test_send_inline_bad_base64_reports_encoding(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "bad.md",
+            "to": "alice:main",
+            "path": "bad.md",
             "manifest": {"file_count": 1, "files": [{"name": "a.txt", "size": 3}]},
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     token = json.loads(init["content"][0]["text"])["inline_token"]
     resp = await _call_raw(
-        h, client, "cassetta_send_inline",
+        h,
+        client,
+        "cassetta_send_inline",
         {
             "token": token,
             "files": [
                 {"name": "a.txt", "content": "!!!notbase64!!!", "encoding": "base64"},
             ],
         },
-        sid, sender_key,
+        sid,
+        sender_key,
     )
     text = _extract_text(resp.json())
     assert "manifest_violation" in text
@@ -236,7 +276,8 @@ async def test_send_inline_bad_base64_reports_encoding(
 
 @pytest.mark.asyncio
 async def test_send_inline_missing_encoding_reports_encoding(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Brief 541: omitting ``encoding`` is rejected naming the field, never ``wrong_size``."""
     client, _ = core_app
@@ -245,21 +286,27 @@ async def test_send_inline_missing_encoding_reports_encoding(
     sid = await h.mcp_init(client, api_key=sender_key)
 
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "noenc.md",
+            "to": "alice:main",
+            "path": "noenc.md",
             "manifest": {"file_count": 1, "files": [{"name": "a.txt", "size": 3}]},
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     token = json.loads(init["content"][0]["text"])["inline_token"]
     resp = await _call_raw(
-        h, client, "cassetta_send_inline",
+        h,
+        client,
+        "cassetta_send_inline",
         {
             "token": token,
             "files": [{"name": "a.txt", "content": "abc"}],  # encoding omitted
         },
-        sid, sender_key,
+        sid,
+        sender_key,
     )
     text = _extract_text(resp.json())
     assert "wrong_size" not in text

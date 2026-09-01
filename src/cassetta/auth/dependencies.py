@@ -22,9 +22,7 @@ def get_key_store(request: Request) -> "KeyStoreProtocol":
 
 
 async def get_current_identity(
-    credentials: Annotated[
-        HTTPAuthorizationCredentials | None, Depends(http_bearer)
-    ],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(http_bearer)],
     request: Request,
 ) -> "Identity":
     """FastAPI dependency for unified authentication.
@@ -60,9 +58,7 @@ async def get_current_identity(
         key_store = get_key_store(request)
         info = await key_store.validate(credentials.credentials)
         if info is not None:
-            identity_provider: IdentityProvider = (
-                request.app.state.backends.identity_provider
-            )
+            identity_provider: IdentityProvider = request.app.state.backends.identity_provider
             identity = await identity_provider.resolve(info)
             # Attach the raw key info so callers that need it (e.g. keys.py)
             # can still reach it without a second lookup.
@@ -80,9 +76,7 @@ async def get_current_identity(
         identity_hint = None
     elif credentials is not None:
         reason = "invalid_key"
-        identity_hint = (
-            credentials.credentials[:12] if credentials.credentials else None
-        )
+        identity_hint = credentials.credentials[:12] if credentials.credentials else None
     else:
         reason = "missing_bearer"
         identity_hint = None
@@ -99,9 +93,7 @@ async def get_current_identity(
 
 
 async def get_current_key(
-    credentials: Annotated[
-        HTTPAuthorizationCredentials | None, Depends(http_bearer)
-    ],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(http_bearer)],
     request: Request,
 ) -> KeyInfo | None:
     """Backwards-compat wrapper.

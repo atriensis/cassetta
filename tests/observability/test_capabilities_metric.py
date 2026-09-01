@@ -24,7 +24,9 @@ async def test_devmode_capabilities_still_increments(obs_client) -> None:
 async def test_mcp_capabilities_query_increments_via_mcp(obs_client) -> None:
     client, metrics = obs_client
     init_body = {
-        "jsonrpc": "2.0", "id": 1, "method": "initialize",
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
         "params": {
             "protocolVersion": "2025-03-26",
             "capabilities": {},
@@ -32,7 +34,8 @@ async def test_mcp_capabilities_query_increments_via_mcp(obs_client) -> None:
         },
     }
     init_resp = await client.post(
-        "/mcp/", json=init_body,
+        "/mcp/",
+        json=init_body,
         headers={
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
@@ -41,11 +44,14 @@ async def test_mcp_capabilities_query_increments_via_mcp(obs_client) -> None:
     sid = init_resp.headers.get("mcp-session-id", "")
     metrics.calls.clear()
     call_body = {
-        "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
         "params": {"name": "cassetta_capabilities", "arguments": {}},
     }
     resp = await client.post(
-        "/mcp/", json=call_body,
+        "/mcp/",
+        json=call_body,
         headers={
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
@@ -54,6 +60,4 @@ async def test_mcp_capabilities_query_increments_via_mcp(obs_client) -> None:
     )
     assert resp.status_code == 200, resp.text
     queries = metrics.find("cassetta.capabilities.queries", "increment")
-    assert any(c.tags and c.tags.get("via") == "mcp" for c in queries), (
-        [c.tags for c in queries]
-    )
+    assert any(c.tags and c.tags.get("via") == "mcp" for c in queries), [c.tags for c in queries]

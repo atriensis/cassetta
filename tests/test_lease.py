@@ -15,17 +15,13 @@ class TestAcquireLease:
         assert isinstance(lease_id, str)
         assert len(lease_id) > 0
 
-    async def test_double_acquire_returns_none(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_double_acquire_returns_none(self, backend: FilesystemBackend) -> None:
         lease_id = await backend.acquire_lease("test-lock", ttl_seconds=60)
         assert lease_id is not None
         second = await backend.acquire_lease("test-lock", ttl_seconds=60)
         assert second is None
 
-    async def test_different_keys_independent(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_different_keys_independent(self, backend: FilesystemBackend) -> None:
         id1 = await backend.acquire_lease("lock-a", ttl_seconds=60)
         id2 = await backend.acquire_lease("lock-b", ttl_seconds=60)
         assert id1 is not None
@@ -77,9 +73,7 @@ class TestReleaseLease:
 
 
 class TestLeaseDoesNotAffectList:
-    async def test_locks_not_visible_in_list(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_locks_not_visible_in_list(self, backend: FilesystemBackend) -> None:
         await backend.put("user-file.txt", b"data")
         await backend.acquire_lease("my-lock", ttl_seconds=60)
         files = await backend.list()

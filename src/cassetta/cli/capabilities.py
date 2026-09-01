@@ -66,11 +66,7 @@ async def _fetch(url: str, api_key: str | None) -> dict[str, Any]:
         resp = await client.get(f"{url.rstrip('/')}/capabilities", headers=headers)
         if resp.status_code >= 400:
             body = resp.text.strip()
-            hint = (
-                " (authentication)"
-                if resp.status_code in (401, 403)
-                else ""
-            )
+            hint = " (authentication)" if resp.status_code in (401, 403) else ""
             print(
                 f"capabilities request failed{hint}: {resp.status_code} {body}",
                 file=sys.stderr,
@@ -89,10 +85,14 @@ async def _fetch(url: str, api_key: str | None) -> dict[str, Any]:
 
 def capabilities(
     url: str = typer.Option(
-        ..., "--url", help="Server base URL (e.g. http://localhost:16001).",
+        ...,
+        "--url",
+        help="Server base URL (e.g. http://localhost:16001).",
     ),
     api_key: str | None = typer.Option(
-        None, "--api-key", help="Optional bearer token for the request.",
+        None,
+        "--api-key",
+        help="Optional bearer token for the request.",
     ),
 ) -> None:
     """Fetch and pretty-print the server's advertised capabilities."""

@@ -65,6 +65,4 @@ def test_dead_envvars_are_silently_ignored(
     # No warning or error referenced any of the three legacy vars.
     for record in caplog.records:
         for var in _DEAD_ENV_VARS:
-            assert var not in record.getMessage(), (
-                f"unexpected warning mentioning {var}: {record.getMessage()}"
-            )
+            assert var not in record.getMessage(), f"unexpected warning mentioning {var}: {record.getMessage()}"

@@ -37,9 +37,7 @@ async def mcp_inbox_app(
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
     os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
 
     app = create_app()
@@ -91,11 +89,17 @@ async def _post(client: httpx.AsyncClient, body: dict, sid: str = "") -> httpx.R
 
 
 async def _init(client: httpx.AsyncClient) -> str:
-    resp = await _post(client, _jsonrpc("initialize", {
-        "protocolVersion": "2025-03-26",
-        "capabilities": {},
-        "clientInfo": {"name": "test-client", "version": "1.0.0"},
-    }))
+    resp = await _post(
+        client,
+        _jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "test-client", "version": "1.0.0"},
+            },
+        ),
+    )
     assert resp.status_code == 200
     return resp.headers.get("mcp-session-id", "")
 
@@ -115,13 +119,19 @@ class TestCassettaInbox:
 
         # Populate alice's inbox (self-send)
         await seed_inbox_bundle(
-            backend, "test:alice", "msg1.txt",
-            content=b"one", sender="test:alice",
+            backend,
+            "test:alice",
+            "msg1.txt",
+            content=b"one",
+            sender="test:alice",
         )
         time.sleep(0.05)
         await seed_inbox_bundle(
-            backend, "test:alice", "msg2.txt",
-            content=b"two", sender="test:alice",
+            backend,
+            "test:alice",
+            "msg2.txt",
+            content=b"two",
+            sender="test:alice",
         )
 
         result = await _call(client, "cassetta_inbox", {}, sid)
@@ -138,8 +148,11 @@ class TestCassettaInbox:
         sid = await _init(client)
 
         await seed_inbox_bundle(
-            backend, "test:bob", "for-bob.txt",
-            content=b"hi", sender="test:alice",
+            backend,
+            "test:bob",
+            "for-bob.txt",
+            content=b"hi",
+            sender="test:alice",
         )
 
         result = await _call(client, "cassetta_inbox", {"agent": "test:bob"}, sid)
@@ -164,8 +177,11 @@ class TestCassettaPick:
         sid = await _init(client)
 
         await seed_inbox_bundle(
-            backend, "test:alice", "task.txt",
-            content=b"do this", sender="test:alice",
+            backend,
+            "test:alice",
+            "task.txt",
+            content=b"do this",
+            sender="test:alice",
         )
 
         result = await _call(client, "cassetta_pick", {"path": "task.txt"}, sid)
@@ -183,13 +199,19 @@ class TestCassettaPick:
         sid = await _init(client)
 
         await seed_inbox_bundle(
-            backend, "test:alice", "old.txt",
-            content=b"old msg", sender="test:alice",
+            backend,
+            "test:alice",
+            "old.txt",
+            content=b"old msg",
+            sender="test:alice",
         )
         time.sleep(0.05)
         await seed_inbox_bundle(
-            backend, "test:alice", "new.txt",
-            content=b"latest msg", sender="test:alice",
+            backend,
+            "test:alice",
+            "new.txt",
+            content=b"latest msg",
+            sender="test:alice",
         )
 
         result = await _call(client, "cassetta_pick", {"path": "latest"}, sid)
@@ -206,9 +228,7 @@ class TestCassettaPick:
         assert result["isError"] is True
 
     @pytest.mark.asyncio
-    async def test_pick_empty_inbox_latest_returns_error(
-        self, mcp_inbox_app: tuple
-    ) -> None:
+    async def test_pick_empty_inbox_latest_returns_error(self, mcp_inbox_app: tuple) -> None:
         _app, client, _backend = mcp_inbox_app
         sid = await _init(client)
 

@@ -57,9 +57,13 @@ def _offenders_in_file(path: Path) -> list[tuple[str, int, str]]:
                 names = _annotation_root_names(node.annotation)
                 bad = names & _FORBIDDEN_ANNOTATIONS
                 if bad:
-                    offenders.append((
-                        str(path), node.lineno, ast.unparse(node.annotation),
-                    ))
+                    offenders.append(
+                        (
+                            str(path),
+                            node.lineno,
+                            ast.unparse(node.annotation),
+                        )
+                    )
         # Function parameters + return types: walk every Arg.
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for arg in list(node.args.args) + list(node.args.kwonlyargs):
@@ -67,10 +71,13 @@ def _offenders_in_file(path: Path) -> list[tuple[str, int, str]]:
                     names = _annotation_root_names(arg.annotation)
                     bad = names & _FORBIDDEN_ANNOTATIONS
                     if bad:
-                        offenders.append((
-                            str(path), arg.lineno,
-                            ast.unparse(arg.annotation),
-                        ))
+                        offenders.append(
+                            (
+                                str(path),
+                                arg.lineno,
+                                ast.unparse(arg.annotation),
+                            )
+                        )
     return offenders
 
 

@@ -26,9 +26,7 @@ class TestResolvedRecipient:
 
 class TestAliasResolverProtocol:
     def test_protocol_is_runtime_checkable(self) -> None:
-        assert hasattr(AliasResolver, "__protocol_attrs__") or isinstance(
-            AliasResolver, type
-        )
+        assert hasattr(AliasResolver, "__protocol_attrs__") or isinstance(AliasResolver, type)
 
     @pytest.mark.asyncio
     async def test_concrete_class_satisfies_protocol(self) -> None:
@@ -36,7 +34,10 @@ class TestAliasResolverProtocol:
             kind = "test"
 
             async def resolve(
-                self, name: str, *, sender_label: str | None = None,
+                self,
+                name: str,
+                *,
+                sender_label: str | None = None,
             ) -> ResolvedRecipient | None:
                 return ResolvedRecipient(inbox_targets=[f"inbox/{name}/"])
 

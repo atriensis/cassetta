@@ -40,6 +40,7 @@ class FakeKeyStore:
 
 def _make_key(label: str, *, active: bool = True) -> KeyInfo:
     from datetime import UTC, datetime
+
     return KeyInfo(
         label=label,
         key_prefix="cst_test1234",
@@ -88,5 +89,6 @@ class TestDefaultAliasResolver:
     @pytest.mark.asyncio
     async def test_protocol_conformance(self) -> None:
         from cassetta.protocols.alias import AliasResolver
+
         resolver = DefaultAliasResolver(key_store=FakeKeyStore([]))
         assert isinstance(resolver, AliasResolver)

@@ -16,7 +16,8 @@ import cassetta
 
 @pytest.mark.asyncio
 async def test_serverinfo_reports_package_version(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     api_key = await h.setup_agent(client, "bob", "version")

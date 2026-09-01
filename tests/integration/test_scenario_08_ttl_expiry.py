@@ -32,7 +32,10 @@ async def test_scenario_08_ttl_expiry(
 
     # 5. Send an inbox message via the Brief 514 flow
     await h.send_inline(
-        client, key, to="ttl:agent", path="temp-msg.txt",
+        client,
+        key,
+        to="ttl:agent",
+        path="temp-msg.txt",
         content=b"temp inbox",
     )
 

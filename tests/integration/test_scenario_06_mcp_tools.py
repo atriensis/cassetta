@@ -17,9 +17,11 @@ async def test_scenario_06_mcp_tools(
 
     # 3. cassetta_put via MCP
     await h.mcp_call(
-        client, "cassetta_put",
+        client,
+        "cassetta_put",
         {"path": "test.txt", "content": "mcp data"},
-        sid, api_key=api_key,
+        sid,
+        api_key=api_key,
     )
 
     # 4. Cross-protocol verify: GET via REST
@@ -32,26 +34,35 @@ async def test_scenario_06_mcp_tools(
 
     # 5. Send via the Brief 514 two-phase flow to own inbox
     await h.send_inline(
-        client, api_key, to="mcp-int:agent", path="task.md",
-        content=b"do this", sid=sid,
+        client,
+        api_key,
+        to="mcp-int:agent",
+        path="task.md",
+        content=b"do this",
+        sid=sid,
     )
 
     # 6. cassetta_pick via MCP
     pick_result = await h.mcp_call(
-        client, "cassetta_pick",
+        client,
+        "cassetta_pick",
         {"path": "task.md"},
-        sid, api_key=api_key,
+        sid,
+        api_key=api_key,
     )
     import json as _json
+
     pick_envelope = _json.loads(pick_result["content"][0]["text"])
     assert pick_envelope["mode"] == "inline"
     assert pick_envelope["files"][0]["content"] == "do this"
 
     # 7. cassetta_agents via MCP
     agents_result = await h.mcp_call(
-        client, "cassetta_agents",
+        client,
+        "cassetta_agents",
         {},
-        sid, api_key=api_key,
+        sid,
+        api_key=api_key,
     )
     agents_text = agents_result["content"][0]["text"]
     assert "mcp-int:agent" in agents_text
@@ -61,9 +72,11 @@ async def test_scenario_06_mcp_tools(
 
     # 9. cassetta_broadcast via MCP
     await h.mcp_call(
-        client, "cassetta_broadcast",
+        client,
+        "cassetta_broadcast",
         {"path": "announce.txt", "content": "hello all"},
-        sid, api_key=api_key,
+        sid,
+        api_key=api_key,
     )
 
     # 10. Second agent picks from inbox to verify delivery

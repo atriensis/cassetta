@@ -56,7 +56,10 @@ def _load_envelope(manifest_json: str) -> dict[str, Any]:
 
 
 async def _write_file_streaming(
-    client: httpx.AsyncClient, url: str, headers: dict[str, str], dest: Path,
+    client: httpx.AsyncClient,
+    url: str,
+    headers: dict[str, str],
+    dest: Path,
 ) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     async with client.stream("GET", url, headers=headers) as resp:
@@ -74,7 +77,9 @@ async def _write_file_streaming(
 
 
 async def _download_all(
-    files: list[Any], headers: dict[str, str], out: Path,
+    files: list[Any],
+    headers: dict[str, str],
+    out: Path,
 ) -> None:
     async with httpx.AsyncClient(timeout=None) as client:
         for entry in files:
@@ -103,7 +108,9 @@ def download(
         help="Path to the reference envelope (JSON). Use '-' for stdin.",
     ),
     out: Path = typer.Option(
-        ..., "--out", help="Destination directory. Created if missing.",
+        ...,
+        "--out",
+        help="Destination directory. Created if missing.",
     ),
 ) -> None:
     """Fetch every file in a reference envelope via GET /download.

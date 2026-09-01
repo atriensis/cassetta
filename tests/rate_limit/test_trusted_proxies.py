@@ -36,7 +36,10 @@ def _build_request(*, client_ip: str, headers: list[tuple[bytes, bytes]] | None 
 
 
 async def _resolve_via_proxy_headers(
-    *, peer_ip: str, xff: str, trusted: str = "*",
+    *,
+    peer_ip: str,
+    xff: str,
+    trusted: str = "*",
 ) -> str:
     """Run ``ProxyHeadersMiddleware`` against a fake scope; return resolved IP."""
     scope: dict[str, Any] = {
@@ -68,14 +71,18 @@ class TestTrustedProxiesXFFResolution:
     @pytest.mark.asyncio
     async def test_xff_replaces_peer_when_proxy_trusted(self) -> None:
         ip = await _resolve_via_proxy_headers(
-            peer_ip="10.0.0.5", xff="198.51.100.7", trusted="10.0.0.0/8",
+            peer_ip="10.0.0.5",
+            xff="198.51.100.7",
+            trusted="10.0.0.0/8",
         )
         assert ip == "198.51.100.7"
 
     @pytest.mark.asyncio
     async def test_xff_ignored_when_peer_untrusted(self) -> None:
         ip = await _resolve_via_proxy_headers(
-            peer_ip="1.2.3.4", xff="198.51.100.7", trusted="10.0.0.0/8",
+            peer_ip="1.2.3.4",
+            xff="198.51.100.7",
+            trusted="10.0.0.0/8",
         )
         assert ip == "1.2.3.4"
 
@@ -83,7 +90,9 @@ class TestTrustedProxiesXFFResolution:
     async def test_default_loopback_only(self) -> None:
         # uvicorn's default treats only 127.0.0.1 as a trusted proxy.
         ip = await _resolve_via_proxy_headers(
-            peer_ip="10.0.0.5", xff="198.51.100.7", trusted="127.0.0.1",
+            peer_ip="10.0.0.5",
+            xff="198.51.100.7",
+            trusted="127.0.0.1",
         )
         assert ip == "10.0.0.5"
 

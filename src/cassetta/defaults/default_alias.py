@@ -21,7 +21,10 @@ class DefaultAliasResolver:
         self._key_store = key_store
 
     async def resolve(
-        self, name: str, *, sender_label: str | None = None,
+        self,
+        name: str,
+        *,
+        sender_label: str | None = None,
     ) -> ResolvedRecipient | None:
         if ":" not in name:
             return None  # Core has no alias concept

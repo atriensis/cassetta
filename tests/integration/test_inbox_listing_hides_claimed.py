@@ -27,7 +27,8 @@ def _unwrap(result: dict) -> dict | list:
 
 @pytest.mark.asyncio
 async def test_listing_excludes_claimed_bundle(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -38,22 +39,31 @@ async def test_listing_excludes_claimed_bundle(
     # Seed two bundles: the one we'll claim, and a control that stays
     # visible throughout.
     await seed_inbox_bundle(
-        backend, "alice:main", "claimed-bundle",
+        backend,
+        "alice:main",
+        "claimed-bundle",
         files=[("a.bin", b"A" * 200)],
         sender="bob",
     )
     await seed_inbox_bundle(
-        backend, "alice:main", "control-bundle",
+        backend,
+        "alice:main",
+        "control-bundle",
         files=[("c.bin", b"C" * 200)],
         sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     # Baseline: both visible.
-    listing = _unwrap(await h.mcp_call(
-        client, "cassetta_inbox", {"agent": "alice:main"},
-        sid=sid, api_key=alice_key,
-    ))
+    listing = _unwrap(
+        await h.mcp_call(
+            client,
+            "cassetta_inbox",
+            {"agent": "alice:main"},
+            sid=sid,
+            api_key=alice_key,
+        )
+    )
     assert isinstance(listing, list)
     paths_before = {e["path"] for e in listing}
     assert "claimed-bundle" in paths_before
@@ -61,17 +71,25 @@ async def test_listing_excludes_claimed_bundle(
 
     # Pick (reference mode) → claim sidecar written.
     pick = await h.mcp_call(
-        client, "cassetta_pick", {"path": "claimed-bundle"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "claimed-bundle"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = json.loads(pick["content"][0]["text"])
     assert envelope["mode"] == "reference"
 
     # MCP listing now excludes the claimed bundle.
-    listing_after = _unwrap(await h.mcp_call(
-        client, "cassetta_inbox", {"agent": "alice:main"},
-        sid=sid, api_key=alice_key,
-    ))
+    listing_after = _unwrap(
+        await h.mcp_call(
+            client,
+            "cassetta_inbox",
+            {"agent": "alice:main"},
+            sid=sid,
+            api_key=alice_key,
+        )
+    )
     assert isinstance(listing_after, list)
     paths_after = {e["path"] for e in listing_after}
     assert "claimed-bundle" not in paths_after
@@ -79,7 +97,8 @@ async def test_listing_excludes_claimed_bundle(
 
     # REST listing also excludes it.
     rest = await client.get(
-        "/inbox/alice:main/", headers={"Authorization": f"Bearer {alice_key}"},
+        "/inbox/alice:main/",
+        headers={"Authorization": f"Bearer {alice_key}"},
     )
     assert rest.status_code == 200
     rest_paths = {e["path"] for e in rest.json()["files"]}
@@ -92,10 +111,15 @@ async def test_listing_excludes_claimed_bundle(
     assert len(sidecars) == 1
     sidecars[0].unlink()
 
-    listing_after_drop = _unwrap(await h.mcp_call(
-        client, "cassetta_inbox", {"agent": "alice:main"},
-        sid=sid, api_key=alice_key,
-    ))
+    listing_after_drop = _unwrap(
+        await h.mcp_call(
+            client,
+            "cassetta_inbox",
+            {"agent": "alice:main"},
+            sid=sid,
+            api_key=alice_key,
+        )
+    )
     assert isinstance(listing_after_drop, list)
     paths_restored = {e["path"] for e in listing_after_drop}
     assert "claimed-bundle" in paths_restored

@@ -69,13 +69,18 @@ def ttl_s() -> int:
 
 @pytest.mark.asyncio
 async def test_sweep_skips_active_claim(
-    claim_storage_factory, ttl_s: int,
+    claim_storage_factory,
+    ttl_s: int,
 ) -> None:
     store = await claim_storage_factory()
     now = time.time()
     claim = ClaimRecord(
-        schema_version=1, jti="active", bundle_path="inbox/a/b",
-        bundle_id="bid", recipient="a", created_at=_iso(now - 10),
+        schema_version=1,
+        jti="active",
+        bundle_path="inbox/a/b",
+        bundle_id="bid",
+        recipient="a",
+        created_at=_iso(now - 10),
         files_fetched=[],
     )
     await store.issue(claim)
@@ -91,13 +96,18 @@ async def test_sweep_skips_active_claim(
 
 @pytest.mark.asyncio
 async def test_sweep_completes_expired_complete_inbox(
-    claim_storage_factory, ttl_s: int,
+    claim_storage_factory,
+    ttl_s: int,
 ) -> None:
     store = await claim_storage_factory()
     now = time.time()
     claim = ClaimRecord(
-        schema_version=1, jti="done", bundle_path="inbox/a/c",
-        bundle_id="bid", recipient="a", created_at=_iso(now - 600),
+        schema_version=1,
+        jti="done",
+        bundle_path="inbox/a/c",
+        bundle_id="bid",
+        recipient="a",
+        created_at=_iso(now - 600),
         files_fetched=["f.bin", "g.bin"],
     )
     await store.issue(claim)
@@ -112,13 +122,18 @@ async def test_sweep_completes_expired_complete_inbox(
 
 @pytest.mark.asyncio
 async def test_sweep_drops_expired_incomplete_claim(
-    claim_storage_factory, ttl_s: int,
+    claim_storage_factory,
+    ttl_s: int,
 ) -> None:
     store = await claim_storage_factory()
     now = time.time()
     claim = ClaimRecord(
-        schema_version=1, jti="partial", bundle_path="inbox/a/d",
-        bundle_id="bid", recipient="a", created_at=_iso(now - 600),
+        schema_version=1,
+        jti="partial",
+        bundle_path="inbox/a/d",
+        bundle_id="bid",
+        recipient="a",
+        created_at=_iso(now - 600),
         files_fetched=["f.bin"],
     )
     await store.issue(claim)
@@ -134,13 +149,18 @@ async def test_sweep_drops_expired_incomplete_claim(
 
 @pytest.mark.asyncio
 async def test_sweep_drops_when_bundle_missing(
-    claim_storage_factory, ttl_s: int,
+    claim_storage_factory,
+    ttl_s: int,
 ) -> None:
     store = await claim_storage_factory()
     now = time.time()
     claim = ClaimRecord(
-        schema_version=1, jti="ghost", bundle_path="inbox/a/e",
-        bundle_id="bid", recipient="a", created_at=_iso(now - 600),
+        schema_version=1,
+        jti="ghost",
+        bundle_path="inbox/a/e",
+        bundle_id="bid",
+        recipient="a",
+        created_at=_iso(now - 600),
         files_fetched=[],
     )
     await store.issue(claim)
@@ -168,8 +188,12 @@ async def test_sweep_drops_malformed_created_at(
         pytest.skip("filesystem-only malformed body injection")
 
     claim = ClaimRecord(
-        schema_version=1, jti="malformed", bundle_path="inbox/a/f",
-        bundle_id="bid", recipient="a", created_at="2026-04-20T14:55:00+00:00",
+        schema_version=1,
+        jti="malformed",
+        bundle_path="inbox/a/f",
+        bundle_id="bid",
+        recipient="a",
+        created_at="2026-04-20T14:55:00+00:00",
         files_fetched=[],
     )
     await store.issue(claim)

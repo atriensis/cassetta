@@ -30,9 +30,7 @@ def _set_common_env() -> None:
     os.environ["CASSETTA_STORAGE_PATH"] = tempfile.mkdtemp()
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
     os.environ["CASSETTA_JWT_KEY"] = _TEST_JWT_KEY_B64
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
@@ -41,8 +39,11 @@ def _set_common_env() -> None:
     os.environ.pop("CASSETTA_JWT_KEY_SECONDARY_FILE", None)
 
 
-def _attach_capture(logger_name: str) -> tuple[
-    list[logging.LogRecord], logging.Handler,
+def _attach_capture(
+    logger_name: str,
+) -> tuple[
+    list[logging.LogRecord],
+    logging.Handler,
 ]:
     """Attach an in-memory handler to ``logger_name`` and return both.
 
@@ -89,17 +90,11 @@ async def test_config_loaded_carries_dev_mode_false_in_auth_mode() -> None:
     finally:
         logging.getLogger("cassetta").removeHandler(handler)
 
-    config_loaded = [
-        r for r in captured
-        if getattr(r, "event", None) == "config_loaded"
-    ]
+    config_loaded = [r for r in captured if getattr(r, "event", None) == "config_loaded"]
     assert len(config_loaded) == 1
     assert config_loaded[0].detail["dev_mode"] is False  # type: ignore[attr-defined]
 
-    enabled = [
-        r for r in captured
-        if getattr(r, "event", None) == "dev_mode_enabled"
-    ]
+    enabled = [r for r in captured if getattr(r, "event", None) == "dev_mode_enabled"]
     assert enabled == []
 
 
@@ -121,17 +116,11 @@ async def test_config_loaded_carries_dev_mode_true_in_dev_mode() -> None:
     finally:
         logging.getLogger("cassetta").removeHandler(handler)
 
-    config_loaded = [
-        r for r in captured
-        if getattr(r, "event", None) == "config_loaded"
-    ]
+    config_loaded = [r for r in captured if getattr(r, "event", None) == "config_loaded"]
     assert len(config_loaded) == 1
     assert config_loaded[0].detail["dev_mode"] is True  # type: ignore[attr-defined]
 
-    enabled = [
-        r for r in captured
-        if getattr(r, "event", None) == "dev_mode_enabled"
-    ]
+    enabled = [r for r in captured if getattr(r, "event", None) == "dev_mode_enabled"]
     assert len(enabled) == 1
     assert enabled[0].levelno == logging.WARNING
 
@@ -196,7 +185,8 @@ async def test_health_503_includes_dev_mode_field() -> None:
 
     config = load_config()
     backends = replace(
-        build_core_defaults(config), key_store=_UnhealthyKeyStore(),
+        build_core_defaults(config),
+        key_store=_UnhealthyKeyStore(),
     )
     app = create_app(config, backends=backends)
 

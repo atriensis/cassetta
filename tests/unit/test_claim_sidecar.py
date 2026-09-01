@@ -42,7 +42,8 @@ def _make_record(
 
 @pytest.mark.asyncio
 async def test_issue_creates_sidecar_with_body_and_perms(
-    claim_storage_factory, tmp_path: Path,
+    claim_storage_factory,
+    tmp_path: Path,
 ) -> None:
     store = await claim_storage_factory(tmp_path)
     claim = _make_record()
@@ -88,7 +89,8 @@ async def test_get_missing_returns_none(claim_storage_factory) -> None:
 
 @pytest.mark.asyncio
 async def test_get_malformed_raises(
-    claim_storage_factory, tmp_path: Path,
+    claim_storage_factory,
+    tmp_path: Path,
 ) -> None:
     """Filesystem-specific: plant a malformed sidecar directly on disk."""
     from cassetta.backends.filesystem.claim_storage import FilesystemClaimStorage
@@ -104,7 +106,8 @@ async def test_get_malformed_raises(
 
 @pytest.mark.asyncio
 async def test_get_unknown_schema_raises(
-    claim_storage_factory, tmp_path: Path,
+    claim_storage_factory,
+    tmp_path: Path,
 ) -> None:
     from cassetta.backends.filesystem.claim_storage import FilesystemClaimStorage
 
@@ -114,15 +117,17 @@ async def test_get_unknown_schema_raises(
     tmp_path.mkdir(parents=True, exist_ok=True)
     path = tmp_path / "future.json"
     path.write_text(
-        json.dumps({
-            "schema_version": 99,
-            "jti": "future",
-            "bundle_path": "inbox/x/y",
-            "bundle_id": "id",
-            "recipient": "x",
-            "created_at": "2026-04-20T14:55:00+00:00",
-            "files_fetched": [],
-        }),
+        json.dumps(
+            {
+                "schema_version": 99,
+                "jti": "future",
+                "bundle_path": "inbox/x/y",
+                "bundle_id": "id",
+                "recipient": "x",
+                "created_at": "2026-04-20T14:55:00+00:00",
+                "files_fetched": [],
+            }
+        ),
         encoding="utf-8",
     )
     with pytest.raises(ValueError):
@@ -198,7 +203,8 @@ async def test_iter_all_yields_every_record(claim_storage_factory) -> None:
 
 @pytest.mark.asyncio
 async def test_iter_all_skips_malformed_entries(
-    claim_storage_factory, tmp_path: Path,
+    claim_storage_factory,
+    tmp_path: Path,
 ) -> None:
     from cassetta.backends.filesystem.claim_storage import FilesystemClaimStorage
 
@@ -220,12 +226,20 @@ async def test_iter_active_by_bundle_path_excludes_expired(
     now = int(time.time())
     fresh_iso = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(now - 10))
     stale_iso = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(now - 600))
-    await store.issue(_make_record(
-        jti="fresh", bundle_path="inbox/a/fresh", created_at=fresh_iso,
-    ))
-    await store.issue(_make_record(
-        jti="stale", bundle_path="inbox/a/stale", created_at=stale_iso,
-    ))
+    await store.issue(
+        _make_record(
+            jti="fresh",
+            bundle_path="inbox/a/fresh",
+            created_at=fresh_iso,
+        )
+    )
+    await store.issue(
+        _make_record(
+            jti="stale",
+            bundle_path="inbox/a/stale",
+            created_at=stale_iso,
+        )
+    )
     active = await store.iter_active_by_bundle_path(60)
     assert "inbox/a/fresh" in active
     assert "inbox/a/stale" not in active

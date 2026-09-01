@@ -48,10 +48,13 @@ async def seed_store_bundle(
         records: list[dict[str, Any]] = []
         for name, data in files:
             await writer.write_file(name, io.BytesIO(data))
-            records.append({
-                "name": name, "size": len(data),
-                "mime": pick_mime(name, explicit=None),
-            })
+            records.append(
+                {
+                    "name": name,
+                    "size": len(data),
+                    "mime": pick_mime(name, explicit=None),
+                }
+            )
         meta: dict[str, Any] = {
             "schema_version": 1,
             "bundle_id": bundle_id,
@@ -84,9 +87,7 @@ async def seed_inbox_bundle(
     """
     if (content is None) == (files is None):
         raise ValueError("pass exactly one of content or files")
-    file_parts: list[tuple[str, bytes]] = (
-        list(files) if files is not None else [(path.split("/")[-1], content or b"")]
-    )
+    file_parts: list[tuple[str, bytes]] = list(files) if files is not None else [(path.split("/")[-1], content or b"")]
     bundle_path = f"inbox/{recipient}/{path}"
     bundle_id = uuid.uuid4().hex
     writer = await backend.open_bundle_write(bundle_path)
@@ -94,10 +95,13 @@ async def seed_inbox_bundle(
         records: list[dict[str, Any]] = []
         for name, data in file_parts:
             await writer.write_file(name, io.BytesIO(data))
-            records.append({
-                "name": name, "size": len(data),
-                "mime": pick_mime(name, explicit=None),
-            })
+            records.append(
+                {
+                    "name": name,
+                    "size": len(data),
+                    "mime": pick_mime(name, explicit=None),
+                }
+            )
         meta: dict[str, Any] = {
             "schema_version": 1,
             "bundle_id": bundle_id,
@@ -112,6 +116,7 @@ async def seed_inbox_bundle(
     except Exception:
         await writer.abort()
         raise
+
 
 SETUP_TOKEN = "integration-test-token"
 
@@ -129,11 +134,14 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 
 
 def _init_msg() -> dict:
-    return _jsonrpc("initialize", {
-        "protocolVersion": "2025-03-26",
-        "capabilities": {},
-        "clientInfo": {"name": "integration-test", "version": "1.0.0"},
-    })
+    return _jsonrpc(
+        "initialize",
+        {
+            "protocolVersion": "2025-03-26",
+            "capabilities": {},
+            "clientInfo": {"name": "integration-test", "version": "1.0.0"},
+        },
+    )
 
 
 @dataclass
@@ -152,7 +160,9 @@ class CoreHelpers:
 
     @staticmethod
     async def setup_agent(
-        client: httpx.AsyncClient, host: str, project: str,
+        client: httpx.AsyncClient,
+        host: str,
+        project: str,
     ) -> str:
         resp = await client.post(
             "/setup",
@@ -164,7 +174,10 @@ class CoreHelpers:
 
     @staticmethod
     async def create_key(
-        client: httpx.AsyncClient, api_key: str, host: str, project: str,
+        client: httpx.AsyncClient,
+        api_key: str,
+        host: str,
+        project: str,
     ) -> str:
         resp = await client.post(
             "/keys",
@@ -176,7 +189,9 @@ class CoreHelpers:
 
     @staticmethod
     async def mcp_post(
-        client: httpx.AsyncClient, body: dict, sid: str = "",
+        client: httpx.AsyncClient,
+        body: dict,
+        sid: str = "",
         api_key: str = "",
     ) -> httpx.Response:
         headers = dict(MCP_HEADERS)
@@ -194,7 +209,10 @@ class CoreHelpers:
 
     @staticmethod
     async def mcp_call(
-        client: httpx.AsyncClient, name: str, args: dict, sid: str = "",
+        client: httpx.AsyncClient,
+        name: str,
+        args: dict,
+        sid: str = "",
         api_key: str = "",
     ) -> dict:
         body = _jsonrpc("tools/call", {"name": name, "arguments": args}, req_id=2)
@@ -204,8 +222,13 @@ class CoreHelpers:
 
     @staticmethod
     async def send_inline(
-        client: httpx.AsyncClient, api_key: str, *,
-        to: str, path: str, content: bytes, name: str | None = None,
+        client: httpx.AsyncClient,
+        api_key: str,
+        *,
+        to: str,
+        path: str,
+        content: bytes,
+        name: str | None = None,
         sid: str | None = None,
     ) -> str:
         """Brief 514 two-phase inline send helper.
@@ -219,29 +242,36 @@ class CoreHelpers:
         if sid is None:
             sid = await CoreHelpers.mcp_init(client, api_key=api_key)
         init = await CoreHelpers.mcp_call(
-            client, "cassetta_send_init",
+            client,
+            "cassetta_send_init",
             {
-                "to": to, "path": path,
+                "to": to,
+                "path": path,
                 "manifest": {
                     "file_count": 1,
                     "files": [{"name": file_name, "size": len(content)}],
                 },
             },
-            sid=sid, api_key=api_key,
+            sid=sid,
+            api_key=api_key,
         )
         body = _json.loads(init["content"][0]["text"])
         assert body.get("mode") == "inline", body
         result = await CoreHelpers.mcp_call(
-            client, "cassetta_send_inline",
+            client,
+            "cassetta_send_inline",
             {
                 "token": body["inline_token"],
-                "files": [{
-                    "name": file_name,
-                    "content": base64.b64encode(content).decode("ascii"),
-                    "encoding": "base64",
-                }],
+                "files": [
+                    {
+                        "name": file_name,
+                        "content": base64.b64encode(content).decode("ascii"),
+                        "encoding": "base64",
+                    }
+                ],
             },
-            sid=sid, api_key=api_key,
+            sid=sid,
+            api_key=api_key,
         )
         done = _json.loads(result["content"][0]["text"])
         assert done.get("ok") is True, done
@@ -260,12 +290,8 @@ async def _make_core_app(ttl: str = "0") -> AsyncIterator[tuple[httpx.AsyncClien
     os.environ["CASSETTA_STORAGE_PATH"] = tmpdir
     os.environ["CASSETTA_DEFAULT_TTL"] = ttl
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_JWT_KEY_FILE", None)
     os.environ.pop("CASSETTA_JWT_KEY_SECONDARY", None)

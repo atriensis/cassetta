@@ -73,33 +73,26 @@ FAMILY_KINDS: dict[type, list[str]] = {
 
 @pytest.mark.parametrize("proto_cls", PROTOCOL_CLASSES)
 def test_protocols_declare_kind_attribute(proto_cls: type) -> None:
-    assert "kind" in proto_cls.__annotations__, (
-        f"{proto_cls.__name__} does not declare `kind` in its class body."
-    )
+    assert "kind" in proto_cls.__annotations__, f"{proto_cls.__name__} does not declare `kind` in its class body."
 
 
 @pytest.mark.parametrize("impl_cls,expected_kind", CONCRETE_IMPLS)
 def test_concrete_impls_have_well_formed_kind(
-    impl_cls: type, expected_kind: str,
+    impl_cls: type,
+    expected_kind: str,
 ) -> None:
     assert hasattr(impl_cls, "kind"), f"{impl_cls.__name__} is missing `kind`"
-    assert isinstance(impl_cls.kind, str), (
-        f"{impl_cls.__name__}.kind is not a str: {type(impl_cls.kind)!r}"
-    )
+    assert isinstance(impl_cls.kind, str), f"{impl_cls.__name__}.kind is not a str: {type(impl_cls.kind)!r}"
     assert impl_cls.kind, f"{impl_cls.__name__}.kind is empty"
     assert KIND_PATTERN.match(impl_cls.kind), (
-        f"{impl_cls.__name__}.kind={impl_cls.kind!r} violates pattern "
-        f"{KIND_PATTERN.pattern!r}"
+        f"{impl_cls.__name__}.kind={impl_cls.kind!r} violates pattern {KIND_PATTERN.pattern!r}"
     )
-    assert impl_cls.kind == expected_kind, (
-        f"{impl_cls.__name__}.kind={impl_cls.kind!r} != {expected_kind!r}"
-    )
+    assert impl_cls.kind == expected_kind, f"{impl_cls.__name__}.kind={impl_cls.kind!r} != {expected_kind!r}"
 
 
 @pytest.mark.parametrize("proto,kinds", list(FAMILY_KINDS.items()))
 def test_kind_unique_per_protocol_family(
-    proto: type, kinds: list[str],
+    proto: type,
+    kinds: list[str],
 ) -> None:
-    assert len(kinds) == len(set(kinds)), (
-        f"Duplicate `kind` within {proto.__name__} family: {kinds}"
-    )
+    assert len(kinds) == len(set(kinds)), f"Duplicate `kind` within {proto.__name__} family: {kinds}"

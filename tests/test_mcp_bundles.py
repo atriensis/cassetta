@@ -33,9 +33,7 @@ def bundle_env(bundle_storage_dir: str) -> None:
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
     os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
 
@@ -78,11 +76,14 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 
 
 def _init_msg() -> dict:
-    return _jsonrpc("initialize", {
-        "protocolVersion": "2025-03-26",
-        "capabilities": {},
-        "clientInfo": {"name": "test-client", "version": "1.0.0"},
-    })
+    return _jsonrpc(
+        "initialize",
+        {
+            "protocolVersion": "2025-03-26",
+            "capabilities": {},
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
+    )
 
 
 async def _post(client: httpx.AsyncClient, body: dict, sid: str = "") -> httpx.Response:
@@ -99,7 +100,10 @@ async def _init(client: httpx.AsyncClient) -> str:
 
 
 async def _call(
-    client: httpx.AsyncClient, name: str, args: dict, sid: str = "",
+    client: httpx.AsyncClient,
+    name: str,
+    args: dict,
+    sid: str = "",
 ) -> dict:
     body = _jsonrpc("tools/call", {"name": name, "arguments": args}, req_id=2)
     resp = await _post(client, body, sid)
@@ -113,7 +117,6 @@ async def _call(
 
 
 class TestMcpPickBundle:
-
     @pytest.mark.asyncio
     async def test_pick_bundle_returns_json(self, mcp: tuple) -> None:
         """Pick multi-file bundle returns JSON with files list."""
@@ -123,7 +126,9 @@ class TestMcpPickBundle:
         sid = await _init(client)
 
         await seed_inbox_bundle(
-            backend, "dev:agent", "my-bundle",
+            backend,
+            "dev:agent",
+            "my-bundle",
             files=[("plan.md", b"# Plan"), ("config.yaml", b"key: value")],
             sender="dev:agent",
         )
@@ -149,8 +154,11 @@ class TestMcpPickBundle:
         sid = await _init(client)
 
         await seed_inbox_bundle(
-            backend, "dev:agent", "note.txt",
-            content=b"hello", sender="dev:agent",
+            backend,
+            "dev:agent",
+            "note.txt",
+            content=b"hello",
+            sender="dev:agent",
         )
 
         result = await _call(client, "cassetta_pick", {"path": "note.txt"}, sid)
@@ -172,7 +180,6 @@ class TestMcpPickBundle:
 
 
 class TestMcpInboxListing:
-
     @pytest.mark.asyncio
     async def test_inbox_listing_shows_file_count(self, mcp: tuple) -> None:
         """Inbox listing includes file_count for bundles and single files."""
@@ -182,13 +189,18 @@ class TestMcpInboxListing:
 
         # Seed a single file
         await seed_inbox_bundle(
-            backend, "dev:agent", "note.txt",
-            content=b"hello", sender="dev:peer",
+            backend,
+            "dev:agent",
+            "note.txt",
+            content=b"hello",
+            sender="dev:peer",
         )
 
         # Seed a bundle
         await seed_inbox_bundle(
-            backend, "dev:agent", "my-bundle",
+            backend,
+            "dev:agent",
+            "my-bundle",
             files=[("a.txt", b"aaa"), ("b.txt", b"bbb")],
             sender="dev:peer",
         )
@@ -210,20 +222,27 @@ class TestMcpInboxListing:
 
 
 class TestMcpFilesBundles:
-
     @pytest.mark.asyncio
     async def test_put_bundle(self, mcp: tuple) -> None:
         """T029: cassetta_put with files parameter stores a bundle."""
         _app, client, backend = mcp
         sid = await _init(client)
 
-        files_json = json.dumps([
-            {"name": "src/main.py", "content": "print('hi')"},
-            {"name": "README.md", "content": "# Readme"},
-        ])
-        result = await _call(client, "cassetta_put", {
-            "path": "my-package", "files": files_json,
-        }, sid)
+        files_json = json.dumps(
+            [
+                {"name": "src/main.py", "content": "print('hi')"},
+                {"name": "README.md", "content": "# Readme"},
+            ]
+        )
+        result = await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "my-package",
+                "files": files_json,
+            },
+            sid,
+        )
         assert result.get("isError") is not True
         text = result["content"][0]["text"]
         assert "my-package" in text
@@ -235,13 +254,21 @@ class TestMcpFilesBundles:
         _app, client, backend = mcp
         sid = await _init(client)
 
-        files_json = json.dumps([
-            {"name": "plan.md", "content": "# Plan"},
-            {"name": "code.py", "content": "x = 1"},
-        ])
-        await _call(client, "cassetta_put", {
-            "path": "test-bundle", "files": files_json,
-        }, sid)
+        files_json = json.dumps(
+            [
+                {"name": "plan.md", "content": "# Plan"},
+                {"name": "code.py", "content": "x = 1"},
+            ]
+        )
+        await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "test-bundle",
+                "files": files_json,
+            },
+            sid,
+        )
 
         result = await _call(client, "cassetta_get", {"path": "test-bundle"}, sid)
         assert result.get("isError") is not True
@@ -260,18 +287,32 @@ class TestMcpFilesBundles:
         sid = await _init(client)
 
         # Store a single file
-        await _call(client, "cassetta_put", {
-            "path": "single.txt", "content": "solo",
-        }, sid)
+        await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "single.txt",
+                "content": "solo",
+            },
+            sid,
+        )
 
         # Store a bundle
-        files_json = json.dumps([
-            {"name": "a.txt", "content": "aaa"},
-            {"name": "b.txt", "content": "bbb"},
-        ])
-        await _call(client, "cassetta_put", {
-            "path": "multi-bundle", "files": files_json,
-        }, sid)
+        files_json = json.dumps(
+            [
+                {"name": "a.txt", "content": "aaa"},
+                {"name": "b.txt", "content": "bbb"},
+            ]
+        )
+        await _call(
+            client,
+            "cassetta_put",
+            {
+                "path": "multi-bundle",
+                "files": files_json,
+            },
+            sid,
+        )
 
         result = await _call(client, "cassetta_list", {}, sid)
         items = json.loads(result["content"][0]["text"])
@@ -286,7 +327,6 @@ class TestMcpFilesBundles:
 
 
 class TestMcpBroadcastBundle:
-
     @pytest.mark.asyncio
     async def test_broadcast_bundle(self, mcp: tuple) -> None:
         """T041: cassetta_broadcast with files parameter sends to all agents."""
@@ -299,13 +339,21 @@ class TestMcpBroadcastBundle:
         await key_store.create_key("alice:proj")
         await key_store.create_key("bob:proj")
 
-        files_json = json.dumps([
-            {"name": "update.md", "content": "# Update"},
-            {"name": "data.csv", "content": "a,b,c"},
-        ])
-        result = await _call(client, "cassetta_broadcast", {
-            "path": "team-update", "files": files_json,
-        }, sid)
+        files_json = json.dumps(
+            [
+                {"name": "update.md", "content": "# Update"},
+                {"name": "data.csv", "content": "a,b,c"},
+            ]
+        )
+        result = await _call(
+            client,
+            "cassetta_broadcast",
+            {
+                "path": "team-update",
+                "files": files_json,
+            },
+            sid,
+        )
         assert result.get("isError") is not True
         text = result["content"][0]["text"]
         assert "2" in text  # 2 recipients

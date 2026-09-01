@@ -32,7 +32,10 @@ class FakeBackend:
     deleted: list[str] = field(default_factory=list)
 
     def list_bundles(
-        self, prefix: str, *, include_orphans: bool = False,
+        self,
+        prefix: str,
+        *,
+        include_orphans: bool = False,
     ) -> Iterable[BundleRef]:
         # include_orphans must be True for the reaper's purpose.
         assert include_orphans is True
@@ -46,9 +49,11 @@ class FakeBackend:
 @pytest.mark.asyncio
 async def test_old_orphans_deleted() -> None:
     now = time.time()
-    backend = FakeBackend(refs=[
-        BundleRef(path="inbox/alice/stale.bin", has_meta=False, mtime=now - 7200),
-    ])
+    backend = FakeBackend(
+        refs=[
+            BundleRef(path="inbox/alice/stale.bin", has_meta=False, mtime=now - 7200),
+        ]
+    )
     await sweep(backend, min_age_s=3600)
     assert backend.deleted == ["inbox/alice/stale.bin"]
 
@@ -56,9 +61,11 @@ async def test_old_orphans_deleted() -> None:
 @pytest.mark.asyncio
 async def test_young_orphans_preserved() -> None:
     now = time.time()
-    backend = FakeBackend(refs=[
-        BundleRef(path="inbox/alice/fresh.bin", has_meta=False, mtime=now - 60),
-    ])
+    backend = FakeBackend(
+        refs=[
+            BundleRef(path="inbox/alice/fresh.bin", has_meta=False, mtime=now - 60),
+        ]
+    )
     await sweep(backend, min_age_s=3600)
     assert backend.deleted == []
 
@@ -66,10 +73,12 @@ async def test_young_orphans_preserved() -> None:
 @pytest.mark.asyncio
 async def test_committed_bundles_skipped_regardless_of_age() -> None:
     now = time.time()
-    backend = FakeBackend(refs=[
-        BundleRef(path="inbox/alice/old-ok.txt", has_meta=True, mtime=now - 999_999),
-        BundleRef(path="store/doc.txt",         has_meta=True, mtime=now - 999_999),
-    ])
+    backend = FakeBackend(
+        refs=[
+            BundleRef(path="inbox/alice/old-ok.txt", has_meta=True, mtime=now - 999_999),
+            BundleRef(path="store/doc.txt", has_meta=True, mtime=now - 999_999),
+        ]
+    )
     await sweep(backend, min_age_s=3600)
     assert backend.deleted == []
 
@@ -92,9 +101,11 @@ async def test_reaper_emits_structured_log() -> None:
     cassetta_logger.setLevel(logging.INFO)
     try:
         now = time.time()
-        backend = FakeBackend(refs=[
-            BundleRef(path="inbox/bob/junk", has_meta=False, mtime=now - 7200),
-        ])
+        backend = FakeBackend(
+            refs=[
+                BundleRef(path="inbox/bob/junk", has_meta=False, mtime=now - 7200),
+            ]
+        )
         await sweep(backend, min_age_s=3600)
     finally:
         cassetta_logger.removeHandler(handler)
@@ -110,9 +121,11 @@ async def test_reaper_emits_structured_log() -> None:
 @pytest.mark.asyncio
 async def test_sweep_is_idempotent_back_to_back() -> None:
     now = time.time()
-    backend = FakeBackend(refs=[
-        BundleRef(path="inbox/alice/stale.bin", has_meta=False, mtime=now - 7200),
-    ])
+    backend = FakeBackend(
+        refs=[
+            BundleRef(path="inbox/alice/stale.bin", has_meta=False, mtime=now - 7200),
+        ]
+    )
     await sweep(backend, min_age_s=3600)
     assert backend.deleted == ["inbox/alice/stale.bin"]
     # Second sweep finds nothing to delete.

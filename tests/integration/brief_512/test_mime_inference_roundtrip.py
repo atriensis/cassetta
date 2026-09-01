@@ -33,7 +33,9 @@ async def _mcp_init(client: httpx.AsyncClient) -> str:
     resp = await client.post(
         "/mcp/",
         json={
-            "jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
             "params": {
                 "protocolVersion": "2025-03-26",
                 "capabilities": {},
@@ -46,12 +48,17 @@ async def _mcp_init(client: httpx.AsyncClient) -> str:
 
 
 async def _mcp_call(
-    client: httpx.AsyncClient, name: str, args: dict, sid: str,
+    client: httpx.AsyncClient,
+    name: str,
+    args: dict,
+    sid: str,
 ) -> dict:
     headers = dict(MCP_HEADERS)
     headers["mcp-session-id"] = sid
     body = {
-        "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
         "params": {"name": name, "arguments": args},
     }
     resp = await client.post("/mcp/", json=body, headers=headers)
@@ -59,23 +66,30 @@ async def _mcp_call(
 
 
 async def _send_inline(
-    client: httpx.AsyncClient, sid: str, to: str, path: str,
+    client: httpx.AsyncClient,
+    sid: str,
+    to: str,
+    path: str,
     files: list[tuple[str, bytes]],
 ) -> None:
     init = await _mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": to, "path": path,
+            "to": to,
+            "path": path,
             "manifest": {
                 "file_count": len(files),
                 "files": [{"name": n, "size": len(d)} for n, d in files],
             },
-        }, sid,
+        },
+        sid,
     )
     body = json.loads(init["content"][0]["text"])
     assert body["mode"] == "inline"
     result = await _mcp_call(
-        client, "cassetta_send_inline",
+        client,
+        "cassetta_send_inline",
         {
             "token": body["inline_token"],
             "files": [
@@ -86,19 +100,25 @@ async def _send_inline(
                 }
                 for n, d in files
             ],
-        }, sid,
+        },
+        sid,
     )
     assert json.loads(result["content"][0]["text"])["ok"] is True
 
 
 class TestMimeInferenceRoundtrip:
     async def test_inbox_send_infers_mime(
-        self, mime_client: httpx.AsyncClient, backend: FilesystemBackend,
+        self,
+        mime_client: httpx.AsyncClient,
+        backend: FilesystemBackend,
     ) -> None:
         """Brief 514 inline send records server-inferred MIME on each file."""
         sid = await _mcp_init(mime_client)
         await _send_inline(
-            mime_client, sid, to="dev:agent", path="handoff",
+            mime_client,
+            sid,
+            to="dev:agent",
+            path="handoff",
             files=[("plan.md", b"# Plan"), ("photo.png", b"PNG-bytes")],
         )
         meta = await backend.read_bundle_meta("inbox/dev:agent/handoff")
@@ -107,30 +127,36 @@ class TestMimeInferenceRoundtrip:
         assert mimes["photo.png"] == "image/png"
 
     async def test_inbox_single_file_infers_mime(
-        self, mime_client: httpx.AsyncClient, backend: FilesystemBackend,
+        self,
+        mime_client: httpx.AsyncClient,
+        backend: FilesystemBackend,
     ) -> None:
         """Single-file inline send records the filename-inferred MIME."""
         sid = await _mcp_init(mime_client)
         await _send_inline(
-            mime_client, sid, to="dev:agent", path="notes.md",
+            mime_client,
+            sid,
+            to="dev:agent",
+            path="notes.md",
             files=[("notes.md", b"# hello")],
         )
         meta = await backend.read_bundle_meta("inbox/dev:agent/notes.md")
         assert meta["files"][0]["mime"] == "text/markdown"
 
     async def test_store_single_file_infers_mime(
-        self, mime_client: httpx.AsyncClient, backend: FilesystemBackend,
+        self,
+        mime_client: httpx.AsyncClient,
+        backend: FilesystemBackend,
     ) -> None:
-        await mime_client.put(
-            "/files/notes.md", content=b"# hello"
-        )
+        await mime_client.put("/files/notes.md", content=b"# hello")
         meta = await backend.read_bundle_meta("store/notes.md")
         assert meta["files"][0]["mime"] == "text/markdown"
 
 
 class TestMimeInStoreListing:
     async def test_store_listing_exposes_mime(
-        self, mime_client: httpx.AsyncClient,
+        self,
+        mime_client: httpx.AsyncClient,
     ) -> None:
         await mime_client.put("/files/doc.md", content=b"# doc")
         await mime_client.put("/files/image.png", content=b"PNG")

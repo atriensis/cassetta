@@ -35,8 +35,7 @@ class _ClientPrecheckError(Exception):
 
     def __init__(self, decision: dict[str, Any]) -> None:
         super().__init__(
-            f"{decision['error']}: {decision['constraint']}"
-            f" observed={decision['observed']} limit={decision['limit']}"
+            f"{decision['error']}: {decision['constraint']} observed={decision['observed']} limit={decision['limit']}"
         )
         self.decision = decision
 
@@ -69,10 +68,7 @@ def _cached_caps_with(per_file_max: int | None = 1000) -> LimitsAdvertisement:
 
 
 def _manifest(files: list[tuple[str, int]]) -> UploadManifest:
-    entries: list[ManifestFile] = [
-        {"name": name, "size": size, "mime": None}
-        for name, size in files
-    ]
+    entries: list[ManifestFile] = [{"name": name, "size": size, "mime": None} for name, size in files]
     return {"file_count": len(entries), "files": entries}
 
 
@@ -109,7 +105,7 @@ def test_null_cap_means_no_limit_on_that_axis() -> None:
     """FR-018: a client cannot be stricter than the server on a null axis."""
     send_init = MagicMock(name="send_init", return_value={"token": "t"})
     caps: LimitsAdvertisement = {
-        "per_file_max": None,               # ← no per-file limit
+        "per_file_max": None,  # ← no per-file limit
         "per_bundle_total_max": None,
         "per_bundle_file_count_max": None,
         "max_inline_size": None,

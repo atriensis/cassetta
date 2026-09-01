@@ -24,23 +24,22 @@ async def bcast_client(
 
 class TestBroadcastDistinctBundleIds:
     async def test_broadcast_bundle_ids_differ_per_recipient(
-        self, bcast_client: httpx.AsyncClient, backend: FilesystemBackend,
+        self,
+        bcast_client: httpx.AsyncClient,
+        backend: FilesystemBackend,
     ) -> None:
         files = [
             ("files", ("update.md", b"# Update", "text/markdown")),
             ("files", ("data.csv", b"a,b,c", "text/csv")),
         ]
         resp = await bcast_client.post(
-            "/broadcast/team-update", files=files,
+            "/broadcast/team-update",
+            files=files,
         )
         assert resp.status_code == 200
 
-        meta_alice = await backend.read_bundle_meta(
-            "inbox/alice:proj/team-update"
-        )
-        meta_bob = await backend.read_bundle_meta(
-            "inbox/bob:proj/team-update"
-        )
+        meta_alice = await backend.read_bundle_meta("inbox/alice:proj/team-update")
+        meta_bob = await backend.read_bundle_meta("inbox/bob:proj/team-update")
         assert meta_alice["bundle_id"] != meta_bob["bundle_id"]
         assert meta_alice["file_count"] == 2
         assert meta_bob["file_count"] == 2

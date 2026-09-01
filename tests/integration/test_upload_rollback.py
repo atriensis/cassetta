@@ -36,7 +36,8 @@ def _unwrap(result: dict) -> dict:
 
 @pytest.mark.asyncio
 async def test_mid_stream_manifest_violation_rolls_back(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     app = client._transport.app  # type: ignore[attr-defined]
@@ -49,10 +50,15 @@ async def test_mid_stream_manifest_violation_rolls_back(
     # Manifest declares size 100 but we'll tar an entry with 200 bytes → wrong_size.
     files = {"payload.bin": b"x" * 200}
     init = await h.mcp_call(
-        client, "cassetta_send_init",
-        {"to": "alice:main", "path": "r.md",
-         "manifest": {"file_count": 1, "files": [{"name": "payload.bin", "size": 100}]}},
-        sid=sid, api_key=sender,
+        client,
+        "cassetta_send_init",
+        {
+            "to": "alice:main",
+            "path": "r.md",
+            "manifest": {"file_count": 1, "files": [{"name": "payload.bin", "size": 100}]},
+        },
+        sid=sid,
+        api_key=sender,
     )
     body = _unwrap(init)
     token = body["batch_token"]
@@ -60,7 +66,8 @@ async def test_mid_stream_manifest_violation_rolls_back(
 
     tar_bytes = _build_tar(files)
     resp = await client.post(
-        url_path, content=tar_bytes,
+        url_path,
+        content=tar_bytes,
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/x-tar"},
     )
     assert resp.status_code == 400
@@ -70,14 +77,13 @@ async def test_mid_stream_manifest_violation_rolls_back(
 
     # Active rollback: bundle dir gone from disk.
     bundle_dir = os.path.join(storage_root, "inbox", "alice:main", "r.md")
-    assert not os.path.exists(bundle_dir), (
-        f"expected active rollback to remove {bundle_dir}"
-    )
+    assert not os.path.exists(bundle_dir), f"expected active rollback to remove {bundle_dir}"
 
 
 @pytest.mark.asyncio
 async def test_kill_mid_stream_leaves_no_meta_json(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Client disconnect mid-stream → no ``meta.json``; bundle invisible."""
     client, _ = core_app_small_inline
@@ -88,13 +94,18 @@ async def test_kill_mid_stream_leaves_no_meta_json(
 
     manifest_files = {"big.bin": b"A" * 500, "small.bin": b"B" * 100}
     init = await h.mcp_call(
-        client, "cassetta_send_init",
-        {"to": "alice:main", "path": "dropped.tgz",
-         "manifest": {
-             "file_count": 2,
-             "files": [{"name": n, "size": len(d)} for n, d in manifest_files.items()],
-         }},
-        sid=sid, api_key=sender,
+        client,
+        "cassetta_send_init",
+        {
+            "to": "alice:main",
+            "path": "dropped.tgz",
+            "manifest": {
+                "file_count": 2,
+                "files": [{"name": n, "size": len(d)} for n, d in manifest_files.items()],
+            },
+        },
+        sid=sid,
+        api_key=sender,
     )
     body = _unwrap(init)
     token = body["batch_token"]
@@ -104,7 +115,8 @@ async def test_kill_mid_stream_leaves_no_meta_json(
     # parse error before any tar entry lands.
     tar_bytes = _build_tar(manifest_files, compress=False)
     resp = await client.post(
-        url_path, content=tar_bytes,
+        url_path,
+        content=tar_bytes,
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/x-tar",
@@ -117,8 +129,11 @@ async def test_kill_mid_stream_leaves_no_meta_json(
     recip_key = await h.create_key(client, sender, "alice", "list")
     recip_sid = await h.mcp_init(client, api_key=recip_key)
     inbox = await h.mcp_call(
-        client, "cassetta_inbox", {"agent": "alice:main"},
-        sid=recip_sid, api_key=recip_key,
+        client,
+        "cassetta_inbox",
+        {"agent": "alice:main"},
+        sid=recip_sid,
+        api_key=recip_key,
     )
     listing = json.loads(inbox["content"][0]["text"])
     paths = {entry["path"] for entry in (listing or [])}

@@ -29,27 +29,35 @@ class RecordingMetricsProvider:
     calls: list[MetricCall] = field(default_factory=list)
 
     def increment(
-        self, name: str, value: int = 1, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: int = 1,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("increment", name, value, tags))
 
     def observe(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("observe", name, value, tags))
 
     def gauge(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("gauge", name, value, tags))
 
     def find(
-        self, name: str, method: str | None = None,
+        self,
+        name: str,
+        method: str | None = None,
     ) -> list[MetricCall]:
-        return [
-            c for c in self.calls
-            if c.name == name and (method is None or c.method == method)
-        ]
+        return [c for c in self.calls if c.name == name and (method is None or c.method == method)]
 
     def has(self, name: str, method: str | None = None) -> bool:
         return len(self.find(name, method)) > 0

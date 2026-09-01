@@ -25,7 +25,10 @@ class KeyStoreProtocol(Protocol):
     async def setup(self, label: str) -> tuple[str, KeyInfo]: ...
 
     async def create_key(
-        self, label: str, *, user_id: str | None = None,
+        self,
+        label: str,
+        *,
+        user_id: str | None = None,
     ) -> tuple[str, KeyInfo]: ...
 
     async def validate(self, raw_key: str) -> KeyInfo | None: ...

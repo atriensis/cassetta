@@ -17,9 +17,7 @@ def backend(storage_dir: str) -> FilesystemBackend:
 
 
 class TestFilesystemNamespaceIsolation:
-    async def test_list_only_returns_data_files(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_list_only_returns_data_files(self, backend: FilesystemBackend, storage_dir: str) -> None:
         """list() returns only files from data/ namespace, not keys/ or locks/."""
         await backend.put("user-file.txt", b"user data")
 
@@ -39,9 +37,7 @@ class TestFilesystemNamespaceIsolation:
         assert not any("keys" in f for f in files)
         assert not any("locks" in f for f in files)
 
-    async def test_put_keys_path_lands_in_data(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_put_keys_path_lands_in_data(self, backend: FilesystemBackend, storage_dir: str) -> None:
         """User putting 'keys/evil.json' should land in data/keys/evil.json,
         not in the actual keys namespace."""
         await backend.put("keys/evil.json", b"evil data")
@@ -62,9 +58,7 @@ class TestFilesystemNamespaceIsolation:
         files = await backend.list()
         assert "keys/evil.json" in files
 
-    async def test_put_locks_path_lands_in_data(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_put_locks_path_lands_in_data(self, backend: FilesystemBackend, storage_dir: str) -> None:
         """User putting 'locks/evil' should land in data/locks/evil."""
         await backend.put("locks/evil", b"evil data")
 
@@ -74,9 +68,7 @@ class TestFilesystemNamespaceIsolation:
         real_locks_path = os.path.join(storage_dir, "locks", "evil")
         assert not os.path.exists(real_locks_path)
 
-    async def test_lease_files_not_in_list(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_lease_files_not_in_list(self, backend: FilesystemBackend) -> None:
         """Active leases don't appear in user-facing list."""
         await backend.put("user-file.txt", b"data")
         await backend.acquire_lease("my-lock", ttl_seconds=60)

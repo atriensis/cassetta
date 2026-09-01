@@ -47,14 +47,9 @@ class TestInferMime:
     def test_unknown_extension_fallback(self) -> None:
         assert infer_mime("mystery.zzz999") == DEFAULT_MIME
 
-    def test_unknown_extension_emits_debug_log(
-        self, cassetta_log_records: list[logging.LogRecord]
-    ) -> None:
+    def test_unknown_extension_emits_debug_log(self, cassetta_log_records: list[logging.LogRecord]) -> None:
         infer_mime("mystery.zzz999")
-        assert any(
-            getattr(rec, "event", None) == "mime_inference_fallback"
-            for rec in cassetta_log_records
-        )
+        assert any(getattr(rec, "event", None) == "mime_inference_fallback" for rec in cassetta_log_records)
 
     def test_no_extension(self) -> None:
         assert infer_mime("README") == DEFAULT_MIME

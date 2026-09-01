@@ -28,19 +28,26 @@ def _unwrap(result: dict) -> dict:
 
 
 async def _make_envelope(
-    client: httpx.AsyncClient, h, alice_key: str,
+    client: httpx.AsyncClient,
+    h,
+    alice_key: str,
 ) -> dict:
     storage_root = Path(os.environ["CASSETTA_STORAGE_PATH"])
     backend = FilesystemBackend(root_path=str(storage_root))
     await seed_inbox_bundle(
-        backend, "alice:main", "secret-drop",
+        backend,
+        "alice:main",
+        "secret-drop",
         files=[("payload.bin", b"x" * 256)],
         sender="bob",
     )
     sid = await h.mcp_init(client, api_key=alice_key)
     result = await h.mcp_call(
-        client, "cassetta_pick", {"path": "secret-drop"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "secret-drop"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = _unwrap(result)
     assert envelope["mode"] == "reference", envelope
@@ -54,7 +61,8 @@ def _download_path(envelope: dict) -> str:
 
 @pytest.mark.asyncio
 async def test_identity_mismatch_403(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Valid JWT (recipient=alice:main) + X-Sender: mallory → 403."""
     client, _ = core_app_small_inline
@@ -63,7 +71,8 @@ async def test_identity_mismatch_403(
     envelope = await _make_envelope(client, h, alice)
 
     resp = await client.get(
-        _download_path(envelope), headers={
+        _download_path(envelope),
+        headers={
             "Authorization": f"Bearer {envelope['download_token']}",
             "X-Sender": "mallory",
         },
@@ -78,7 +87,8 @@ async def test_identity_mismatch_403(
 
 @pytest.mark.asyncio
 async def test_identity_missing_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Valid JWT + no identity header (X-Sender absent) → 401."""
     client, _ = core_app_small_inline
@@ -87,7 +97,8 @@ async def test_identity_missing_401(
     envelope = await _make_envelope(client, h, alice)
 
     resp = await client.get(
-        _download_path(envelope), headers={
+        _download_path(envelope),
+        headers={
             "Authorization": f"Bearer {envelope['download_token']}",
             # X-Sender omitted
         },
@@ -99,7 +110,8 @@ async def test_identity_missing_401(
 
 @pytest.mark.asyncio
 async def test_no_bearer_401_missing_bearer(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """No Authorization header, identity set → 401 missing_bearer."""
     client, _ = core_app_small_inline
@@ -108,7 +120,8 @@ async def test_no_bearer_401_missing_bearer(
     envelope = await _make_envelope(client, h, alice)
 
     resp = await client.get(
-        _download_path(envelope), headers={
+        _download_path(envelope),
+        headers={
             "X-Sender": "alice:main",
         },
     )

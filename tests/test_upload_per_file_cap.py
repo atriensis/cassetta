@@ -53,9 +53,12 @@ def _build_tar(name: str, data: bytes) -> bytes:
 
 def _make_config(per_file_max: int | None) -> AppConfig:
     return AppConfig(
-        setup_token="t", dev_mode=True,
-        storage_path="/tmp/x", keys_file="/tmp/k",
-        default_ttl=0, allowed_path_chars="a-zA-Z0-9_./-",
+        setup_token="t",
+        dev_mode=True,
+        storage_path="/tmp/x",
+        keys_file="/tmp/k",
+        default_ttl=0,
+        allowed_path_chars="a-zA-Z0-9_./-",
         mcp_allowed_hosts=(),
         jwt_primary_key=b"x" * 32,
         public_base_url="http://localhost:16001",
@@ -64,8 +67,11 @@ def _make_config(per_file_max: int | None) -> AppConfig:
 
 
 async def _drive(
-    tar_bytes: bytes, manifest: list[dict[str, Any]],
-    *, per_file_max: int | None, capture_reads: bool = False,
+    tar_bytes: bytes,
+    manifest: list[dict[str, Any]],
+    *,
+    per_file_max: int | None,
+    capture_reads: bool = False,
 ) -> tuple[_FakeWriter, list[str]]:
     """Run ``_stream_tar_into_writer`` inside an anyio worker thread."""
     config = _make_config(per_file_max)
@@ -87,14 +93,22 @@ async def _drive(
             await anyio.to_thread.run_sync(
                 functools.partial(
                     _stream_tar_into_writer,
-                    reader, writer, manifest, "r|", config=config,
+                    reader,
+                    writer,
+                    manifest,
+                    "r|",
+                    config=config,
                 ),
             )
     else:
         await anyio.to_thread.run_sync(
             functools.partial(
                 _stream_tar_into_writer,
-                reader, writer, manifest, "r|", config=config,
+                reader,
+                writer,
+                manifest,
+                "r|",
+                config=config,
             ),
         )
     return writer, reads
@@ -128,7 +142,10 @@ class TestDefaultCeiling:
         manifest = [{"name": "big.bin", "size": 200}]
         with pytest.raises(LimitsRejection):
             _, reads = await _drive(
-                tar, manifest, per_file_max=64, capture_reads=True,
+                tar,
+                manifest,
+                per_file_max=64,
+                capture_reads=True,
             )
         # The spy lives on the patcher's scope; pull from the inner
         # tarfile reader instead by re-running with a manual capture.
@@ -142,9 +159,7 @@ class TestDefaultCeiling:
         with patch("tarfile.ExFileObject.read", new=_spy):
             with pytest.raises(LimitsRejection):
                 await _drive(tar, manifest, per_file_max=64)
-        assert reads_outer == [], (
-            f"unexpected read of oversize entry: {reads_outer}"
-        )
+        assert reads_outer == [], f"unexpected read of oversize entry: {reads_outer}"
 
 
 class TestExplicitOverride:

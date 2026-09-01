@@ -25,21 +25,25 @@ async def _seed_inbox(backend, recipient: str, path: str, content: bytes) -> Non
     bundle_path = f"inbox/{recipient}/{path}"
     writer = await backend.open_bundle_write(bundle_path)
     try:
-        records = [{
-            "name": path.split("/")[-1],
-            "size": len(content),
-            "mime": pick_mime(path, explicit=None),
-        }]
+        records = [
+            {
+                "name": path.split("/")[-1],
+                "size": len(content),
+                "mime": pick_mime(path, explicit=None),
+            }
+        ]
         await writer.write_file(records[0]["name"], io.BytesIO(content))
-        await writer.commit({
-            "schema_version": 1,
-            "bundle_id": uuid.uuid4().hex,
-            "sender": None,
-            "created_at": datetime.now(UTC).isoformat(),
-            "content_type": "application/octet-stream",
-            "file_count": 1,
-            "files": records,
-        })
+        await writer.commit(
+            {
+                "schema_version": 1,
+                "bundle_id": uuid.uuid4().hex,
+                "sender": None,
+                "created_at": datetime.now(UTC).isoformat(),
+                "content_type": "application/octet-stream",
+                "file_count": 1,
+                "files": records,
+            }
+        )
     except Exception:
         await writer.abort()
         raise
@@ -47,7 +51,8 @@ async def _seed_inbox(backend, recipient: str, path: str, content: bytes) -> Non
 
 @pytest.fixture
 async def inbox_client(
-    storage_dir: str, recording_metrics: RecordingMetricsProvider,
+    storage_dir: str,
+    recording_metrics: RecordingMetricsProvider,
 ):
     """Dev-mode client with a seeded inbox bundle at ``inbox/alice/hi.txt``."""
     from cassetta.app import create_app
@@ -67,7 +72,8 @@ async def inbox_client(
 
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -132,7 +138,8 @@ async def test_peek_emission_unchanged(inbox_client) -> None:
 
 
 async def test_denied_403_does_not_increment(
-    storage_dir, recording_metrics: RecordingMetricsProvider,
+    storage_dir,
+    recording_metrics: RecordingMetricsProvider,
     policy_log_capture,
 ) -> None:
     """SC-013 — denied inbox read does NOT increment inbox.operations;
@@ -147,12 +154,17 @@ async def test_denied_403_does_not_increment(
         kind: ClassVar[str] = "deny-all"
 
         async def check(
-            self, identity: Identity, resource: str, action: str,
+            self,
+            identity: Identity,
+            resource: str,
+            action: str,
         ) -> bool:
             return False
 
         async def visible_agents(
-            self, identity: Identity, labels: list[str],
+            self,
+            identity: Identity,
+            labels: list[str],
         ) -> list[str]:
             return []
 
@@ -184,8 +196,7 @@ async def test_denied_403_does_not_increment(
 
     inbox_ops = recording_metrics.find("cassetta.inbox.operations", "increment")
     assert not inbox_ops, (
-        f"Denied request must NOT increment cassetta.inbox.operations, "
-        f"got {[c.tags for c in inbox_ops]}"
+        f"Denied request must NOT increment cassetta.inbox.operations, got {[c.tags for c in inbox_ops]}"
     )
     policy = recording_metrics.find("cassetta.policy.decisions", "increment")
     assert len(policy) == 1, [c.tags for c in policy]

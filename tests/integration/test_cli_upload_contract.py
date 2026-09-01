@@ -66,7 +66,9 @@ def _cli(*args: str) -> subprocess.CompletedProcess[str]:
 def test_cli_help_lists_all_flags() -> None:
     proc = subprocess.run(
         [_cassetta_bin(), "upload", "--help"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
         env=_plain_env(),
     )
     out = _strip_ansi(proc.stdout)
@@ -78,8 +80,10 @@ def test_cli_help_lists_all_flags() -> None:
 
 def test_cli_rejects_absolute_path() -> None:
     proc = _cli(
-        "--url", "http://localhost:16001/upload/does-not-matter",
-        "--token", "irrelevant.irrelevant.irrelevant",
+        "--url",
+        "http://localhost:16001/upload/does-not-matter",
+        "--token",
+        "irrelevant.irrelevant.irrelevant",
         "/absolute/path.py",
     )
     assert proc.returncode != 0
@@ -89,8 +93,10 @@ def test_cli_rejects_absolute_path() -> None:
 
 def test_cli_rejects_traversal() -> None:
     proc = _cli(
-        "--url", "http://localhost:16001/upload/nope",
-        "--token", "irrelevant.irrelevant.irrelevant",
+        "--url",
+        "http://localhost:16001/upload/nope",
+        "--token",
+        "irrelevant.irrelevant.irrelevant",
         "../escape.py",
     )
     assert proc.returncode != 0
@@ -98,8 +104,10 @@ def test_cli_rejects_traversal() -> None:
 
 def test_cli_rejects_out_of_charset() -> None:
     proc = _cli(
-        "--url", "http://localhost:16001/upload/nope",
-        "--token", "irrelevant.irrelevant.irrelevant",
+        "--url",
+        "http://localhost:16001/upload/nope",
+        "--token",
+        "irrelevant.irrelevant.irrelevant",
         "weird<char.py",
     )
     assert proc.returncode != 0
@@ -119,13 +127,18 @@ def test_cli_accepts_nested_relative_path(tmp_path) -> None:  # type: ignore[no-
     # Use an unreachable URL to force an HTTP failure AFTER normalisation.
     proc = subprocess.run(
         [
-            _cassetta_bin(), "upload",
-            "--url", "http://127.0.0.1:1/does-not-matter",
-            "--token", "irrelevant.irrelevant.irrelevant",
+            _cassetta_bin(),
+            "upload",
+            "--url",
+            "http://127.0.0.1:1/does-not-matter",
+            "--token",
+            "irrelevant.irrelevant.irrelevant",
             "src/main.py",
         ],
         cwd=str(tmp_path),
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     # HTTP error path returns exit 1; argument-validation errors exit != 0
     # with "typer" / "invalid" / "absolute" keywords. We assert we reached
@@ -142,11 +155,16 @@ def test_cli_rejects_empty_positional() -> None:
     # Passing an empty-string arg should fail.
     proc = subprocess.run(
         [
-            _cassetta_bin(), "upload",
-            "--url", "http://localhost:16001/upload/nope",
-            "--token", "irrelevant.irrelevant.irrelevant",
+            _cassetta_bin(),
+            "upload",
+            "--url",
+            "http://localhost:16001/upload/nope",
+            "--token",
+            "irrelevant.irrelevant.irrelevant",
             "",
         ],
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     assert proc.returncode != 0

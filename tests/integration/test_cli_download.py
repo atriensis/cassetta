@@ -39,12 +39,8 @@ async def _boot(storage_dir: str) -> AsyncIterator[tuple[httpx.AsyncClient, Any]
     os.environ["CASSETTA_SETUP_TOKEN"] = SETUP_TOKEN
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ["CASSETTA_MAX_INLINE_SIZE"] = "32"
     os.environ.pop("CASSETTA_JWT_KEY_FILE", None)
@@ -91,13 +87,19 @@ async def test_cli_download_happy_path() -> None:
             ("src/lib.py", b"print('brief 515 CLI')\n" * 30),
         ]
         await seed_inbox_bundle(
-            backend, "alice:main", "big-drop",
-            files=files, sender="bob",
+            backend,
+            "alice:main",
+            "big-drop",
+            files=files,
+            sender="bob",
         )
         sid = await h.mcp_init(client, api_key=alice_key)
         pick = await h.mcp_call(
-            client, "cassetta_pick", {"path": "big-drop"},
-            sid=sid, api_key=alice_key,
+            client,
+            "cassetta_pick",
+            {"path": "big-drop"},
+            sid=sid,
+            api_key=alice_key,
         )
         envelope_text = pick["content"][0]["text"]
         envelope = json.loads(envelope_text)
@@ -123,13 +125,19 @@ async def test_cli_download_expired_jwt_fails() -> None:
 
         backend = FilesystemBackend(root_path=storage_dir)
         await seed_inbox_bundle(
-            backend, "alice:main", "short-lived",
-            files=[("a.bin", b"a" * 200)], sender="bob",
+            backend,
+            "alice:main",
+            "short-lived",
+            files=[("a.bin", b"a" * 200)],
+            sender="bob",
         )
         sid = await h.mcp_init(client, api_key=alice_key)
         pick = await h.mcp_call(
-            client, "cassetta_pick", {"path": "short-lived"},
-            sid=sid, api_key=alice_key,
+            client,
+            "cassetta_pick",
+            {"path": "short-lived"},
+            sid=sid,
+            api_key=alice_key,
         )
         envelope = json.loads(pick["content"][0]["text"])
 
@@ -137,19 +145,24 @@ async def test_cli_download_expired_jwt_fails() -> None:
         config = load_config()
         now = int(time.time())
         expired_claims = _jwt.decode(
-            envelope["download_token"], options={"verify_signature": False},
+            envelope["download_token"],
+            options={"verify_signature": False},
         )
         expired_claims["iat"] = now - 10_000
         expired_claims["nbf"] = now - 10_000
         expired_claims["exp"] = now - 5_000
         expired_token = jwt_tokens.sign(
-            expired_claims, key=config.jwt_primary_key,
+            expired_claims,
+            key=config.jwt_primary_key,
         )
         envelope["download_token"] = expired_token
 
         out_dir = Path(storage_dir) / "dl-expired"
         result = _run_cli_with_asgi(
-            app, json.dumps(envelope), out_dir, expected_exit=None,
+            app,
+            json.dumps(envelope),
+            out_dir,
+            expected_exit=None,
         )
         assert result.exit_code != 0, result.output
         combined = (result.output or "") + (getattr(result, "stderr", "") or "")
@@ -164,7 +177,8 @@ async def test_cli_download_not_reference_mode_exits_nonzero() -> None:
     os.environ.pop("CASSETTA_MAX_INLINE_SIZE", None)
     runner = CliRunner()
     inline = {
-        "mode": "inline", "bundle": {"bundle_id": "x"},
+        "mode": "inline",
+        "bundle": {"bundle_id": "x"},
         "files": [{"name": "foo.md", "content": "hi", "encoding": "utf8"}],
     }
     result = runner.invoke(
@@ -176,7 +190,9 @@ async def test_cli_download_not_reference_mode_exits_nonzero() -> None:
 
 
 def _run_cli_with_asgi(
-    app: Any, envelope_json: str, out_dir: Path,  # type: ignore[name-defined]
+    app: Any,
+    envelope_json: str,
+    out_dir: Path,  # type: ignore[name-defined]
     expected_exit: int | None,
 ) -> Any:  # type: ignore[misc]
     """Invoke the ``cassetta download`` CLI with httpx.AsyncClient wired to ASGI."""

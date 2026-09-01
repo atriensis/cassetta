@@ -84,9 +84,7 @@ class TestCreationTime:
         ctime = await backend.get_creation_time("timed.txt")
         assert before <= ctime <= after
 
-    async def test_get_creation_time_missing_raises(
-        self, backend
-    ) -> None:
+    async def test_get_creation_time_missing_raises(self, backend) -> None:
         with pytest.raises(FileNotFoundError):
             await backend.get_creation_time("missing.txt")
 

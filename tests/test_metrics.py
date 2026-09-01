@@ -28,25 +28,31 @@ class RecordingMetricsProvider:
         self.calls: list[MetricCall] = []
 
     def increment(
-        self, name: str, value: int = 1, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: int = 1,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("increment", name, value, tags))
 
     def observe(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("observe", name, value, tags))
 
     def gauge(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("gauge", name, value, tags))
 
     def find(self, name: str, method: str | None = None) -> list[MetricCall]:
-        return [
-            c for c in self.calls
-            if c.name == name and (method is None or c.method == method)
-        ]
+        return [c for c in self.calls if c.name == name and (method is None or c.method == method)]
 
     def has(self, name: str, method: str | None = None) -> bool:
         return len(self.find(name, method)) > 0
@@ -88,9 +94,7 @@ async def metrics_client(storage_dir, recording_metrics, make_backends):
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
     os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost"
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
 
@@ -103,6 +107,7 @@ async def metrics_client(storage_dir, recording_metrics, make_backends):
     configure_mcp(config, backends)
 
     import asyncio
+
     started = asyncio.Event()
     stop = asyncio.Event()
 
@@ -115,13 +120,15 @@ async def metrics_client(storage_dir, recording_metrics, make_backends):
     await started.wait()
 
     from httpx import ASGITransport, AsyncClient
+
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://localhost",
     ) as client:
         # Setup: create first key in dev mode
         resp = await client.post(
-            "/setup", json={"host": "test", "project": "test-key"},
+            "/setup",
+            json={"host": "test", "project": "test-key"},
             headers={"Authorization": "Bearer setup-token-unused"},
         )
         if resp.status_code == 201:
@@ -207,7 +214,9 @@ class TestInboxMetrics:
         client, metrics = metrics_client
         # MCP init
         init_body = {
-            "jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
             "params": {
                 "protocolVersion": "2025-03-26",
                 "capabilities": {},
@@ -215,7 +224,8 @@ class TestInboxMetrics:
             },
         }
         init_resp = await client.post(
-            "/mcp/", json=init_body,
+            "/mcp/",
+            json=init_body,
             headers={
                 "Accept": "application/json, text/event-stream",
                 "Content-Type": "application/json",
@@ -224,11 +234,14 @@ class TestInboxMetrics:
         sid = init_resp.headers.get("mcp-session-id", "")
         # Trigger a send via the new flow
         call_body = {
-            "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
             "params": {
                 "name": "cassetta_send_init",
                 "arguments": {
-                    "to": "test:bob", "path": "hello.txt",
+                    "to": "test:bob",
+                    "path": "hello.txt",
                     "manifest": {
                         "file_count": 1,
                         "files": [{"name": "hello.txt", "size": 6}],
@@ -237,7 +250,8 @@ class TestInboxMetrics:
             },
         }
         resp = await client.post(
-            "/mcp/", json=call_body,
+            "/mcp/",
+            json=call_body,
             headers={
                 "Accept": "application/json, text/event-stream",
                 "Content-Type": "application/json",
@@ -304,6 +318,7 @@ class TestPolicyMetrics:
         configure_mcp(config, backends)
 
         import asyncio
+
         started = asyncio.Event()
         stop_ev = asyncio.Event()
 
@@ -316,22 +331,21 @@ class TestPolicyMetrics:
         await started.wait()
 
         from httpx import ASGITransport, AsyncClient
+
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",
         ) as client:
             # Setup creates the first key (dev mode = empty token auth works)
             resp = await client.post(
-                "/setup", json={"host": "test", "project": "test"},
+                "/setup",
+                json={"host": "test", "project": "test"},
                 headers={"Authorization": "Bearer setup-token-unused"},
             )
             # The deny-all policy should cause a 403
             assert resp.status_code == 403
             decisions = recording.find("cassetta.policy.decisions")
-            assert any(
-                c.tags and c.tags.get("result") == "denied"
-                for c in decisions
-            )
+            assert any(c.tags and c.tags.get("result") == "denied" for c in decisions)
 
         stop_ev.set()
         await task

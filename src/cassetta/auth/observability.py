@@ -56,9 +56,7 @@ def emit_auth_failure(
     fallback also raises (catastrophic broken-logging case), the helper
     swallows so the caller's 401/403 is preserved.
     """
-    assert identity_hint is None or len(identity_hint) <= 12, (
-        "identity_hint must be <= 12 chars (FR-006)"
-    )
+    assert identity_hint is None or len(identity_hint) <= 12, "identity_hint must be <= 12 chars (FR-006)"
     try:
         struct_log(
             _logger,

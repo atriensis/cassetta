@@ -17,19 +17,26 @@ def _seed_required_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CASSETTA_JWT_KEY", _TEST_JWT_KEY_B64)
     monkeypatch.setenv("CASSETTA_PUBLIC_BASE_URL", "http://localhost:16001")
     for var in (
-        "CASSETTA_JWT_KEY_FILE", "CASSETTA_JWT_KEY_SECONDARY",
-        "CASSETTA_JWT_KEY_SECONDARY_FILE", "CASSETTA_KEYS_FILE",
-        "CASSETTA_DEFAULT_TTL", "CASSETTA_STORAGE_PATH",
-        "CASSETTA_MAX_FILE_SIZE", "CASSETTA_PER_FILE_MAX",
-        "CASSETTA_PER_BUNDLE_TOTAL_MAX", "CASSETTA_PER_BUNDLE_FILE_COUNT_MAX",
-        "CASSETTA_MAX_INLINE_SIZE", "CASSETTA_MCP_ALLOWED_HOSTS",
+        "CASSETTA_JWT_KEY_FILE",
+        "CASSETTA_JWT_KEY_SECONDARY",
+        "CASSETTA_JWT_KEY_SECONDARY_FILE",
+        "CASSETTA_KEYS_FILE",
+        "CASSETTA_DEFAULT_TTL",
+        "CASSETTA_STORAGE_PATH",
+        "CASSETTA_MAX_FILE_SIZE",
+        "CASSETTA_PER_FILE_MAX",
+        "CASSETTA_PER_BUNDLE_TOTAL_MAX",
+        "CASSETTA_PER_BUNDLE_FILE_COUNT_MAX",
+        "CASSETTA_MAX_INLINE_SIZE",
+        "CASSETTA_MCP_ALLOWED_HOSTS",
     ):
         monkeypatch.delenv(var, raising=False)
 
 
 class TestConfigValidation:
     def test_missing_setup_token_raises(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.delenv("CASSETTA_SETUP_TOKEN", raising=False)
@@ -39,7 +46,8 @@ class TestConfigValidation:
             load_config()
 
     def test_empty_setup_token_enables_dev_mode(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_STORAGE_PATH", "/tmp/test")
@@ -49,7 +57,8 @@ class TestConfigValidation:
         assert config.dev_mode is True
 
     def test_nonempty_setup_token_disables_dev_mode(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_SETUP_TOKEN", "my-token")
@@ -61,7 +70,8 @@ class TestConfigValidation:
         assert config.setup_token == "my-token"
 
     def test_negative_ttl_raises(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_DEFAULT_TTL", "-1")
@@ -71,7 +81,8 @@ class TestConfigValidation:
             load_config()
 
     def test_default_values(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         from cassetta.config import load_config
@@ -84,7 +95,8 @@ class TestConfigValidation:
         assert config.limits.max_inline_size == 102400
 
     def test_custom_values(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_SETUP_TOKEN", "tok")
@@ -99,7 +111,8 @@ class TestConfigValidation:
         assert config.limits.per_file_max == 5242880
 
     def test_mcp_allowed_hosts_default_empty(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         from cassetta.config import load_config
@@ -108,11 +121,13 @@ class TestConfigValidation:
         assert config.mcp_allowed_hosts == ()
 
     def test_mcp_allowed_hosts_parses_csv(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv(
-            "CASSETTA_MCP_ALLOWED_HOSTS", "pi.host, pi.host:16001 ,foo.example",
+            "CASSETTA_MCP_ALLOWED_HOSTS",
+            "pi.host, pi.host:16001 ,foo.example",
         )
         from cassetta.config import load_config
 
@@ -120,7 +135,8 @@ class TestConfigValidation:
         assert config.mcp_allowed_hosts == ("pi.host", "pi.host:16001", "foo.example")
 
     def test_keys_file_defaults_outside_storage(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_STORAGE_PATH", "/var/lib/cassetta/data")
@@ -132,7 +148,8 @@ class TestConfigValidation:
         assert not config.keys_file.startswith(config.storage_path + "/")
 
     def test_keys_file_explicit_override(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_STORAGE_PATH", "/var/lib/cassetta/data")
@@ -147,7 +164,8 @@ class TestBrief531EnvVars:
     """Brief 531 — operational-resilience env-var parsing."""
 
     def test_defaults_applied_when_unset(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         for var in (
@@ -168,14 +186,16 @@ class TestBrief531EnvVars:
         assert config.jwt_key_overlap_ttl == 600
 
     def test_valid_values_plumbed_through(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_ONBOARD", "20/hour")
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_BROADCAST", "100/minute")
         monkeypatch.setenv("CASSETTA_BROADCAST_MAX_TARGETS", "50")
         monkeypatch.setenv(
-            "CASSETTA_TRUSTED_PROXIES", "10.0.0.0/8,192.168.0.0/16",
+            "CASSETTA_TRUSTED_PROXIES",
+            "10.0.0.0/8,192.168.0.0/16",
         )
         monkeypatch.setenv("CASSETTA_JWT_KEY_OVERLAP_TTL", "1200")
         from cassetta.config import load_config
@@ -188,7 +208,8 @@ class TestBrief531EnvVars:
         assert config.jwt_key_overlap_ttl == 1200
 
     def test_rate_limit_short_units_normalised(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_ONBOARD", "5/min")
@@ -200,7 +221,8 @@ class TestBrief531EnvVars:
         assert config.rate_limit_broadcast == "10/second"
 
     def test_malformed_rate_limit_onboard_exits(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_ONBOARD", "not-a-rate")
@@ -210,7 +232,8 @@ class TestBrief531EnvVars:
             load_config()
 
     def test_malformed_rate_limit_broadcast_exits(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_BROADCAST", "abc/minute")
@@ -220,7 +243,8 @@ class TestBrief531EnvVars:
             load_config()
 
     def test_broadcast_max_targets_zero_exits(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_BROADCAST_MAX_TARGETS", "0")
@@ -230,7 +254,8 @@ class TestBrief531EnvVars:
             load_config()
 
     def test_broadcast_max_targets_negative_exits(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_BROADCAST_MAX_TARGETS", "-5")
@@ -240,7 +265,8 @@ class TestBrief531EnvVars:
             load_config()
 
     def test_jwt_key_overlap_ttl_non_integer_exits(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_JWT_KEY_OVERLAP_TTL", "abc")
@@ -250,7 +276,8 @@ class TestBrief531EnvVars:
             load_config()
 
     def test_jwt_key_overlap_ttl_zero_exits(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_JWT_KEY_OVERLAP_TTL", "0")

@@ -25,9 +25,7 @@ async def _make(storage: str) -> AsyncIterator[tuple[httpx.AsyncClient, asyncio.
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
     os.environ["CASSETTA_JWT_KEY"] = SHARED_KEY_B64
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
     app = create_app()
     cfg = app.state.config
@@ -59,7 +57,7 @@ async def test_credential_verifies_on_sibling_app_with_same_key(
     shared_storage = tempfile.mkdtemp()
 
     # --- App A ----------------------------------------------------------
-    async for (client_a, stop_a, task_a) in _make(shared_storage):
+    async for client_a, stop_a, task_a in _make(shared_storage):
         sender_key = await h.setup_agent(client_a, "bob", "stateless")
         # Force batch.
         os.environ["CASSETTA_MAX_INLINE_SIZE"] = "4"
@@ -87,15 +85,18 @@ async def test_credential_verifies_on_sibling_app_with_same_key(
         await h.create_key(client_a, sender_key, "alice", "main")
         sid_a = await h.mcp_init(client_a, api_key=sender_key)
         init = await h.mcp_call(
-            client_a, "cassetta_send_init",
+            client_a,
+            "cassetta_send_init",
             {
-                "to": "alice:main", "path": "cross.bin",
+                "to": "alice:main",
+                "path": "cross.bin",
                 "manifest": {
                     "file_count": 1,
                     "files": [{"name": "payload.bin", "size": 50}],
                 },
             },
-            sid=sid_a, api_key=sender_key,
+            sid=sid_a,
+            api_key=sender_key,
         )
         body = json.loads(init["content"][0]["text"])
         batch_token = body["batch_token"]
@@ -106,7 +107,7 @@ async def test_credential_verifies_on_sibling_app_with_same_key(
 
     # --- App B (fresh process, same key + same storage) ----------------
     os.environ.pop("CASSETTA_MAX_INLINE_SIZE", None)
-    async for (client_b, stop_b, task_b) in _make(shared_storage):
+    async for client_b, stop_b, task_b in _make(shared_storage):
         import gzip
         import io
         import tarfile
@@ -125,7 +126,8 @@ async def test_credential_verifies_on_sibling_app_with_same_key(
         bundle_path = "inbox/alice:main/cross.bin"
         url_path = "/upload/" + urllib.parse.quote(bundle_path, safe="")
         resp = await client_b.post(
-            url_path, content=tar_gz,
+            url_path,
+            content=tar_gz,
             headers={
                 "Authorization": f"Bearer {batch_token}",
                 "Content-Type": "application/x-tar",

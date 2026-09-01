@@ -35,8 +35,10 @@ def storage_dir() -> str:
 
 
 async def _booted_app(
-    storage_dir: str, recording_metrics: Any,
-    monkeypatch: pytest.MonkeyPatch, *,
+    storage_dir: str,
+    recording_metrics: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
     rate: str = "10/minute",
 ) -> AsyncIterator[tuple[httpx.AsyncClient, str]]:
     # Brief 539: monkeypatch auto-restores; previously this helper leaked
@@ -96,26 +98,34 @@ async def _booted_app(
 async def _init_mcp(client: httpx.AsyncClient) -> str:
     resp = await client.post(
         "/mcp/",
-        json=_jsonrpc("initialize", {
-            "protocolVersion": "2025-03-26",
-            "capabilities": {},
-            "clientInfo": {"name": "rl-test", "version": "1.0.0"},
-        }),
+        json=_jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "rl-test", "version": "1.0.0"},
+            },
+        ),
         headers=MCP_HEADERS,
     )
     return resp.headers.get("mcp-session-id", "")
 
 
 async def _call_mcp_broadcast(
-    client: httpx.AsyncClient, sid: str,
+    client: httpx.AsyncClient,
+    sid: str,
 ) -> dict:
     headers = dict(MCP_HEADERS)
     if sid:
         headers["mcp-session-id"] = sid
-    body = _jsonrpc("tools/call", {
-        "name": "cassetta_broadcast",
-        "arguments": {"path": "x.txt", "content": "hi"},
-    }, req_id=2)
+    body = _jsonrpc(
+        "tools/call",
+        {
+            "name": "cassetta_broadcast",
+            "arguments": {"path": "x.txt", "content": "hi"},
+        },
+        req_id=2,
+    )
     resp = await client.post("/mcp/", json=body, headers=headers)
     return resp.json()["result"]
 
@@ -123,18 +133,24 @@ async def _call_mcp_broadcast(
 class TestSharedBudget:
     @pytest.mark.asyncio
     async def test_rest_and_mcp_drain_one_bucket(
-        self, storage_dir: str, recording_metrics: Any,
+        self,
+        storage_dir: str,
+        recording_metrics: Any,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         async for client, sender in _booted_app(
-            storage_dir, recording_metrics, monkeypatch, rate="3/minute",
+            storage_dir,
+            recording_metrics,
+            monkeypatch,
+            rate="3/minute",
         ):
             sid = await _init_mcp(client)
 
             # Two REST requests + one MCP call → exhaust the 3/min bucket.
             for _ in range(2):
                 resp = await client.post(
-                    "/broadcast/x.txt", content=b"hi",
+                    "/broadcast/x.txt",
+                    content=b"hi",
                     headers={"Authorization": f"Bearer {sender}"},
                 )
                 assert resp.status_code == 200, resp.text
@@ -144,7 +160,8 @@ class TestSharedBudget:
 
             # 4th call (REST) should be rejected.
             resp = await client.post(
-                "/broadcast/x.txt", content=b"hi",
+                "/broadcast/x.txt",
+                content=b"hi",
                 headers={"Authorization": f"Bearer {sender}"},
             )
             assert resp.status_code == 429

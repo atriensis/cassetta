@@ -22,7 +22,9 @@ def _mint(claims_extra: dict[str, Any] | None = None) -> str:
         "recipient": "alice",
         "mode": "inline",
         "manifest": {"file_count": 0, "files": []},
-        "iat": now, "nbf": now, "exp": now + 300,
+        "iat": now,
+        "nbf": now,
+        "exp": now + 300,
     }
     if claims_extra:
         base.update(claims_extra)

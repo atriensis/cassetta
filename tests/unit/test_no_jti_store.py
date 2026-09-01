@@ -37,7 +37,6 @@ def test_no_jti_store_in_core() -> None:
             for pattern in _BAD_PATTERNS:
                 if pattern.search(line):
                     offenders.append((p.relative_to(_CORE_SRC), i, pattern.pattern, line.strip()))
-    assert not offenders, (
-        "Found jti-store references outside auth/jwt_tokens.py:\n"
-        + "\n".join(f"  {p}:{i} — /{pat}/ — {line}" for p, i, pat, line in offenders)
+    assert not offenders, "Found jti-store references outside auth/jwt_tokens.py:\n" + "\n".join(
+        f"  {p}:{i} — /{pat}/ — {line}" for p, i, pat, line in offenders
     )

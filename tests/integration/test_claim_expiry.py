@@ -30,7 +30,8 @@ def _unwrap(result: dict) -> dict | list:
 
 @pytest.mark.asyncio
 async def test_expired_claim_releases_bundle(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -39,15 +40,20 @@ async def test_expired_claim_releases_bundle(
     storage_root = Path(os.environ["CASSETTA_STORAGE_PATH"])
     backend = FilesystemBackend(root_path=str(storage_root))
     await seed_inbox_bundle(
-        backend, "alice:main", "expiring-bundle",
+        backend,
+        "alice:main",
+        "expiring-bundle",
         files=[("data.bin", b"E" * 400)],
         sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     pick = await h.mcp_call(
-        client, "cassetta_pick", {"path": "expiring-bundle"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "expiring-bundle"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = _unwrap(pick)
     assert isinstance(envelope, dict)
@@ -72,20 +78,26 @@ async def test_expired_claim_releases_bundle(
     assert list(claims_dir.glob("*.json")) == []
 
     # Listing now shows the bundle again.
-    listing = _unwrap(await h.mcp_call(
-        client, "cassetta_inbox", {"agent": "alice:main"},
-        sid=sid, api_key=alice_key,
-    ))
+    listing = _unwrap(
+        await h.mcp_call(
+            client,
+            "cassetta_inbox",
+            {"agent": "alice:main"},
+            sid=sid,
+            api_key=alice_key,
+        )
+    )
     assert isinstance(listing, list)
     paths = {e["path"] for e in listing}
-    assert "expiring-bundle" in paths, (
-        f"bundle should reappear after sweep; listing: {listing!r}"
-    )
+    assert "expiring-bundle" in paths, f"bundle should reappear after sweep; listing: {listing!r}"
 
     # A fresh pick succeeds and mints a new JWT.
     pick2 = await h.mcp_call(
-        client, "cassetta_pick", {"path": "expiring-bundle"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "expiring-bundle"},
+        sid=sid,
+        api_key=alice_key,
     )
     env2 = _unwrap(pick2)
     assert isinstance(env2, dict)

@@ -49,7 +49,9 @@ class TestRequestIdPropagation:
 
     @pytest.mark.asyncio
     async def test_json_log_contains_request_id(
-        self, client: httpx.AsyncClient, capsys,
+        self,
+        client: httpx.AsyncClient,
+        capsys,
     ):
         """Verify that structured log events include request_id in JSON mode."""
         configure_logging("json")
@@ -78,9 +80,11 @@ class TestRequestIdConcurrency:
 
     @pytest.mark.asyncio
     async def test_concurrent_requests_have_distinct_ids(
-        self, client: httpx.AsyncClient,
+        self,
+        client: httpx.AsyncClient,
     ):
         """Send concurrent requests and verify they don't interfere."""
+
         async def make_request(path: str) -> int:
             resp = await client.put(f"/files/{path}", content=b"data")
             return resp.status_code

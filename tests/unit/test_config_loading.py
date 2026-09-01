@@ -44,7 +44,8 @@ def _valid_primary_key_b64() -> str:
 
 
 def test_primary_key_loaded_from_env_value(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     primary = _valid_primary_key_b64()
@@ -58,7 +59,8 @@ def test_primary_key_loaded_from_env_value(
 
 
 def test_key_file_wins_over_env_value(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     file_key_raw = _valid_primary_key_b64()
@@ -77,7 +79,8 @@ def test_key_file_wins_over_env_value(
 
 
 def test_secondary_key_from_env(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     monkeypatch.setenv("CASSETTA_JWT_KEY", _valid_primary_key_b64())
@@ -91,7 +94,8 @@ def test_secondary_key_from_env(
 
 
 def test_secondary_key_from_file(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     monkeypatch.setenv("CASSETTA_JWT_KEY", _valid_primary_key_b64())
@@ -107,7 +111,8 @@ def test_secondary_key_from_file(
 
 
 def test_missing_primary_key_exits(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     monkeypatch.setenv("CASSETTA_PUBLIC_BASE_URL", "http://localhost:16001")
@@ -117,7 +122,8 @@ def test_missing_primary_key_exits(
 
 
 def test_missing_public_base_url_exits(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     monkeypatch.setenv("CASSETTA_JWT_KEY", _valid_primary_key_b64())
@@ -131,7 +137,9 @@ def test_missing_public_base_url_exits(
     ["no-scheme.example.com", "ftp://nope", "", "   "],
 )
 def test_public_base_url_without_scheme_exits(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, bad_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    bad_url: str,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     monkeypatch.setenv("CASSETTA_JWT_KEY", _valid_primary_key_b64())
@@ -141,7 +149,8 @@ def test_public_base_url_without_scheme_exits(
 
 
 def test_public_base_url_trailing_slash_stripped(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     monkeypatch.setenv("CASSETTA_JWT_KEY", _valid_primary_key_b64())
@@ -153,7 +162,8 @@ def test_public_base_url_trailing_slash_stripped(
 
 
 def test_primary_key_too_short_exits(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     # 16 bytes of key material is below pyjwt's 32-byte HS256 minimum.
@@ -165,7 +175,8 @@ def test_primary_key_too_short_exits(
 
 
 def test_no_jwt_env_leakage_on_success(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     """Sanity: config exposes bytes, not the original env value, to discourage echoing."""
     _base_env(monkeypatch, tmp_path)

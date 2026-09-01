@@ -31,7 +31,8 @@ def _unwrap(result: dict) -> dict | str:
 
 @pytest.mark.asyncio
 async def test_get_store_returns_reference_without_sidecar(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
 
@@ -41,14 +42,18 @@ async def test_get_store_returns_reference_without_sidecar(
     backend = FilesystemBackend(root_path=str(storage_root))
     payload = b"X" * (2 * 1024 * 1024)  # 2 MB — way past the 32-byte inline cap
     await seed_store_bundle(
-        backend, "docs/big-blob",
+        backend,
+        "docs/big-blob",
         files=[("big-blob.bin", payload)],
     )
 
     sid = await h.mcp_init(client, api_key=api_key)
     result = await h.mcp_call(
-        client, "cassetta_get", {"path": "docs/big-blob"},
-        sid=sid, api_key=api_key,
+        client,
+        "cassetta_get",
+        {"path": "docs/big-blob"},
+        sid=sid,
+        api_key=api_key,
     )
     envelope = _unwrap(result)
     assert isinstance(envelope, dict), envelope
@@ -61,9 +66,7 @@ async def test_get_store_returns_reference_without_sidecar(
     claims_dir = storage_root / ".claims"
     if claims_dir.exists():
         sidecars = list(claims_dir.glob("*.json"))
-        assert sidecars == [], (
-            f"store reference MUST NOT write a claim sidecar; found: {sidecars!r}"
-        )
+        assert sidecars == [], f"store reference MUST NOT write a claim sidecar; found: {sidecars!r}"
 
     token = envelope["download_token"]
     url_path = urllib.parse.urlparse(envelope["files"][0]["url"]).path
@@ -74,8 +77,11 @@ async def test_get_store_returns_reference_without_sidecar(
 
     # Store entry remains readable (non-destructive — FR-009).
     again = await h.mcp_call(
-        client, "cassetta_get", {"path": "docs/big-blob"},
-        sid=sid, api_key=api_key,
+        client,
+        "cassetta_get",
+        {"path": "docs/big-blob"},
+        sid=sid,
+        api_key=api_key,
     )
     again_env = _unwrap(again)
     assert isinstance(again_env, dict)
