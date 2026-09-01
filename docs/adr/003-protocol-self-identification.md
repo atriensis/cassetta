@@ -28,10 +28,10 @@ eight that don't would be worse than a uniform convention.
 ## Consequences
 
 - **Clean Layer-2 logging.** The lifespan emits the active backend by reading
-  `backends.claim_store.kind` (see `core/src/cassetta/app.py`).
+  `backends.claim_store.kind` (see `src/cassetta/app.py`).
 - **Observable change**: Azure now logs `claim_storage_backend=azure` (previously
   `=blob`). Operators grepping that field must update expectations — recorded in
-  `core/MIGRATION.md`.
+  `MIGRATION.md`.
 - `@runtime_checkable` + `ClassVar[str]` forced three `cloud/extensions/*` classes
   (`CloudAliasResolver`, `CloudIdentityProvider`, `TeamAccessPolicy`) to carry
   `kind = "cloud"` so they satisfy `isinstance` at runtime — three classes outside
@@ -41,7 +41,7 @@ eight that don't would be worse than a uniform convention.
   mypy); and the three cloud classes above were easy to miss.
 
 Verified in the tree today: `kind: ClassVar[str]` is declared on the nine Layer 1
-Protocols under `core/src/cassetta/protocols/`, and `BlobClaimStorage.kind ==
+Protocols under `src/cassetta/protocols/`, and `BlobClaimStorage.kind ==
 "azure"` (`cloud/src/cassetta_cloud/backends/azure/claim_storage.py`).
 
 ## Links

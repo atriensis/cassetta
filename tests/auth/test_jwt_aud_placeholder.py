@@ -20,7 +20,7 @@ def test_jwt_aud_mismatch_is_in_reason_enum() -> None:
 
 
 def test_no_core_callsite_currently_emits_jwt_aud_mismatch() -> None:
-    """No source file under ``core/src/cassetta/`` mentions the reason.
+    """No source file under ``src/cassetta/`` mentions the reason.
 
     The helper module declares the type alias and is excluded. If any
     other module references the literal string ``"jwt_aud_mismatch"``,

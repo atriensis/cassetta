@@ -1,7 +1,7 @@
 """Audit regression test — Brief 533 SC-012 / FR-064.
 
 After FR-063 backfill lands, grepping ``metrics\\.(increment|gauge)\\(`` over
-``core/src/cassetta/`` MUST find only the single call inside ``safe_emit``
+``src/cassetta/`` MUST find only the single call inside ``safe_emit``
 itself in ``structured_log.py`` plus explicitly-fenced exceptions. Any
 future code review that adds a raw ``metrics.*`` call fails this test
 before merging.
@@ -32,8 +32,8 @@ _PATTERN = re.compile(r"metrics\.(increment|gauge)\(")
 
 def _core_src_root() -> Path:
     here = Path(__file__).resolve()
-    # core/tests/observability/test_audit_no_raw_metric_calls.py
-    # → core/src/cassetta/
+    # tests/observability/test_audit_no_raw_metric_calls.py
+    # → src/cassetta/
     return here.parents[2] / "src" / "cassetta"
 
 

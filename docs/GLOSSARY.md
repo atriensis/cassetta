@@ -10,7 +10,7 @@ this way, see [`docs/adr/`](adr/); for the rules, the
 - **Alias** — a friendly recipient name resolved to a concrete inbox/agent by an
   `AliasResolver` (Layer 1). Enables addressing without raw identifiers.
 - **AST lock** — a regression test that parses the abstract syntax tree of
-  `core/src/cassetta/` to forbid §VII violations (concrete-class type annotations
+  `src/cassetta/` to forbid §VII violations (concrete-class type annotations
   or vendor imports leaking into Layer 2).
 - **Azurite axis** — the test axis that runs against Azurite (the Azure Blob
   emulator, via Docker) to exercise cloud backends; complements the filesystem
@@ -24,9 +24,9 @@ this way, see [`docs/adr/`](adr/); for the rules, the
   with a `meta.json` manifest.
 - **Claim** — download-claim state: a recorded, JWT-backed reservation of a bundle
   for reference-mode download, persisted via the `ClaimStorage` Protocol.
-- **Core / Cloud** — the open-core split. `core/` = open-source single-user
-  self-host; `cloud/` = commercial multi-tenant extensions. `core/` never imports
-  `cloud/`.
+- **Core / Cloud** — the open-core split. Core (this repository) = open-source
+  single-user self-host; `cloud/` = commercial multi-tenant extensions. Core never
+  imports `cloud/`.
 - **Dev mode** — relaxed local-development posture, enabled by setting
   `CASSETTA_SETUP_TOKEN` to an empty string (and using a dev-only JWT key). Not for
   production.

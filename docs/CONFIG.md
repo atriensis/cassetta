@@ -15,7 +15,7 @@ Sections:
 - [MCP](#mcp)
 
 > This file is populated alongside brief 513. Sections not directly
-> touched by 513/514 are tracked elsewhere for now (see `core/README.md`)
+> touched by 513/514 are tracked elsewhere for now (see `README.md`)
 > and will be folded in as briefs refresh them.
 
 ## Upload flow (brief 514)
@@ -125,7 +125,7 @@ the minimum wait during rotation step 3 above.
 ## Limits policy
 
 Introduced by brief 513. Environment variables are parsed by
-`load_limits_config()` in `core/src/cassetta/config.py` into a
+`load_limits_config()` in `src/cassetta/config.py` into a
 `LimitsConfig` dataclass that parameterises `CoreLimitsPolicy` (the
 default `LimitsPolicy` implementation).
 

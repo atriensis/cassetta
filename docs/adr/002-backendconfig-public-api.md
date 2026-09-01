@@ -34,15 +34,15 @@ different `BackendConfig(...)` literals.
   string registry, no `Optional` soup. One kwarg replaces nine.
 - **§VII-clean**: the local-default fallback exists in exactly one place
   (`build_core_defaults`); Layer 2 never reconstructs it. The AST regression lock
-  was extended from `app.py` to all of `core/src/cassetta/` (except
+  was extended from `app.py` to all of `src/cassetta/` (except
   `defaults/factory.py` and `backends/`).
 - **Expressible deployments**: Docker, K8s, and self-host are all just
   `BackendConfig` literals.
 - Cost: this was bundled into a larger cleanup wave rather than a minimal patch —
   but doing so eliminated a second pass over the same files.
 
-Implemented at `core/src/cassetta/defaults/factory.py` (`BackendConfig`,
-`build_core_defaults`) and `core/src/cassetta/app.py` (`create_app`).
+Implemented at `src/cassetta/defaults/factory.py` (`BackendConfig`,
+`build_core_defaults`) and `src/cassetta/app.py` (`create_app`).
 
 ## Links
 

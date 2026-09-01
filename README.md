@@ -15,7 +15,6 @@ filesystem so you can self-host on a Raspberry Pi, a VPS, or your laptop.
 You will need Docker and Docker Compose v2.
 
 ```bash
-cd core/
 cp .env.example .env
 # Edit .env and set CASSETTA_SETUP_TOKEN to a long random string.
 docker compose up -d
@@ -33,12 +32,14 @@ curl http://localhost:16001/health
 ```bash
 curl -X POST \
   -H "Content-Type: application/json" \
-  "http://localhost:16001/setup?x_setup_token=YOUR_SETUP_TOKEN" \
-  -d '{"label":"my-laptop"}'
-# {"api_key":"cst_...","label":"my-laptop"}
+  -H "X-Setup-Token: YOUR_SETUP_TOKEN" \
+  http://localhost:16001/setup \
+  -d '{"host":"my-laptop","project":"notes"}'
+# {"label":"my-laptop:notes","api_key":"cst_...","created_at":"2026-01-01T00:00:00Z"}
 ```
 
-Save the returned `api_key` — it is shown only once. From now on,
+The key is labelled `host:project`, so one machine can hold a separate key per
+project. Save the returned `api_key` — it is shown only once. From now on,
 authenticate REST calls with `Authorization: Bearer cst_...`.
 
 ### Store and retrieve a file
@@ -135,7 +136,7 @@ in `deploy/helm/cassetta/`.
 
 1. Install Docker Engine and Docker Compose v2 from your distro packages or
    from <https://docs.docker.com/engine/install/>.
-2. Clone or copy this `core/` directory to the server.
+2. Clone or copy this repository to the server.
 3. Create `.env` from `.env.example` and set a strong `CASSETTA_SETUP_TOKEN`.
 4. Run `docker compose up -d`.
 
@@ -178,7 +179,7 @@ The provided Dockerfile builds for both `linux/amd64` (most VPSes, x86 home
 servers) and `linux/arm64` (Raspberry Pi 4/5, Apple Silicon). Use:
 
 ```bash
-docker buildx build --platform linux/arm64,linux/amd64 -f core/Dockerfile .
+docker buildx build --platform linux/arm64,linux/amd64 .
 ```
 
 (Add `--load` for a single-arch local image, or `--push` to push to a
@@ -189,7 +190,6 @@ registry.)
 Pull the latest sources, then:
 
 ```bash
-cd core/
 docker compose up -d --build
 ```
 

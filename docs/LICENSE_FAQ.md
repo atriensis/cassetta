@@ -1,11 +1,11 @@
 # Licence FAQ — FSL-1.1-ALv2 in plain English
 
-Cassetta's `core/` is released under the **Functional Source License, Version 1.1,
+Cassetta's core is released under the **Functional Source License, Version 1.1,
 with an Apache 2.0 future grant** (FSL-1.1-ALv2). The FSL is uncommon, so this FAQ
 explains it in everyday terms.
 
 **This FAQ is a convenience summary, not legal advice. The authoritative text is
-[`core/LICENSE`](../core/LICENSE).** If anything here and the licence disagree, the
+[`LICENSE`](../LICENSE).** If anything here and the licence disagree, the
 licence wins. (`cloud/` is separately, proprietarily licensed — see `cloud/LICENSE`
 — and is *not* covered by this FAQ.)
 
@@ -59,5 +59,5 @@ version.
 
 ## Still unsure?
 
-Read [`core/LICENSE`](../core/LICENSE) and, for a commercial/competing use case
+Read [`LICENSE`](../LICENSE) and, for a commercial/competing use case
 before the two-year conversion, consult your own counsel or contact the maintainer.

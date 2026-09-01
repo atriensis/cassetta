@@ -31,7 +31,7 @@ async def test_scenario_05_send_validation(
         "error": "gone",
         "reason": "replaced_by_514",
         "replacement": "POST /upload/{bundle_path}",
-        "migration_guide": "core/MIGRATION.md#brief-514",
+        "migration_guide": "MIGRATION.md#brief-514",
     }
 
     # 3. Verify nothing was stored — listing returns empty.

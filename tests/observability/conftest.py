@@ -1,4 +1,4 @@
-"""Shared fixtures for ``core/tests/observability/`` (Brief 533)."""
+"""Shared fixtures for ``tests/observability/`` (Brief 533)."""
 
 from __future__ import annotations
 

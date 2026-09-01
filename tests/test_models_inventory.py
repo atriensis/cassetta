@@ -1,10 +1,10 @@
-"""Brief 535 Fix 6 — every pydantic model in ``core/src/cassetta/models.py``
+"""Brief 535 Fix 6 — every pydantic model in ``src/cassetta/models.py``
 must be referenced by at least one production code path.
 
 Brief 535 deletes 8 dead models and wires 4 routes / error handlers
 with ``response_model=`` declarations. This regression test scans
 ``models.py`` for ``ClassDef`` names and asserts each appears in at
-least one other file under ``core/src/cassetta/``. The check protects
+least one other file under ``src/cassetta/``. The check protects
 against future drift: if someone adds a model without wiring it, the
 test fails with the orphan's name.
 """
@@ -29,7 +29,7 @@ def _model_class_names(path: Path) -> list[str]:
 
 
 def _production_files() -> list[Path]:
-    """All ``.py`` files under ``core/src/cassetta/`` except ``models.py``
+    """All ``.py`` files under ``src/cassetta/`` except ``models.py``
     and ``__pycache__`` artefacts."""
     return [
         p
@@ -58,7 +58,7 @@ def _intra_model_edges(path: Path, names: list[str]) -> dict[str, set[str]]:
 
 def test_no_orphan_models_in_core_models_py() -> None:
     """Every model defined in ``models.py`` is referenced at least once
-    in another ``core/src/cassetta/`` file."""
+    in another ``src/cassetta/`` file."""
     assert _MODELS_FILE.is_file(), f"missing: {_MODELS_FILE}"
     names = _model_class_names(_MODELS_FILE)
     assert names, "models.py exposes zero class definitions — unexpected"
@@ -92,7 +92,7 @@ def test_no_orphan_models_in_core_models_py() -> None:
 
     orphans = [n for n in names if n not in live]
     assert not orphans, (
-        "Orphan pydantic models in core/models.py (Brief 535 Fix 6 "
+        "Orphan pydantic models in models.py (Brief 535 Fix 6 "
         "deletes models with no production use, or wires them as "
         "response_model= on a route):\n  "
         + "\n  ".join(orphans)

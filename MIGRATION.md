@@ -272,7 +272,7 @@ by the pluggable `LimitsPolicy` Protocol, with a new `CoreLimitsPolicy`
 reference implementation that reads configuration from a richer set of
 env vars.
 
-See `core/docs/CONFIG.md` for the complete reference.
+See `docs/CONFIG.md` for the complete reference.
 
 ## Env-var mapping
 
@@ -326,7 +326,7 @@ Callers that still hit the legacy REST path receive
 ```json
 {"error": "gone", "reason": "replaced_by_514",
  "replacement": "POST /upload/{bundle_path}",
- "migration_guide": "core/MIGRATION.md#brief-514"}
+ "migration_guide": "MIGRATION.md#brief-514"}
 ```
 
 ## New environment variables
@@ -1127,9 +1127,9 @@ endpoints to non-trusted callers.
 ## What Changed
 
 The documented self-host quickstart now boots the server end-to-end
-from a literal `cp core/.env.example core/.env && make run` with no
+from a literal `cp .env.example .env && make run` with no
 further file edits. The `Makefile:run` target switched to
-`uvicorn --env-file core/.env --factory cassetta.app:create_app`.
+`uvicorn --env-file .env --factory cassetta.app:create_app`.
 `MIGRATION.md` is now exhaustive between v0.2.0 and v0.15.0 (eight
 backfilled sections — Briefs 503, 504, 507, 508, 509, 516, 518, 519).
 `CLIENT_SETUP.md` and `AGENT_SETUP.md` enumerate the full live MCP
@@ -1160,7 +1160,7 @@ openssl rand -base64 32 > /tmp/k && export CASSETTA_JWT_KEY=$(cat /tmp/k)
 ```
 
 Or switch to `CASSETTA_JWT_KEY_FILE=<path>` for managed-secret setups.
-The `core/README.md` Quickstart block carries the same warning
+The `README.md` Quickstart block carries the same warning
 immediately after the "Connect an MCP agent" section.
 
 ---
@@ -1250,7 +1250,7 @@ Three independent operational-resilience controls landed:
 
 ## Added
 
-- **Five new env vars** (see `core/.env.example` for full operator guide):
+- **Five new env vars** (see `.env.example` for full operator guide):
   - `CASSETTA_RATE_LIMIT_ONBOARD` — default `5/minute`. Format
     `<int>/<unit>` where unit ∈ `{sec, min, hour, second, minute, hourly}`.
   - `CASSETTA_RATE_LIMIT_BROADCAST` — default `10/minute`. Shared budget
@@ -1394,7 +1394,7 @@ Three closely-coupled additive improvements:
    `CASSETTA_LOG_FORMAT=json`. The duplicate
    `claim_storage_backend=azure_blob` emission at the cloud bootstrap
    was deleted; the canonical line now lives in
-   `core/src/cassetta/app.py` and is itself a struct_log record.
+   `src/cassetta/app.py` and is itself a struct_log record.
 
 3. **Auth logger isolation** — `configure_logging(...)` now attaches an
    explicit handler to `cassetta.auth` and sets `propagate=False` on
@@ -1404,7 +1404,7 @@ Three closely-coupled additive improvements:
 A new helper, `safe_emit(...)` in `cassetta.structured_log`, funnels
 paired struct_log + counter emission through TWO INDEPENDENT
 best-effort try/except handlers. Every counter call in
-`core/src/cassetta/` now routes through `safe_emit` (one explicit
+`src/cassetta/` now routes through `safe_emit` (one explicit
 exception: `auth/observability.py:emit_auth_failure` keeps its
 brief-529 fallback string verbatim for regression-lock reasons).
 
@@ -1512,7 +1512,7 @@ Six narrowly-scoped fixes:
    fallback; a new AST regression test forbids reintroduction.
 
 6. **Dead pydantic models pruned + live shapes wired** (Fix 6) — nine
-   unused models removed from `core/src/cassetta/models.py`. Four real
+   unused models removed from `src/cassetta/models.py`. Four real
    wire shapes wired with `response_model=` so the OpenAPI document
    reflects them: `InboxListResponse`, `PeekResponse`,
    `LimitsRejectionBody`, `BundlePathConflict`.
@@ -1635,10 +1635,10 @@ added, removed, or renamed, and no request/response shape change. Two effects:
 1. **Leak-free OpenAPI descriptions.** Internal change-ticket numbers and internal class names no longer
    appear in the generated OpenAPI. `POST /broadcast/{path}`, `GET /agents`, and the removed
    `PUT /inbox/{agent}/{path}` now carry caller-facing descriptions. A standing guard
-   (`core/tests/test_openapi_leakage.py`) keeps every path and component-schema description free of
+   (`tests/test_openapi_leakage.py`) keeps every path and component-schema description free of
    internal markers, covering routes added later automatically.
 
-2. **New REST reference.** `core/docs/REST_API.md` documents the REST surface as of this release
+2. **New REST reference.** `docs/REST_API.md` documents the REST surface as of this release
    (credential model, endpoint table, curl workflows, what REST can/can't do, live `/docs` pointer). The
    root README now links it alongside the `cassetta` CLI and the live interactive docs.
 

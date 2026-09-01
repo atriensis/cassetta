@@ -1,0 +1,48 @@
+# Build context = the repository root. Only `pyproject.toml`, `uv.lock`, `LICENSE` and `src/`
+# are actually COPYed by the Dockerfile, but keeping the context small speeds every build and
+# keeps a stray `.env` from ever reaching the daemon.
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# Python build + cache artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Test, lint, and type-check state
+tests/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Docs — not needed to run the service
+docs/
+
+# Runtime state: never bake a developer's bus contents into an image
+data/
+data.keys/
+
+# Secrets
+.env
+.env.local
+
+# The docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Editor and OS noise
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

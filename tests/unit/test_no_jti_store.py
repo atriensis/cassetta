@@ -1,6 +1,6 @@
 """T040 — belt-and-braces: no jti store exists in core (Brief 514 FR-014).
 
-Scans ``core/src/cassetta/**.py`` for references to a jti blacklist /
+Scans ``src/cassetta/**.py`` for references to a jti blacklist /
 ledger / store outside the single allowed location (``auth/jwt_tokens.py``).
 Fails the build if anyone introduces a server-side jti-keyed state.
 """

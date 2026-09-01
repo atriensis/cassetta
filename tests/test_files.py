@@ -59,7 +59,7 @@ class TestPutFile:
 
         The test fixture leaves ``CASSETTA_MAX_INLINE_SIZE`` at the default
         (100 KB), so a 1 MB body exceeds the inline threshold but not a
-        hard cap. See ``core/docs/CONFIG.md`` for the policy wire contract.
+        hard cap. See ``docs/CONFIG.md`` for the policy wire contract.
         """
         big_content = b"x" * (100 * 1024 + 1)
         response = await client.put(

@@ -6,7 +6,7 @@ Covers:
 (b) Legacy REST URL ``PUT /inbox/{agent}/{path}`` returns 410 Gone with
     the structured body specified by the ``legacySendRemoved`` shape in
     ``contracts/rest-upload.yaml``.
-(c) ``core/MIGRATION.md`` contains a "Brief 514 — Upload flow" section
+(c) ``MIGRATION.md`` contains a "Brief 514 — Upload flow" section
     (grep assertion).
 """
 
@@ -71,14 +71,14 @@ async def test_legacy_rest_send_returns_410(
         "error": "gone",
         "reason": "replaced_by_514",
         "replacement": "POST /upload/{bundle_path}",
-        "migration_guide": "core/MIGRATION.md#brief-514",
+        "migration_guide": "MIGRATION.md#brief-514",
     }
 
 
 def test_migration_doc_has_brief_514_section() -> None:
-    """``core/MIGRATION.md`` contains the Brief 514 migration heading."""
-    # __file__: core/tests/integration/test_legacy_send_removed.py
-    # parents[2] = core/
+    """``MIGRATION.md`` contains the Brief 514 migration heading."""
+    # __file__: tests/integration/test_legacy_send_removed.py
+    # parents[2] = the repository root
     migration = Path(__file__).resolve().parents[2] / "MIGRATION.md"
     text = migration.read_text(encoding="utf-8")
     assert "Brief 514 — Upload flow" in text, (

@@ -264,7 +264,7 @@ names you declared.
 Pass `--no-compress` for already-compressed payloads (e.g. `.mp4`,
 `.zip`): the CLI will send `application/x-tar` without gzip.
 
-See `core/docs/CLIENT_SETUP.md` for the full CLI reference
+See `docs/CLIENT_SETUP.md` for the full CLI reference
 (exit codes, rotation-safe credentials, etc.) and
 `specs/514-upload-flow/quickstart.md` for a hands-on walkthrough.
 
@@ -353,7 +353,7 @@ in `Authorization` and the JWT's `recipient` claim echoed on
 `X-Sender` (so you do not have to re-supply your own identity on the
 command line). Exit 0 = all files on disk.
 
-See `core/docs/CLIENT_SETUP.md` for the full CLI reference.
+See `docs/CLIENT_SETUP.md` for the full CLI reference.
 
 ### Claim semantics (inbox only — brief 515)
 

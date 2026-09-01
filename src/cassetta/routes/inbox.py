@@ -167,7 +167,7 @@ async def send_to_inbox_removed(
             "error": "gone",
             "reason": "replaced_by_514",
             "replacement": "POST /upload/{bundle_path}",
-            "migration_guide": "core/MIGRATION.md#brief-514",
+            "migration_guide": "MIGRATION.md#brief-514",
         },
     )
 

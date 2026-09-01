@@ -30,7 +30,7 @@ def make_backends() -> Callable[..., BackendConfig]:
     that need to stub a single Protocol (e.g. an in-memory
     ``ClaimStorage``) call ``make_backends(config, claim_store=stub)``.
     Exposed as a fixture (not a module-level function) so that tests in
-    subdirs like ``core/tests/unit/`` — which pytest's
+    subdirs like ``tests/unit/`` — which pytest's
     ``--import-mode=importlib`` does not place on sys.path alongside the
     parent ``conftest.py`` — still receive it via dependency injection.
     """
