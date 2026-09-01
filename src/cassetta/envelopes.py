@@ -61,7 +61,8 @@ class ReferenceEnvelope(TypedDict):
 
 
 def build_inline_envelope(
-    meta: dict[str, Any], file_payloads: list[tuple[str, bytes]],
+    meta: dict[str, Any],
+    file_payloads: list[tuple[str, bytes]],
 ) -> InlineEnvelope:
     """Construct an inline envelope from manifest + raw file bytes.
 
@@ -74,17 +75,21 @@ def build_inline_envelope(
     for name, data in file_payloads:
         try:
             text = data.decode("utf-8")
-            files.append({
-                "name": name,
-                "content": text,
-                "encoding": "utf8",
-            })
+            files.append(
+                {
+                    "name": name,
+                    "content": text,
+                    "encoding": "utf8",
+                }
+            )
         except UnicodeDecodeError:
-            files.append({
-                "name": name,
-                "content": base64.b64encode(data).decode("ascii"),
-                "encoding": "base64",
-            })
+            files.append(
+                {
+                    "name": name,
+                    "content": base64.b64encode(data).decode("ascii"),
+                    "encoding": "base64",
+                }
+            )
     return {
         "mode": "inline",
         "bundle": meta,
@@ -108,12 +113,14 @@ def build_reference_envelope(
     ref_files: list[ReferenceFile] = []
     for record in meta.get("files", []):
         name = str(record["name"])
-        ref_files.append({
-            "name": name,
-            "size": int(record.get("size", 0)),
-            "mime": str(record.get("mime") or "application/octet-stream"),
-            "url": transport.build_download_url(bundle_path, name, token),
-        })
+        ref_files.append(
+            {
+                "name": name,
+                "size": int(record.get("size", 0)),
+                "mime": str(record.get("mime") or "application/octet-stream"),
+                "url": transport.build_download_url(bundle_path, name, token),
+            }
+        )
     return {
         "mode": "reference",
         "bundle": meta,
@@ -150,12 +157,14 @@ def build_reference_envelope_with_path(
     ref_files: list[ReferenceFile] = []
     for record in meta.get("files", []):
         name = str(record["name"])
-        ref_files.append({
-            "name": name,
-            "size": int(record.get("size", 0)),
-            "mime": str(record.get("mime") or "application/octet-stream"),
-            "url": transport.build_download_url(bundle_path, name, token),
-        })
+        ref_files.append(
+            {
+                "name": name,
+                "size": int(record.get("size", 0)),
+                "mime": str(record.get("mime") or "application/octet-stream"),
+                "url": transport.build_download_url(bundle_path, name, token),
+            }
+        )
     return {
         "mode": "reference",
         "bundle": meta,

@@ -75,7 +75,10 @@ def _policy_kind_fields(policy: AccessPolicy) -> tuple[str, str]:
 
 
 async def _enforce(
-    request: Request, identity: Identity, resource: str, action: str,
+    request: Request,
+    identity: Identity,
+    resource: str,
+    action: str,
     metrics: MetricsProvider | None = None,
 ) -> None:
     policy = _get_policy(request)
@@ -85,18 +88,20 @@ async def _enforce(
         # team-policy denials get policy_kind=cloud (field) / =team (tag).
         field_kind, tag_kind = _policy_kind_fields(policy)
         safe_emit(
-            logger, logging.INFO, "policy.denied",
+            logger,
+            logging.INFO,
+            "policy.denied",
             identity_label=identity.label,
             identity_extra=identity.extra or None,
-            resource=resource, action=action, result="denied",
+            resource=resource,
+            action=action,
+            result="denied",
             detail={"policy_kind": field_kind},
             metric_name="cassetta.policy.decisions",
             metric_tags={"result": "denied", "policy_kind": tag_kind},
             metrics=metrics,
         )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 
 def _is_expired_by_meta(created_at_iso: str, ttl: int) -> bool:
@@ -129,10 +134,7 @@ def _listing_entry(path: str, meta: dict[str, Any], ttl: int) -> dict[str, objec
         "remaining_ttl": remaining,
         "file_count": int(meta.get("file_count", len(files))),
         "schema_version": int(meta.get("schema_version", SCHEMA_VERSION)),
-        "files": [
-            {"name": f["name"], "size": int(f["size"]), "mime": f["mime"]}
-            for f in files
-        ],
+        "files": [{"name": f["name"], "size": int(f["size"]), "mime": f["mime"]} for f in files],
     }
 
 
@@ -209,8 +211,11 @@ async def list_inbox(
             meta = await backend.read_bundle_meta(ref.path)
         except FileNotFoundError:
             struct_log(
-                logger, logging.WARNING, "inbox.foreign_object",
-                resource=f"inbox:{agent}", detail={"path": ref.path},
+                logger,
+                logging.WARNING,
+                "inbox.foreign_object",
+                resource=f"inbox:{agent}",
+                detail={"path": ref.path},
             )
             continue
         created_at_iso = str(meta.get("created_at", ""))
@@ -244,7 +249,9 @@ async def peek_inbox_file(
         meta = await backend.read_bundle_meta(bundle_path)
     except FileNotFoundError as exc:
         struct_log(
-            logger, logging.INFO, "peek.not_found",
+            logger,
+            logging.INFO,
+            "peek.not_found",
             identity_label=identity.label,
             resource=f"inbox:{agent}",
             detail={"path": path, "found": False, "reason": "absent"},
@@ -256,7 +263,9 @@ async def peek_inbox_file(
 
     if _is_expired_by_meta(str(meta.get("created_at", "")), config.default_ttl):
         struct_log(
-            logger, logging.INFO, "peek.not_found",
+            logger,
+            logging.INFO,
+            "peek.not_found",
             identity_label=identity.label,
             resource=f"inbox:{agent}",
             detail={"path": path, "found": False, "reason": "expired"},
@@ -269,12 +278,17 @@ async def peek_inbox_file(
     file_count = int(meta.get("file_count", 0))
     total_size = sum(int(f.get("size", 0)) for f in meta.get("files", []))
     struct_log(
-        logger, logging.DEBUG, "peek.ok",
+        logger,
+        logging.DEBUG,
+        "peek.ok",
         identity_label=identity.label,
         resource=f"inbox:{agent}",
         detail={
-            "path": path, "found": True, "file_count": file_count,
-            "total_size": total_size, "bundle_id": meta.get("bundle_id"),
+            "path": path,
+            "found": True,
+            "file_count": file_count,
+            "total_size": total_size,
+            "bundle_id": meta.get("bundle_id"),
         },
     )
     safe_emit(
@@ -337,23 +351,29 @@ async def get_inbox_file(
     total_size = sum(int(f.get("size", 0)) for f in records)
     entry: DownloadEntry = {"file_count": file_count, "total_size": total_size}
     decision = await policy.evaluate_download(
-        PolicyContext(identity=identity), entry,
+        PolicyContext(identity=identity),
+        entry,
     )
     mode = decision.get("mode")
     struct_log(
-        logger, logging.DEBUG, "download_mode_decision",
+        logger,
+        logging.DEBUG,
+        "download_mode_decision",
         identity_label=identity.label,
-        detail={"bundle_id": meta.get("bundle_id"), "mode": mode,
-                "namespace": "inbox"},
+        detail={"bundle_id": meta.get("bundle_id"), "mode": mode, "namespace": "inbox"},
     )
 
     if mode == "reference":
         transport = _get_transport(request)
         claim_store = _get_claim_store(request)
         ref_envelope = await build_reference_payload_for_inbox(
-            config=_get_config(request), policy=policy, transport=transport,
-            claim_store=claim_store, identity=identity,
-            bundle_path=bundle_path, meta=meta,
+            config=_get_config(request),
+            policy=policy,
+            transport=transport,
+            claim_store=claim_store,
+            identity=identity,
+            bundle_path=bundle_path,
+            meta=meta,
             recipient=agent,
             write_claim=False,
         )
@@ -404,8 +424,11 @@ async def pick_inbox_file(
                 meta = await backend.read_bundle_meta(ref.path)
             except FileNotFoundError:
                 struct_log(
-                    logger, logging.WARNING, "inbox.foreign_object",
-                    resource=f"inbox:{agent}", detail={"path": ref.path},
+                    logger,
+                    logging.WARNING,
+                    "inbox.foreign_object",
+                    resource=f"inbox:{agent}",
+                    detail={"path": ref.path},
                 )
                 continue
             created_at_iso = str(meta.get("created_at", ""))
@@ -451,14 +474,16 @@ async def pick_inbox_file(
     policy = _get_limits_policy(request)
     entry: DownloadEntry = {"file_count": file_count, "total_size": total_size}
     decision = await policy.evaluate_download(
-        PolicyContext(identity=identity), entry,
+        PolicyContext(identity=identity),
+        entry,
     )
     mode = decision.get("mode")
     struct_log(
-        logger, logging.DEBUG, "download_mode_decision",
+        logger,
+        logging.DEBUG,
+        "download_mode_decision",
         identity_label=identity.label,
-        detail={"bundle_id": meta.get("bundle_id"), "mode": mode,
-                "namespace": "inbox"},
+        detail={"bundle_id": meta.get("bundle_id"), "mode": mode, "namespace": "inbox"},
     )
 
     if mode == "reference":
@@ -466,10 +491,15 @@ async def pick_inbox_file(
         claim_store = _get_claim_store(request)
         try:
             ref_envelope = await build_reference_payload_for_inbox(
-                config=_get_config(request), policy=policy, transport=transport,
-                claim_store=claim_store, identity=identity,
-                bundle_path=bundle_path, meta=meta,
-                recipient=agent, write_claim=True,
+                config=_get_config(request),
+                policy=policy,
+                transport=transport,
+                claim_store=claim_store,
+                identity=identity,
+                bundle_path=bundle_path,
+                meta=meta,
+                recipient=agent,
+                write_claim=True,
             )
         except BundleClaimedError as exc:
             # Same "not found" surface as any late-comer (FR-011a step 6).

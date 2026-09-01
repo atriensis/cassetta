@@ -29,14 +29,10 @@ class _StubVisibilityPolicy:
     def __init__(self, *, visible_fn=None) -> None:
         self._visible_fn = visible_fn or (lambda identity, labels: list(labels))
 
-    async def check(
-        self, identity: Identity, resource: str, action: str
-    ) -> bool:
+    async def check(self, identity: Identity, resource: str, action: str) -> bool:
         return True
 
-    async def visible_agents(
-        self, identity: Identity, labels: list[str]
-    ) -> list[str]:
+    async def visible_agents(self, identity: Identity, labels: list[str]) -> list[str]:
         result = self._visible_fn(identity, labels)
         if asyncio.iscoroutine(result):
             return await result
@@ -93,12 +89,8 @@ async def stub_agents_app(
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_PER_FILE_MAX"] = "1048576"
     os.environ.pop("CASSETTA_MAX_FILE_SIZE", None)
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
 
@@ -138,7 +130,8 @@ def _swap_policy(app, policy) -> None:
 class TestAgentsEndpoint:
     @pytest.mark.asyncio
     async def test_list_agents_returns_all_labels(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, _app, sender_key = stub_agents_app
 
@@ -158,7 +151,8 @@ class TestAgentsEndpoint:
 
     @pytest.mark.asyncio
     async def test_agents_includes_created_at(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, _app, sender_key = stub_agents_app
         resp = await client.get(
@@ -171,7 +165,8 @@ class TestAgentsEndpoint:
 
     @pytest.mark.asyncio
     async def test_agents_excludes_revoked_keys(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_agents_app
         await app.state.backends.key_store.revoke_key("test:dan")
@@ -185,7 +180,8 @@ class TestAgentsEndpoint:
 
     @pytest.mark.asyncio
     async def test_agents_requires_auth(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, _app, _sender_key = stub_agents_app
         resp = await client.get("/agents")
@@ -202,7 +198,8 @@ class TestAgentsDefaultPolicyPassthrough:
 
     @pytest.mark.asyncio
     async def test_default_policy_returns_all_labels(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, _app, sender_key = stub_agents_app
         resp = await client.get(
@@ -219,36 +216,35 @@ class TestAgentsListMetric:
 
     @pytest.mark.asyncio
     async def test_unfiltered_when_full_list_returned(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_agents_app
         await client.get(
             "/agents",
             headers={"Authorization": f"Bearer {sender_key}"},
         )
-        events = [
-            e for e in app.state.backends.metrics_provider.events
-            if e["name"] == "cassetta.agents.list"
-        ]
+        events = [e for e in app.state.backends.metrics_provider.events if e["name"] == "cassetta.agents.list"]
         assert events
         assert any(e["tags"].get("result") == "unfiltered" for e in events)
 
     @pytest.mark.asyncio
     async def test_filtered_when_subset_returned(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_agents_app
-        _swap_policy(app, _StubVisibilityPolicy(
-            visible_fn=lambda i, labels: ["test:bob"],
-        ))
+        _swap_policy(
+            app,
+            _StubVisibilityPolicy(
+                visible_fn=lambda i, labels: ["test:bob"],
+            ),
+        )
         await client.get(
             "/agents",
             headers={"Authorization": f"Bearer {sender_key}"},
         )
-        events = [
-            e for e in app.state.backends.metrics_provider.events
-            if e["name"] == "cassetta.agents.list"
-        ]
+        events = [e for e in app.state.backends.metrics_provider.events if e["name"] == "cassetta.agents.list"]
         assert events
         assert any(e["tags"].get("result") == "filtered" for e in events)
 
@@ -258,12 +254,16 @@ class TestAgentsRESTVisibilityFilter:
 
     @pytest.mark.asyncio
     async def test_visibility_filter_subsets_response(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_agents_app
-        _swap_policy(app, _StubVisibilityPolicy(
-            visible_fn=lambda i, labels: ["test:bob"],
-        ))
+        _swap_policy(
+            app,
+            _StubVisibilityPolicy(
+                visible_fn=lambda i, labels: ["test:bob"],
+            ),
+        )
         resp = await client.get(
             "/agents",
             headers={"Authorization": f"Bearer {sender_key}"},
@@ -273,7 +273,8 @@ class TestAgentsRESTVisibilityFilter:
 
     @pytest.mark.asyncio
     async def test_visibility_failure_returns_empty(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_agents_app
 
@@ -288,10 +289,7 @@ class TestAgentsRESTVisibilityFilter:
         assert resp.status_code == 200
         assert resp.json()["agents"] == []
         # Failure metric is tagged 'filtered' (zero-visibility outcome).
-        events = [
-            e for e in app.state.backends.metrics_provider.events
-            if e["name"] == "cassetta.agents.list"
-        ]
+        events = [e for e in app.state.backends.metrics_provider.events if e["name"] == "cassetta.agents.list"]
         assert any(e["tags"].get("result") == "filtered" for e in events)
 
 
@@ -300,7 +298,8 @@ class TestAgentsMCPVisibilityFilter:
 
     @pytest.mark.asyncio
     async def test_mcp_passthrough_returns_all(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         from cassetta import mcp_server
 
@@ -316,14 +315,18 @@ class TestAgentsMCPVisibilityFilter:
 
     @pytest.mark.asyncio
     async def test_mcp_filtered_subset(
-        self, stub_agents_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_agents_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         from cassetta import mcp_server
 
         _client, app, _sender_key = stub_agents_app
-        _swap_policy(app, _StubVisibilityPolicy(
-            visible_fn=lambda i, labels: ["test:bob"],
-        ))
+        _swap_policy(
+            app,
+            _StubVisibilityPolicy(
+                visible_fn=lambda i, labels: ["test:bob"],
+            ),
+        )
         mcp_server.set_current_identity(Identity(label="test:sender"))
         try:
             text = await mcp_server._cassetta_agents()
@@ -334,8 +337,5 @@ class TestAgentsMCPVisibilityFilter:
         assert labels == {"test:bob"}
 
         # Metric also fires from MCP path.
-        events = [
-            e for e in app.state.backends.metrics_provider.events
-            if e["name"] == "cassetta.agents.list"
-        ]
+        events = [e for e in app.state.backends.metrics_provider.events if e["name"] == "cassetta.agents.list"]
         assert any(e["tags"].get("result") == "filtered" for e in events)

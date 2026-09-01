@@ -35,17 +35,18 @@ def rest_env(rest_storage_dir: str, monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setenv("CASSETTA_PUBLIC_BASE_URL", "http://localhost:16001")
     for var in (
-        "CASSETTA_KEYS_FILE", "CASSETTA_MAX_FILE_SIZE", "CASSETTA_PER_FILE_MAX",
-        "CASSETTA_PER_BUNDLE_TOTAL_MAX", "CASSETTA_PER_BUNDLE_FILE_COUNT_MAX",
+        "CASSETTA_KEYS_FILE",
+        "CASSETTA_MAX_FILE_SIZE",
+        "CASSETTA_PER_FILE_MAX",
+        "CASSETTA_PER_BUNDLE_TOTAL_MAX",
+        "CASSETTA_PER_BUNDLE_FILE_COUNT_MAX",
         "CASSETTA_MAX_INLINE_SIZE",
     ):
         monkeypatch.delenv(var, raising=False)
 
 
 @pytest.fixture
-async def rest_app(
-    rest_env: None, rest_storage_dir: str
-) -> AsyncIterator[tuple]:
+async def rest_app(rest_env: None, rest_storage_dir: str) -> AsyncIterator[tuple]:
     """Return (app, httpx client) for REST bundle testing."""
     app = create_app()
     config = app.state.config
@@ -74,14 +75,15 @@ async def rest_client(rest_app: tuple) -> AsyncIterator[httpx.AsyncClient]:
 
 
 class TestRestPickBundle:
-
     @pytest.mark.asyncio
     async def test_pick_bundle_returns_json(self, rest_app: tuple) -> None:
         """POST .../pick on multi-file bundle returns JSON."""
         app, client = rest_app
         await app.state.backends.key_store.create_key("dev:agent")
         await seed_inbox_bundle(
-            app.state.backends.backend, "dev:agent", "my-bundle",
+            app.state.backends.backend,
+            "dev:agent",
+            "my-bundle",
             files=[("plan.md", b"# Plan"), ("config.yaml", b"key: val")],
         )
 
@@ -101,7 +103,9 @@ class TestRestPickBundle:
         app, client = rest_app
         await app.state.backends.key_store.create_key("dev:agent")
         await seed_inbox_bundle(
-            app.state.backends.backend, "dev:agent", "note.txt",
+            app.state.backends.backend,
+            "dev:agent",
+            "note.txt",
             content=b"hello",
         )
 
@@ -124,18 +128,21 @@ class TestRestPickBundle:
 
 
 class TestRestInboxListing:
-
     @pytest.mark.asyncio
     async def test_inbox_listing_includes_file_count(self, rest_app: tuple) -> None:
         """GET /inbox/{agent}/ includes file_count in items."""
         app, client = rest_app
         await app.state.backends.key_store.create_key("dev:agent")
         await seed_inbox_bundle(
-            app.state.backends.backend, "dev:agent", "note.txt",
+            app.state.backends.backend,
+            "dev:agent",
+            "note.txt",
             content=b"hello",
         )
         await seed_inbox_bundle(
-            app.state.backends.backend, "dev:agent", "my-bundle",
+            app.state.backends.backend,
+            "dev:agent",
+            "my-bundle",
             files=[("a.txt", b"aaa"), ("b.txt", b"bbb")],
         )
 
@@ -153,7 +160,6 @@ class TestRestInboxListing:
 
 
 class TestRestFilesBundles:
-
     @pytest.mark.asyncio
     async def test_put_bundle_multipart(self, rest_client: httpx.AsyncClient) -> None:
         """T032: PUT /files/{path} with multipart creates bundle."""
@@ -209,7 +215,6 @@ class TestRestFilesBundles:
 
 
 class TestRestBroadcastBundle:
-
     @pytest.mark.asyncio
     async def test_broadcast_bundle_multipart(self, rest_client: httpx.AsyncClient) -> None:
         """T042: POST /broadcast with multipart sends bundle to all agents."""

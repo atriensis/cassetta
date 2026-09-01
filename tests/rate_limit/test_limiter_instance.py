@@ -44,7 +44,8 @@ class TestModuleSurface:
 
 class TestRecordRateLimitHit:
     def test_increments_counter_with_route_and_reason(
-        self, recording_metrics: object,
+        self,
+        recording_metrics: object,
     ) -> None:
         request = _request_with_metrics(recording_metrics)
 
@@ -56,7 +57,8 @@ class TestRecordRateLimitHit:
         assert calls[0].tags == {"route": "broadcast", "reason": "rate"}
 
     def test_separate_calls_emit_separate_increments(
-        self, recording_metrics: object,
+        self,
+        recording_metrics: object,
     ) -> None:
         request = _request_with_metrics(recording_metrics)
 
@@ -86,8 +88,11 @@ class TestImperativeCheck:
     def test_admits_until_bucket_full(self) -> None:
         # Fresh peer IP so this test is independent of the rest of the suite.
         scope = {
-            "type": "http", "method": "POST", "path": "/x",
-            "headers": [], "client": ("203.0.113.1", 0),
+            "type": "http",
+            "method": "POST",
+            "path": "/x",
+            "headers": [],
+            "client": ("203.0.113.1", 0),
             "app": SimpleNamespace(state=SimpleNamespace()),
         }
         request = Request(scope)

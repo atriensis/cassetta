@@ -60,17 +60,13 @@ class _StubAccessPolicy:
         self._visible_fn = visible_fn or (lambda identity, labels: list(labels))
         self._check_fn = check_fn or (lambda identity, resource, action: True)
 
-    async def check(
-        self, identity: Identity, resource: str, action: str
-    ) -> bool:
+    async def check(self, identity: Identity, resource: str, action: str) -> bool:
         result = self._check_fn(identity, resource, action)
         if asyncio.iscoroutine(result):
             return await result
         return result
 
-    async def visible_agents(
-        self, identity: Identity, labels: list[str]
-    ) -> list[str]:
+    async def visible_agents(self, identity: Identity, labels: list[str]) -> list[str]:
         result = self._visible_fn(identity, labels)
         if asyncio.iscoroutine(result):
             return await result
@@ -85,9 +81,7 @@ class _StubAliasResolver:
     def __init__(self, *, resolve_fn=None) -> None:
         self._resolve_fn = resolve_fn
 
-    async def resolve(
-        self, name: str, *, sender_label: str | None = None
-    ) -> ResolvedRecipient | None:
+    async def resolve(self, name: str, *, sender_label: str | None = None) -> ResolvedRecipient | None:
         if self._resolve_fn is None:
             return ResolvedRecipient(inbox_targets=[name])
         result = self._resolve_fn(name, sender_label)
@@ -132,12 +126,8 @@ async def stub_app(storage_dir: str) -> AsyncIterator[tuple[httpx.AsyncClient, A
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_PER_FILE_MAX"] = "1048576"
     os.environ.pop("CASSETTA_MAX_FILE_SIZE", None)
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
 
@@ -185,7 +175,8 @@ def _swap_policy(app, *, policy=None, resolver=None) -> None:
 class TestBroadcastEndpoint:
     @pytest.mark.asyncio
     async def test_broadcast_delivers_to_all_visible(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
 
@@ -204,13 +195,17 @@ class TestBroadcastEndpoint:
 
     @pytest.mark.asyncio
     async def test_broadcast_zero_recipients(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
         # Stub visibility to empty.
-        _swap_policy(app, policy=_StubAccessPolicy(
-            visible_fn=lambda identity, labels: [],
-        ))
+        _swap_policy(
+            app,
+            policy=_StubAccessPolicy(
+                visible_fn=lambda identity, labels: [],
+            ),
+        )
         resp = await client.post(
             "/broadcast/lonely.txt",
             content=b"lonely message",
@@ -225,7 +220,8 @@ class TestBroadcastEndpoint:
 
     @pytest.mark.asyncio
     async def test_broadcast_requires_path(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, _app, sender_key = stub_app
         # No path segment → no route matches; FastAPI returns 307/404/405.
@@ -247,14 +243,18 @@ class TestBroadcastVisibilityFirst:
 
     @pytest.mark.asyncio
     async def test_invisible_targets_not_in_response(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
 
         # visible_agents returns only "test:bob" — carol & dan are invisible.
-        _swap_policy(app, policy=_StubAccessPolicy(
-            visible_fn=lambda identity, labels: ["test:bob"],
-        ))
+        _swap_policy(
+            app,
+            policy=_StubAccessPolicy(
+                visible_fn=lambda identity, labels: ["test:bob"],
+            ),
+        )
 
         resp = await client.post(
             "/broadcast/hello.txt",
@@ -277,7 +277,8 @@ class TestBroadcastDeniedBucket:
 
     @pytest.mark.asyncio
     async def test_denied_target_in_denied_bucket_with_metric(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
 
@@ -301,14 +302,10 @@ class TestBroadcastDeniedBucket:
         assert "test:bob" not in data["delivered_to"]
 
         metrics = app.state.backends.metrics_provider
-        denials = [
-            (m["name"], m["tags"]) for m in metrics.events
-            if m["name"] == "cassetta.policy.decisions"
-        ]
+        denials = [(m["name"], m["tags"]) for m in metrics.events if m["name"] == "cassetta.policy.decisions"]
         # Exactly one denial event for the one denied target.
         write_denials = [
-            tags for name, tags in denials
-            if tags.get("result") == "denied" and tags.get("action") == "write"
+            tags for name, tags in denials if tags.get("result") == "denied" and tags.get("action") == "write"
         ]
         assert len(write_denials) == 1
 
@@ -318,7 +315,8 @@ class TestBroadcastFailedBucket:
 
     @pytest.mark.asyncio
     async def test_resolver_returns_none_target_in_failed(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
 
@@ -343,7 +341,8 @@ class TestBroadcastFailedBucket:
 
     @pytest.mark.asyncio
     async def test_backend_write_exception_target_in_failed(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
 
@@ -355,7 +354,9 @@ class TestBroadcastFailedBucket:
             return await original_open(bundle_path)
 
         with patch.object(
-            app.state.backends.backend, "open_bundle_write", raising_open,
+            app.state.backends.backend,
+            "open_bundle_write",
+            raising_open,
         ):
             resp = await client.post(
                 "/broadcast/hello.txt",
@@ -375,7 +376,8 @@ class TestBroadcastOperationsResultTag:
 
     @pytest.mark.asyncio
     async def test_all_delivered_success(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
         resp = await client.post(
@@ -385,21 +387,22 @@ class TestBroadcastOperationsResultTag:
         )
         assert resp.status_code == 200
         metrics = app.state.backends.metrics_provider
-        ops = [
-            m for m in metrics.events
-            if m["name"] == "cassetta.broadcast.operations"
-        ]
+        ops = [m for m in metrics.events if m["name"] == "cassetta.broadcast.operations"]
         assert ops
         assert any(m["tags"].get("result") == "success" for m in ops)
 
     @pytest.mark.asyncio
     async def test_mixed_partial(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
-        _swap_policy(app, policy=_StubAccessPolicy(
-            check_fn=lambda i, r, a: r != "inbox:test:bob",
-        ))
+        _swap_policy(
+            app,
+            policy=_StubAccessPolicy(
+                check_fn=lambda i, r, a: r != "inbox:test:bob",
+            ),
+        )
         resp = await client.post(
             "/broadcast/mixed.txt",
             content=b"x",
@@ -408,20 +411,24 @@ class TestBroadcastOperationsResultTag:
         assert resp.status_code == 200
         metrics = app.state.backends.metrics_provider
         partial = [
-            m for m in metrics.events
-            if m["name"] == "cassetta.broadcast.operations"
-            and m["tags"].get("result") == "partial"
+            m
+            for m in metrics.events
+            if m["name"] == "cassetta.broadcast.operations" and m["tags"].get("result") == "partial"
         ]
         assert partial
 
     @pytest.mark.asyncio
     async def test_zero_visible_noop(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
-        _swap_policy(app, policy=_StubAccessPolicy(
-            visible_fn=lambda i, labels: [],
-        ))
+        _swap_policy(
+            app,
+            policy=_StubAccessPolicy(
+                visible_fn=lambda i, labels: [],
+            ),
+        )
         resp = await client.post(
             "/broadcast/empty.txt",
             content=b"x",
@@ -430,21 +437,25 @@ class TestBroadcastOperationsResultTag:
         assert resp.status_code == 200
         metrics = app.state.backends.metrics_provider
         noop = [
-            m for m in metrics.events
-            if m["name"] == "cassetta.broadcast.operations"
-            and m["tags"].get("result") == "noop"
+            m
+            for m in metrics.events
+            if m["name"] == "cassetta.broadcast.operations" and m["tags"].get("result") == "noop"
         ]
         assert noop
 
     @pytest.mark.asyncio
     async def test_visible_but_zero_delivered_error(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
         # All visible, all denied.
-        _swap_policy(app, policy=_StubAccessPolicy(
-            check_fn=lambda i, r, a: False,
-        ))
+        _swap_policy(
+            app,
+            policy=_StubAccessPolicy(
+                check_fn=lambda i, r, a: False,
+            ),
+        )
         resp = await client.post(
             "/broadcast/alldenied.txt",
             content=b"x",
@@ -453,9 +464,9 @@ class TestBroadcastOperationsResultTag:
         assert resp.status_code == 200
         metrics = app.state.backends.metrics_provider
         err = [
-            m for m in metrics.events
-            if m["name"] == "cassetta.broadcast.operations"
-            and m["tags"].get("result") == "error"
+            m
+            for m in metrics.events
+            if m["name"] == "cassetta.broadcast.operations" and m["tags"].get("result") == "error"
         ]
         assert err
 
@@ -465,10 +476,12 @@ class TestBroadcastWholePolicyFailure:
 
     @pytest.mark.asyncio
     async def test_visible_agents_exception_returns_empty_response(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
         caplog,
     ) -> None:
         import logging as _logging
+
         client, app, sender_key = stub_app
 
         def boom(identity, labels):
@@ -500,9 +513,9 @@ class TestBroadcastWholePolicyFailure:
 
         metrics = app.state.backends.metrics_provider
         err = [
-            m for m in metrics.events
-            if m["name"] == "cassetta.broadcast.operations"
-            and m["tags"].get("result") == "error"
+            m
+            for m in metrics.events
+            if m["name"] == "cassetta.broadcast.operations" and m["tags"].get("result") == "error"
         ]
         assert err
 
@@ -513,7 +526,8 @@ class TestBroadcastPerTargetCheckException:
 
     @pytest.mark.asyncio
     async def test_per_target_check_exception(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
 
@@ -543,7 +557,8 @@ class TestBroadcastOversize:
 
     @pytest.mark.asyncio
     async def test_oversize_returns_413(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         client, app, sender_key = stub_app
 
@@ -564,7 +579,8 @@ class TestBroadcastOversize:
         for label in ["test:bob", "test:carol", "test:dan"]:
             try:
                 await backend.open_bundle_file_read(
-                    f"inbox/{label}/big.txt", "big.txt",
+                    f"inbox/{label}/big.txt",
+                    "big.txt",
                 )
                 pytest.fail(f"Bundle should not exist for {label}")
             except FileNotFoundError:
@@ -581,24 +597,24 @@ class TestMCPBroadcastVisibility:
 
     @pytest.mark.asyncio
     async def test_invisible_labels_not_in_textual_return(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         from cassetta import mcp_server
 
         _client, app, _sender_key = stub_app
-        _swap_policy(app, policy=_StubAccessPolicy(
-            visible_fn=lambda identity, labels: ["test:bob"],
-        ))
+        _swap_policy(
+            app,
+            policy=_StubAccessPolicy(
+                visible_fn=lambda identity, labels: ["test:bob"],
+            ),
+        )
 
         # Set up the contextvars the MCP tool reads.
         mcp_server.set_sender_label("test:sender")
-        mcp_server.set_current_identity(
-            Identity(label="test:sender", extra={"user_id": "u-1"})
-        )
+        mcp_server.set_current_identity(Identity(label="test:sender", extra={"user_id": "u-1"}))
         try:
-            text = await mcp_server._cassetta_broadcast(
-                path="hello.txt", content="hi"
-            )
+            text = await mcp_server._cassetta_broadcast(path="hello.txt", content="hi")
         finally:
             mcp_server.set_sender_label(None)
             mcp_server.set_current_identity(None)
@@ -614,7 +630,8 @@ class TestMCPBroadcastDeniedBucket:
 
     @pytest.mark.asyncio
     async def test_denied_targets_dont_appear_and_metric_fires(
-        self, stub_app: tuple[httpx.AsyncClient, Any, str],
+        self,
+        stub_app: tuple[httpx.AsyncClient, Any, str],
     ) -> None:
         from cassetta import mcp_server
 
@@ -626,13 +643,9 @@ class TestMCPBroadcastDeniedBucket:
         _swap_policy(app, policy=_StubAccessPolicy(check_fn=check_fn))
 
         mcp_server.set_sender_label("test:sender")
-        mcp_server.set_current_identity(
-            Identity(label="test:sender", extra={"user_id": "u-1"})
-        )
+        mcp_server.set_current_identity(Identity(label="test:sender", extra={"user_id": "u-1"}))
         try:
-            text = await mcp_server._cassetta_broadcast(
-                path="hello.txt", content="hi"
-            )
+            text = await mcp_server._cassetta_broadcast(path="hello.txt", content="hi")
         finally:
             mcp_server.set_sender_label(None)
             mcp_server.set_current_identity(None)
@@ -644,7 +657,8 @@ class TestMCPBroadcastDeniedBucket:
 
         metrics = app.state.backends.metrics_provider
         write_denials = [
-            m for m in metrics.events
+            m
+            for m in metrics.events
             if m["name"] == "cassetta.policy.decisions"
             and m["tags"].get("result") == "denied"
             and m["tags"].get("action") == "write"

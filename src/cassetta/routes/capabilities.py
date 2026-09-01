@@ -30,7 +30,9 @@ async def get_capabilities(
 ) -> dict[str, object]:
     """Return the server's advertised capabilities document."""
     doc = await build_capabilities_document(
-        policy, PolicyContext(identity=identity), via="rest",
+        policy,
+        PolicyContext(identity=identity),
+        via="rest",
     )
     # Brief 533 FR-008: capability query counter (via=rest). Dev-mode
     # (no-auth) MUST still increment per Edge Cases #93.

@@ -38,9 +38,7 @@ async def deny_client(
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
     os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
 
@@ -56,8 +54,10 @@ async def deny_client(
     # Swap the access policy to AlwaysDenyPolicy via dataclasses.replace so
     # every downstream read (routes, MCP) sees the deny policy.
     from dataclasses import replace
+
     app.state.backends = replace(
-        default_backends, access_policy=AlwaysDenyPolicy(),
+        default_backends,
+        access_policy=AlwaysDenyPolicy(),
     )
     backends = app.state.backends
     configure_mcp(config, backends)
@@ -85,9 +85,7 @@ async def deny_client(
 
 class TestRESTDenial:
     @pytest.mark.asyncio
-    async def test_files_upload_denied(
-        self, deny_client: tuple[httpx.AsyncClient, str, Any]
-    ) -> None:
+    async def test_files_upload_denied(self, deny_client: tuple[httpx.AsyncClient, str, Any]) -> None:
         client, api_key, backend = deny_client
         resp = await client.put(
             "/files/blocked.md",
@@ -99,9 +97,7 @@ class TestRESTDenial:
         assert not await backend.exists("blocked.md")
 
     @pytest.mark.asyncio
-    async def test_files_list_denied(
-        self, deny_client: tuple[httpx.AsyncClient, str, Any]
-    ) -> None:
+    async def test_files_list_denied(self, deny_client: tuple[httpx.AsyncClient, str, Any]) -> None:
         client, api_key, _ = deny_client
         resp = await client.get(
             "/files/",
@@ -110,9 +106,7 @@ class TestRESTDenial:
         assert resp.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_inbox_send_denied(
-        self, deny_client: tuple[httpx.AsyncClient, str, Any]
-    ) -> None:
+    async def test_inbox_send_denied(self, deny_client: tuple[httpx.AsyncClient, str, Any]) -> None:
         """Legacy PUT /inbox/{agent}/{path} is gone; it now returns 410.
 
         ``cassetta_send_init`` is the replacement path; the deny policy is
@@ -130,9 +124,7 @@ class TestRESTDenial:
         assert body["reason"] == "replaced_by_514"
 
     @pytest.mark.asyncio
-    async def test_inbox_list_denied(
-        self, deny_client: tuple[httpx.AsyncClient, str, Any]
-    ) -> None:
+    async def test_inbox_list_denied(self, deny_client: tuple[httpx.AsyncClient, str, Any]) -> None:
         client, api_key, _ = deny_client
         resp = await client.get(
             "/inbox/alice/",

@@ -35,12 +35,16 @@ def test_limits_policy_is_runtime_checkable() -> None:
         kind = "test"
 
         async def evaluate_upload(
-            self, ctx: PolicyContext, manifest: UploadManifest,
+            self,
+            ctx: PolicyContext,
+            manifest: UploadManifest,
         ) -> UploadDecision:
             return {"mode": "inline", "reason": None}
 
         async def evaluate_download(
-            self, ctx: PolicyContext, entry: DownloadEntry,
+            self,
+            ctx: PolicyContext,
+            entry: DownloadEntry,
         ) -> DownloadDecision:
             return {"mode": "inline", "reason": None}
 

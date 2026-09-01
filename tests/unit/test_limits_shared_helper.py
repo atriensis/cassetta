@@ -25,10 +25,7 @@ from cassetta.protocols import limits as _proto_limits
 
 
 def _manifest(files: list[tuple[str, int]]) -> UploadManifest:
-    entries: list[ManifestFile] = [
-        {"name": name, "size": size, "mime": None}
-        for name, size in files
-    ]
+    entries: list[ManifestFile] = [{"name": name, "size": size, "mime": None} for name, size in files]
     return {"file_count": len(entries), "files": entries}
 
 
@@ -63,10 +60,7 @@ def _fingerprint_1000_runs() -> str:
     acc: list[str] = []
     for _ in range(1_000):
         file_count = rng.randint(1, 30)
-        files = [
-            (f"f{i}.bin", rng.randint(0, 200_000))
-            for i in range(file_count)
-        ]
+        files = [(f"f{i}.bin", rng.randint(0, 200_000)) for i in range(file_count)]
         limits: LimitsAdvertisement = {
             "per_file_max": rng.choice([None, 50_000, 100_000]),
             "per_bundle_total_max": rng.choice([None, 500_000]),
@@ -207,7 +201,8 @@ def test_inline_when_total_at_inline_threshold() -> None:
         "max_inline_size": 1000,
     }
     decision = check_manifest_against_limits(
-        _manifest([("a", 500), ("b", 500)]), limits,
+        _manifest([("a", 500), ("b", 500)]),
+        limits,
     )
     assert decision == {"mode": "inline", "reason": None}
 
@@ -220,7 +215,8 @@ def test_batch_when_total_exceeds_inline_threshold() -> None:
         "max_inline_size": 1000,
     }
     decision = check_manifest_against_limits(
-        _manifest([("a", 600), ("b", 600)]), limits,
+        _manifest([("a", 600), ("b", 600)]),
+        limits,
     )
     assert decision == {"mode": "batch", "reason": None}
 

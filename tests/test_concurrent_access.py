@@ -18,9 +18,7 @@ from cassetta.backends.filesystem.storage import FilesystemBackend
 
 
 class TestConcurrentUploadAndCleanup:
-    async def test_upload_survives_concurrent_delete(
-        self, storage_dir: str
-    ) -> None:
+    async def test_upload_survives_concurrent_delete(self, storage_dir: str) -> None:
         """Writing a fresh bundle while another bundle is deleted — both
         operations succeed and the resulting directory state is consistent."""
         backend = FilesystemBackend(root_path=storage_dir)
@@ -29,19 +27,23 @@ class TestConcurrentUploadAndCleanup:
             writer = await backend.open_bundle_write(path)
             try:
                 await writer.write_file(path.split("/")[-1], io.BytesIO(data))
-                await writer.commit({
-                    "schema_version": 1,
-                    "bundle_id": uuid.uuid4().hex,
-                    "sender": None,
-                    "created_at": dt.now(UTC).isoformat(),
-                    "content_type": "application/octet-stream",
-                    "file_count": 1,
-                    "files": [{
-                        "name": path.split("/")[-1],
-                        "size": len(data),
-                        "mime": "application/octet-stream",
-                    }],
-                })
+                await writer.commit(
+                    {
+                        "schema_version": 1,
+                        "bundle_id": uuid.uuid4().hex,
+                        "sender": None,
+                        "created_at": dt.now(UTC).isoformat(),
+                        "content_type": "application/octet-stream",
+                        "file_count": 1,
+                        "files": [
+                            {
+                                "name": path.split("/")[-1],
+                                "size": len(data),
+                                "mime": "application/octet-stream",
+                            }
+                        ],
+                    }
+                )
             except Exception:
                 await writer.abort()
                 raise

@@ -25,8 +25,6 @@ def test_core_src_has_no_vendor_imports() -> None:
             for token in _FORBIDDEN:
                 if token in stripped:
                     offenders.append((str(py), lineno, stripped))
-    assert not offenders, (
-        "Vendor imports found in src/:\n" + "\n".join(
-            f"  {p}:{lineno}  {line}" for p, lineno, line in offenders
-        )
+    assert not offenders, "Vendor imports found in src/:\n" + "\n".join(
+        f"  {p}:{lineno}  {line}" for p, lineno, line in offenders
     )

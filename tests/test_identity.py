@@ -1,6 +1,5 @@
 """Tests for Identity dataclass and IdentityProvider."""
 
-
 import httpx
 import pytest
 
@@ -86,9 +85,7 @@ class TestIdentityWiring:
     """Tests for identity resolution in auth middleware and request context."""
 
     @pytest.mark.asyncio
-    async def test_auth_resolves_identity_in_request(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_auth_resolves_identity_in_request(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         """get_current_key should resolve identity and store in request state."""
         client, setup_token = auth_client
         # Create a key
@@ -109,9 +106,7 @@ class TestIdentityWiring:
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_mcp_sender_label_from_identity(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_mcp_sender_label_from_identity(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         """MCP sender label should come from resolved identity.label."""
         # Simulate what MCPAuthMiddleware does
         from datetime import UTC, datetime

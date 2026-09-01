@@ -7,7 +7,8 @@ async def test_rotate_reasserts_gauge_with_current_count(obs_client) -> None:
     client, metrics = obs_client
     # Seed: create a key so a rotation is possible.
     resp = await client.post(
-        "/keys", json={"host": "rot", "project": "k1"},
+        "/keys",
+        json={"host": "rot", "project": "k1"},
     )
     assert resp.status_code == 201
     metrics.calls.clear()
@@ -24,7 +25,8 @@ async def test_rotate_reasserts_even_when_count_unchanged(obs_client) -> None:
     """FR-009 freshness invariant — re-assertion is unconditional on rotate."""
     client, metrics = obs_client
     resp = await client.post(
-        "/keys", json={"host": "rot2", "project": "k2"},
+        "/keys",
+        json={"host": "rot2", "project": "k2"},
     )
     assert resp.status_code == 201
     metrics.calls.clear()
@@ -33,6 +35,4 @@ async def test_rotate_reasserts_even_when_count_unchanged(obs_client) -> None:
         resp = await client.post("/keys/rot2:k2/rotate")
         assert resp.status_code == 200
     gauges = metrics.find("cassetta.active_keys", "gauge")
-    assert len(gauges) >= 2, (
-        f"each rotation re-asserts the gauge; got {len(gauges)}"
-    )
+    assert len(gauges) >= 2, f"each rotation re-asserts the gauge; got {len(gauges)}"

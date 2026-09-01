@@ -32,29 +32,36 @@ async def test_scenario_01_full_lifecycle(
     # 4. Send to own inbox via the new two-phase flow
     sid = await h.mcp_init(client, api_key=api_key)
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": label, "path": "msg.md",
+            "to": label,
+            "path": "msg.md",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "msg.md", "size": len(b"inbox message")}],
             },
         },
-        sid=sid, api_key=api_key,
+        sid=sid,
+        api_key=api_key,
     )
     body = json.loads(init["content"][0]["text"])
     assert body["mode"] == "inline"
     await h.mcp_call(
-        client, "cassetta_send_inline",
+        client,
+        "cassetta_send_inline",
         {
             "token": body["inline_token"],
-            "files": [{
-                "name": "msg.md",
-                "content": base64.b64encode(b"inbox message").decode("ascii"),
-                "encoding": "base64",
-            }],
+            "files": [
+                {
+                    "name": "msg.md",
+                    "content": base64.b64encode(b"inbox message").decode("ascii"),
+                    "encoding": "base64",
+                }
+            ],
         },
-        sid=sid, api_key=api_key,
+        sid=sid,
+        api_key=api_key,
     )
 
     # 5. List inbox

@@ -110,12 +110,13 @@ def _bundle_id_of(event: _CapturedEvent) -> str | None:
 
 
 def _assert_lifecycle_once(
-    handler: _EventHandler, bundle_id: str, *, label: str,
+    handler: _EventHandler,
+    bundle_id: str,
+    *,
+    label: str,
 ) -> None:
     for name in ("upload_init", "upload_stream_start", "upload_stream_complete"):
-        matches = [
-            e for e in handler.events_for(name) if _bundle_id_of(e) == bundle_id
-        ]
+        matches = [e for e in handler.events_for(name) if _bundle_id_of(e) == bundle_id]
         assert len(matches) == 1, (
             f"{label}: expected exactly one {name!r} for bundle_id={bundle_id!r}, "
             f"got {len(matches)}: {[e.detail for e in handler.events_for(name)]!r}"
@@ -124,7 +125,9 @@ def _assert_lifecycle_once(
 
 @pytest.mark.asyncio
 async def test_inline_upload_emits_fr027_events(
-    core_app: tuple[httpx.AsyncClient, str], h, log_capture: _EventHandler,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
+    log_capture: _EventHandler,
 ) -> None:
     client, _ = core_app
     sender = await h.setup_agent(client, "bob", "obs-inline")
@@ -133,31 +136,38 @@ async def test_inline_upload_emits_fr027_events(
 
     content = b"hello inline\n"
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "notes.md",
+            "to": "alice:main",
+            "path": "notes.md",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "notes.md", "size": len(content)}],
             },
         },
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
     body = _unwrap(init)
     assert body["mode"] == "inline"
     bundle_id = body["bundle_id"]
 
     send = await h.mcp_call(
-        client, "cassetta_send_inline",
+        client,
+        "cassetta_send_inline",
         {
             "token": body["inline_token"],
-            "files": [{
-                "name": "notes.md",
-                "content": base64.b64encode(content).decode("ascii"),
-                "encoding": "base64",
-            }],
+            "files": [
+                {
+                    "name": "notes.md",
+                    "content": base64.b64encode(content).decode("ascii"),
+                    "encoding": "base64",
+                }
+            ],
         },
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
     send_body = _unwrap(send)
     assert send_body == {"bundle_id": bundle_id, "ok": True}
@@ -182,14 +192,14 @@ async def test_batch_upload_emits_fr027_events(
     }
     manifest = {
         "file_count": len(files),
-        "files": [
-            {"name": name, "size": len(data)} for name, data in files.items()
-        ],
+        "files": [{"name": name, "size": len(data)} for name, data in files.items()],
     }
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {"to": "alice:main", "path": "drop.tgz", "manifest": manifest},
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
     body = _unwrap(init)
     assert body["mode"] == "batch"
@@ -228,44 +238,54 @@ async def test_both_modes_same_session_keep_bundle_ids_distinct(
     # --- Inline --------------------------------------------------------------
     small = b"tiny\n"
     init_inline = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "small.txt",
+            "to": "alice:main",
+            "path": "small.txt",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "small.txt", "size": len(small)}],
             },
         },
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
     ib = _unwrap(init_inline)
     assert ib["mode"] == "inline"
     inline_bundle_id = ib["bundle_id"]
     await h.mcp_call(
-        client, "cassetta_send_inline",
+        client,
+        "cassetta_send_inline",
         {
             "token": ib["inline_token"],
-            "files": [{
-                "name": "small.txt",
-                "content": base64.b64encode(small).decode("ascii"),
-                "encoding": "base64",
-            }],
+            "files": [
+                {
+                    "name": "small.txt",
+                    "content": base64.b64encode(small).decode("ascii"),
+                    "encoding": "base64",
+                }
+            ],
         },
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
 
     # --- Batch ---------------------------------------------------------------
     batch_files = {"blob.bin": b"z" * 256}
     init_batch = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "big.tgz",
+            "to": "alice:main",
+            "path": "big.tgz",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "blob.bin", "size": len(batch_files["blob.bin"])}],
             },
         },
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
     bb = _unwrap(init_batch)
     assert bb["mode"] == "batch"
@@ -273,7 +293,8 @@ async def test_both_modes_same_session_keep_bundle_ids_distinct(
     url_path = urllib.parse.urlparse(bb["upload_url"]).path
     tar_bytes = _build_tar(batch_files, compress=False)
     resp = await client.post(
-        url_path, content=tar_bytes,
+        url_path,
+        content=tar_bytes,
         headers={
             "Authorization": f"Bearer {bb['batch_token']}",
             "Content-Type": "application/x-tar",
@@ -322,14 +343,20 @@ async def test_download_reference_pick_emits_fr026_events(
         ("src/lib.py", b"print('obs')\n" * 20),
     ]
     await seed_inbox_bundle(
-        backend, "alice:main", "obs-drop",
-        files=files, sender="bob",
+        backend,
+        "alice:main",
+        "obs-drop",
+        files=files,
+        sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     pick = await h.mcp_call(
-        client, "cassetta_pick", {"path": "obs-drop"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "obs-drop"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = _unwrap(pick)
     assert envelope["mode"] == "reference", envelope
@@ -392,8 +419,7 @@ async def test_download_reference_pick_emits_fr026_events(
     assert completed.detail.get("namespace") == "inbox"
 
     # Bundle directory is gone after completion.
-    assert not (Path(storage_dir) / "data" / "inbox" / "alice:main" /
-                "obs-drop").exists()
+    assert not (Path(storage_dir) / "data" / "inbox" / "alice:main" / "obs-drop").exists()
 
 
 @pytest.mark.asyncio
@@ -421,14 +447,20 @@ async def test_download_error_paths_emit_fr026_events(
 
     backend = FilesystemBackend(root_path=storage_dir)
     await seed_inbox_bundle(
-        backend, "alice:main", "err-drop",
-        files=[("a.bin", b"x" * 500)], sender="bob",
+        backend,
+        "alice:main",
+        "err-drop",
+        files=[("a.bin", b"x" * 500)],
+        sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     pick = await h.mcp_call(
-        client, "cassetta_pick", {"path": "err-drop"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "err-drop"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = _unwrap(pick)
     assert envelope["mode"] == "reference"
@@ -449,7 +481,8 @@ async def test_download_error_paths_emit_fr026_events(
     assert resp_401.status_code == 401, resp_401.text
     # Brief 529 R4: download_jwt_validation_failed → auth.failure source=download.
     jwt_events = [
-        e for e in log_capture.events_for("auth.failure")
+        e
+        for e in log_capture.events_for("auth.failure")
         if isinstance(e.detail, dict) and e.detail.get("source") == "download"
     ]
     assert jwt_events, "no auth.failure (source=download) emitted"

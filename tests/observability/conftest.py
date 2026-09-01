@@ -38,7 +38,8 @@ _TEST_JWT_KEY_B64 = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
 
 @pytest.fixture
 async def obs_client(
-    storage_dir: str, recording_metrics: RecordingMetricsProvider,
+    storage_dir: str,
+    recording_metrics: RecordingMetricsProvider,
 ) -> AsyncIterator[tuple[httpx.AsyncClient, RecordingMetricsProvider]]:
     """Dev-mode client with a recording ``MetricsProvider``.
 
@@ -54,9 +55,7 @@ async def obs_client(
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
     os.environ["CASSETTA_JWT_KEY"] = _TEST_JWT_KEY_B64
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
@@ -66,7 +65,8 @@ async def obs_client(
 
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -97,7 +97,8 @@ async def obs_client(
 
 @pytest.fixture
 async def obs_auth_client(
-    storage_dir: str, recording_metrics: RecordingMetricsProvider,
+    storage_dir: str,
+    recording_metrics: RecordingMetricsProvider,
 ) -> AsyncIterator[tuple[httpx.AsyncClient, str, RecordingMetricsProvider]]:
     """Auth-enabled client with a recording ``MetricsProvider``.
 
@@ -113,9 +114,7 @@ async def obs_auth_client(
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
     os.environ["CASSETTA_JWT_KEY"] = _TEST_JWT_KEY_B64
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
@@ -125,7 +124,8 @@ async def obs_auth_client(
 
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)

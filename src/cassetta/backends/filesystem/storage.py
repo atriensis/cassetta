@@ -208,7 +208,9 @@ class FilesystemBackend:
                 for fname in files:
                     rel = (root_path / fname).relative_to(data_dir).as_posix()
                     struct_log(
-                        logger, logging.WARNING, "bundles.stray_entry",
+                        logger,
+                        logging.WARNING,
+                        "bundles.stray_entry",
                         detail={"path": rel, "prefix": prefix},
                     )
                 continue
@@ -216,15 +218,11 @@ class FilesystemBackend:
             has_meta = _BUNDLE_MANIFEST in files
             has_files = any(fname != _BUNDLE_MANIFEST for fname in files)
             if has_meta:
-                results.append(
-                    BundleRef(path=rel, has_meta=True, mtime=root_path.stat().st_mtime)
-                )
+                results.append(BundleRef(path=rel, has_meta=True, mtime=root_path.stat().st_mtime))
                 dirs[:] = []  # do not recurse into bundle contents
             elif has_files:
                 if include_orphans:
-                    results.append(
-                        BundleRef(path=rel, has_meta=False, mtime=root_path.stat().st_mtime)
-                    )
+                    results.append(BundleRef(path=rel, has_meta=False, mtime=root_path.stat().st_mtime))
                 dirs[:] = []
         results.sort(key=lambda r: r.path)
         return iter(results)
@@ -317,19 +315,14 @@ class FilesystemBundleWriter:
         if written_names != declared_set:
             missing = declared_set - written_names
             extra = written_names - declared_set
-            raise ValueError(
-                f"Bundle file set mismatch (missing={sorted(missing)}, extra={sorted(extra)})"
-            )
+            raise ValueError(f"Bundle file set mismatch (missing={sorted(missing)}, extra={sorted(extra)})")
         for entry in files:
             n = entry["name"]
             declared_size = entry.get("size")
             if not isinstance(declared_size, int):
                 raise ValueError(f"files[].size must be an integer (got {type(declared_size).__name__})")
             if declared_size != self._written[n]:
-                raise ValueError(
-                    f"Bundle size mismatch for {n}: declared={declared_size}, "
-                    f"actual={self._written[n]}"
-                )
+                raise ValueError(f"Bundle size mismatch for {n}: declared={declared_size}, actual={self._written[n]}")
 
         meta_bytes = json.dumps(meta).encode("utf-8")
         tmp_path = self._bundle_dir / _BUNDLE_MANIFEST_TMP

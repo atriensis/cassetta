@@ -42,7 +42,8 @@ def test_auth_record_renders_through_configured_handler() -> None:
         h.stream = stream  # type: ignore[attr-defined]
 
     logging.getLogger("cassetta.auth.observability").info(
-        "auth.test", extra={"event": "auth.test"},
+        "auth.test",
+        extra={"event": "auth.test"},
     )
 
     contents = stream.getvalue()
@@ -74,9 +75,7 @@ def test_auth_record_does_not_propagate_to_root() -> None:
     finally:
         root.removeHandler(handler)
 
-    assert captured == [], (
-        f"cassetta.auth records propagated to root: {[r.msg for r in captured]}"
-    )
+    assert captured == [], f"cassetta.auth records propagated to root: {[r.msg for r in captured]}"
 
 
 def test_configure_logging_idempotent_on_auth_subtree() -> None:
@@ -88,9 +87,7 @@ def test_configure_logging_idempotent_on_auth_subtree() -> None:
 
     auth_logger = logging.getLogger("cassetta.auth")
     # Idempotent: exactly one handler attached after re-invocation.
-    assert len(auth_logger.handlers) == 1, [
-        type(h).__name__ for h in auth_logger.handlers
-    ]
+    assert len(auth_logger.handlers) == 1, [type(h).__name__ for h in auth_logger.handlers]
     # No propagation, so a root recording handler sees no record.
     captured: list[logging.LogRecord] = []
 

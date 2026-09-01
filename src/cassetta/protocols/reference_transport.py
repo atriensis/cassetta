@@ -41,5 +41,8 @@ class ReferenceTransport(Protocol):
     kind: ClassVar[str]
 
     def build_download_url(
-        self, bundle_path: str, name: str, token: str,
+        self,
+        bundle_path: str,
+        name: str,
+        token: str,
     ) -> str: ...

@@ -93,7 +93,10 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 
 
 async def _mcp_post(
-    client: httpx.AsyncClient, body: dict, auth_key: str, sid: str = "",
+    client: httpx.AsyncClient,
+    body: dict,
+    auth_key: str,
+    sid: str = "",
 ) -> httpx.Response:
     headers = dict(MCP_HEADERS)
     headers["Authorization"] = f"Bearer {auth_key}"
@@ -103,18 +106,28 @@ async def _mcp_post(
 
 
 async def _mcp_init(client: httpx.AsyncClient, auth_key: str) -> str:
-    resp = await _mcp_post(client, _jsonrpc("initialize", {
-        "protocolVersion": "2025-03-26",
-        "capabilities": {},
-        "clientInfo": {"name": "test-client", "version": "1.0.0"},
-    }), auth_key)
+    resp = await _mcp_post(
+        client,
+        _jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "test-client", "version": "1.0.0"},
+            },
+        ),
+        auth_key,
+    )
     assert resp.status_code == 200
     return resp.headers.get("mcp-session-id", "")
 
 
 async def _mcp_call(
-    client: httpx.AsyncClient, name: str, args: dict,
-    auth_key: str, sid: str,
+    client: httpx.AsyncClient,
+    name: str,
+    args: dict,
+    auth_key: str,
+    sid: str,
 ) -> dict:
     body = _jsonrpc("tools/call", {"name": name, "arguments": args}, req_id=2)
     resp = await _mcp_post(client, body, auth_key, sid)
@@ -129,13 +142,17 @@ class TestMCPSendRESTRetrieve:
 
         # Seed: alice sent a bundle to bob (bypassing the removed send path).
         await seed_inbox_bundle(
-            backend, "test:bob", "report.txt",
-            content=b"mcp content", sender="test:alice",
+            backend,
+            "test:bob",
+            "report.txt",
+            content=b"mcp content",
+            sender="test:alice",
         )
 
         # Bob retrieves via REST listing
         resp = await client.get(
-            "/inbox/test:bob/", headers={"Authorization": f"Bearer {bob_key}"},
+            "/inbox/test:bob/",
+            headers={"Authorization": f"Bearer {bob_key}"},
         )
         assert resp.status_code == 200
         files = resp.json()["files"]
@@ -162,16 +179,25 @@ class TestRESTSendMCPPick:
 
         # Seed: alice sent a bundle to bob.
         await seed_inbox_bundle(
-            backend, "test:bob", "task.json",
-            content=b'{"task": "from rest"}', sender="test:alice",
+            backend,
+            "test:bob",
+            "task.json",
+            content=b'{"task": "from rest"}',
+            sender="test:alice",
         )
 
         # Bob picks via MCP
         set_sender_label("test:bob")
         sid = await _mcp_init(client, bob_key)
-        result = await _mcp_call(client, "cassetta_pick", {
-            "path": "task.json",
-        }, bob_key, sid)
+        result = await _mcp_call(
+            client,
+            "cassetta_pick",
+            {
+                "path": "task.json",
+            },
+            bob_key,
+            sid,
+        )
         assert result.get("isError") is not True
         envelope = json.loads(result["content"][0]["text"])
         assert envelope["mode"] == "inline"
@@ -188,8 +214,11 @@ class TestMCPSendRESTPick:
 
         # Seed: alice sent a bundle to bob.
         await seed_inbox_bundle(
-            backend, "test:bob", "data.csv",
-            content=b"a,b,c", sender="test:alice",
+            backend,
+            "test:bob",
+            "data.csv",
+            content=b"a,b,c",
+            sender="test:alice",
         )
 
         # Bob picks via REST

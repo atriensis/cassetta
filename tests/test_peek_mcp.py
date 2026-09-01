@@ -32,12 +32,8 @@ def peek_env(peek_storage_dir: str) -> None:
     os.environ["CASSETTA_STORAGE_PATH"] = peek_storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
 
@@ -79,7 +75,9 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 
 
 async def _post(
-    client: httpx.AsyncClient, body: dict, sid: str = "",
+    client: httpx.AsyncClient,
+    body: dict,
+    sid: str = "",
 ) -> httpx.Response:
     headers = dict(MCP_HEADERS)
     if sid:
@@ -90,18 +88,24 @@ async def _post(
 async def _init(client: httpx.AsyncClient) -> str:
     resp = await _post(
         client,
-        _jsonrpc("initialize", {
-            "protocolVersion": "2025-03-26",
-            "capabilities": {},
-            "clientInfo": {"name": "peek-test", "version": "1.0.0"},
-        }),
+        _jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "peek-test", "version": "1.0.0"},
+            },
+        ),
     )
     assert resp.status_code == 200
     return resp.headers.get("mcp-session-id", "")
 
 
 async def _call(
-    client: httpx.AsyncClient, name: str, args: dict, sid: str = "",
+    client: httpx.AsyncClient,
+    name: str,
+    args: dict,
+    sid: str = "",
 ) -> dict:
     body = _jsonrpc("tools/call", {"name": name, "arguments": args}, req_id=2)
     resp = await _post(client, body, sid)
@@ -117,8 +121,11 @@ async def test_peek_inbox_round_trip_mcp(mcp_peek: tuple) -> None:
     sid = await _init(client)
 
     from .conftest import seed_inbox_bundle
+
     await seed_inbox_bundle(
-        app.state.backends.backend, "dev:alice", "handoff",
+        app.state.backends.backend,
+        "dev:alice",
+        "handoff",
         files=[("plan.md", b"# Plan"), ("config.yaml", b"key: value")],
         sender="dev:bob",
     )
@@ -126,8 +133,10 @@ async def test_peek_inbox_round_trip_mcp(mcp_peek: tuple) -> None:
     # Peek as bob (still the last sender)
     set_sender_label("dev:alice")
     peek = await _call(
-        client, "cassetta_peek",
-        {"path": "inbox/dev:alice/handoff"}, sid,
+        client,
+        "cassetta_peek",
+        {"path": "inbox/dev:alice/handoff"},
+        sid,
     )
     assert peek.get("isError") is not True
     payload = json.loads(peek["content"][0]["text"])
@@ -155,16 +164,25 @@ async def test_peek_store_via_bare_and_prefixed_paths(mcp_peek: tuple) -> None:
     _app, client, _backend = mcp_peek
     sid = await _init(client)
 
-    await _call(client, "cassetta_put", {
-        "path": "some/thing", "content": "hello",
-    }, sid)
+    await _call(
+        client,
+        "cassetta_put",
+        {
+            "path": "some/thing",
+            "content": "hello",
+        },
+        sid,
+    )
 
     bare = await _call(client, "cassetta_peek", {"path": "some/thing"}, sid)
     bare_body = json.loads(bare["content"][0]["text"])
     assert bare_body["bundle"]["file_count"] == 1
 
     prefixed = await _call(
-        client, "cassetta_peek", {"path": "store/some/thing"}, sid,
+        client,
+        "cassetta_peek",
+        {"path": "store/some/thing"},
+        sid,
     )
     prefixed_body = json.loads(prefixed["content"][0]["text"])
     assert prefixed_body == bare_body

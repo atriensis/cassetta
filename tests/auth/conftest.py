@@ -36,27 +36,35 @@ class RecordingMetricsProvider:
         self.calls: list[MetricCall] = []
 
     def increment(
-        self, name: str, value: int = 1, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: int = 1,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("increment", name, value, tags))
 
     def observe(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("observe", name, value, tags))
 
     def gauge(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("gauge", name, value, tags))
 
     def find(
-        self, name: str, method: str | None = None,
+        self,
+        name: str,
+        method: str | None = None,
     ) -> list[MetricCall]:
-        return [
-            c for c in self.calls
-            if c.name == name and (method is None or c.method == method)
-        ]
+        return [c for c in self.calls if c.name == name and (method is None or c.method == method)]
 
 
 @pytest.fixture
@@ -66,7 +74,8 @@ def recording_metrics() -> RecordingMetricsProvider:
 
 @pytest.fixture
 async def auth_metrics_client(
-    storage_dir: str, recording_metrics: RecordingMetricsProvider,
+    storage_dir: str,
+    recording_metrics: RecordingMetricsProvider,
 ) -> AsyncIterator[tuple[httpx.AsyncClient, str, RecordingMetricsProvider]]:
     """Auth-enabled client with a recording ``MetricsProvider`` wired in.
 
@@ -82,9 +91,7 @@ async def auth_metrics_client(
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
     os.environ["CASSETTA_JWT_KEY"] = _TEST_JWT_KEY_B64
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_JWT_KEY_FILE", None)
@@ -94,7 +101,8 @@ async def auth_metrics_client(
 
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)

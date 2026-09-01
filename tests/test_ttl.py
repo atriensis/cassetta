@@ -29,9 +29,7 @@ async def ttl_client(
 
 
 class TestTTLExpiry:
-    async def test_file_accessible_within_ttl(
-        self, ttl_client: httpx.AsyncClient
-    ) -> None:
+    async def test_file_accessible_within_ttl(self, ttl_client: httpx.AsyncClient) -> None:
         await ttl_client.put("/files/fresh.txt", content=b"fresh")
         response = await ttl_client.get("/files/fresh.txt")
         assert response.status_code == 200
@@ -39,18 +37,14 @@ class TestTTLExpiry:
         assert envelope["mode"] == "inline"
         assert envelope["files"][0]["content"] == "fresh"
 
-    async def test_expired_file_returns_404(
-        self, ttl_client: httpx.AsyncClient
-    ) -> None:
+    async def test_expired_file_returns_404(self, ttl_client: httpx.AsyncClient) -> None:
         await ttl_client.put("/files/expiring.txt", content=b"bye")
         # Wait for TTL to expire (1 second TTL)
         time.sleep(1.5)
         response = await ttl_client.get("/files/expiring.txt")
         assert response.status_code == 404
 
-    async def test_expired_files_excluded_from_list(
-        self, ttl_client: httpx.AsyncClient
-    ) -> None:
+    async def test_expired_files_excluded_from_list(self, ttl_client: httpx.AsyncClient) -> None:
         await ttl_client.put("/files/old.txt", content=b"old")
         time.sleep(1.5)
         # Upload a fresh file after the old one expired
@@ -61,9 +55,7 @@ class TestTTLExpiry:
         assert "new.txt" in paths
         assert "old.txt" not in paths
 
-    async def test_no_expiry_when_ttl_zero(
-        self, client: httpx.AsyncClient
-    ) -> None:
+    async def test_no_expiry_when_ttl_zero(self, client: httpx.AsyncClient) -> None:
         # client fixture has TTL=0
         await client.put("/files/forever.txt", content=b"permanent")
         time.sleep(0.1)
@@ -72,9 +64,7 @@ class TestTTLExpiry:
 
 
 class TestTTLCleanup:
-    async def test_cleanup_removes_expired_bundles(
-        self, storage_dir: str
-    ) -> None:
+    async def test_cleanup_removes_expired_bundles(self, storage_dir: str) -> None:
         """One cleanup sweep removes expired bundles in the store namespace."""
         import io
         import uuid
@@ -86,17 +76,23 @@ class TestTTLCleanup:
         # Seed a committed bundle
         writer = await backend.open_bundle_write("store/to-expire.txt")
         await writer.write_file("to-expire.txt", io.BytesIO(b"data"))
-        await writer.commit({
-            "schema_version": 1,
-            "bundle_id": uuid.uuid4().hex,
-            "sender": None,
-            "created_at": datetime.now(UTC).isoformat(),
-            "content_type": "application/octet-stream",
-            "file_count": 1,
-            "files": [{
-                "name": "to-expire.txt", "size": 4, "mime": "text/plain",
-            }],
-        })
+        await writer.commit(
+            {
+                "schema_version": 1,
+                "bundle_id": uuid.uuid4().hex,
+                "sender": None,
+                "created_at": datetime.now(UTC).isoformat(),
+                "content_type": "application/octet-stream",
+                "file_count": 1,
+                "files": [
+                    {
+                        "name": "to-expire.txt",
+                        "size": 4,
+                        "mime": "text/plain",
+                    }
+                ],
+            }
+        )
         time.sleep(1.5)
 
         config = AppConfig(

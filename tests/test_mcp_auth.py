@@ -44,37 +44,46 @@ class _RecordingMetrics:
         self.calls: list[_MetricCall] = []
 
     def increment(
-        self, name: str, value: int = 1, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: int = 1,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(_MetricCall("increment", name, value, tags))
 
     def observe(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(_MetricCall("observe", name, value, tags))
 
     def gauge(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(_MetricCall("gauge", name, value, tags))
 
 
 def _setup_app_with_metrics(
-    setup_token: str, storage_dir: str,
+    setup_token: str,
+    storage_dir: str,
 ) -> tuple:
     """Variant of ``_setup_app`` with a recording metrics provider."""
     os.environ["CASSETTA_SETUP_TOKEN"] = setup_token
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
 
     metrics = _RecordingMetrics()
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=metrics,
+        build_core_defaults(config),
+        metrics_provider=metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -154,13 +163,11 @@ async def test_mcp_dev_mode_bypasses_auth() -> None:
 # US1 AS-4: missing Bearer prefix → reason=missing_bearer.
 # US1 AS-5: invalid bearer → reason=invalid_key, identity_hint=first 12 chars.
 
+
 def _failure_records(
     captured: list[logging.LogRecord],
 ) -> list[logging.LogRecord]:
-    return [
-        r for r in captured
-        if getattr(r, "event", None) == "auth.failure"
-    ]
+    return [r for r in captured if getattr(r, "event", None) == "auth.failure"]
 
 
 @pytest.mark.asyncio
@@ -187,13 +194,11 @@ async def test_mcp_missing_bearer_emits_auth_failure(
         "reason": "missing_bearer",
         "identity_hint": None,
     }
-    increments = [
-        c for c in metrics.calls
-        if c.name == "cassetta.auth.failures" and c.method == "increment"
-    ]
+    increments = [c for c in metrics.calls if c.name == "cassetta.auth.failures" and c.method == "increment"]
     assert len(increments) == 1
     assert increments[0].tags == {
-        "source": "mcp", "reason": "missing_bearer",
+        "source": "mcp",
+        "reason": "missing_bearer",
     }
     # Note: R5 originally assumed MCP requests would have request_id=null.
     # In practice, RequestIdMiddleware is registered on the parent FastAPI
@@ -232,11 +237,9 @@ async def test_mcp_invalid_bearer_emits_auth_failure_invalid_key(
     assert detail["identity_hint"] == bearer[:12]
     assert len(detail["identity_hint"]) <= 12
 
-    increments = [
-        c for c in metrics.calls
-        if c.name == "cassetta.auth.failures" and c.method == "increment"
-    ]
+    increments = [c for c in metrics.calls if c.name == "cassetta.auth.failures" and c.method == "increment"]
     assert len(increments) == 1
     assert increments[0].tags == {
-        "source": "mcp", "reason": "invalid_key",
+        "source": "mcp",
+        "reason": "invalid_key",
     }

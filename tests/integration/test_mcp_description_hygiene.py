@@ -35,7 +35,8 @@ async def _list_tools(h, client: httpx.AsyncClient, api_key: str) -> dict:
 
 @pytest.mark.asyncio
 async def test_send_descriptions_have_no_internal_leakage(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     key = await h.setup_agent(client, "bob", "hygiene")
@@ -49,7 +50,8 @@ async def test_send_descriptions_have_no_internal_leakage(
 
 @pytest.mark.asyncio
 async def test_send_descriptions_state_caller_usage(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Descriptions must read as caller guidance (inputs + the encoding constraint)."""
     client, _ = core_app

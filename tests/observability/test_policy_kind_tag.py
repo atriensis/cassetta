@@ -15,7 +15,8 @@ _TEST_JWT_KEY_B64 = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
 
 
 async def test_core_denial_has_policy_kind_core_field(
-    storage_dir, recording_metrics: RecordingMetricsProvider,
+    storage_dir,
+    recording_metrics: RecordingMetricsProvider,
     cassetta_log_capture: CassettaLogCapture,
 ) -> None:
     """SC-016 — core REST `_enforce` denial emits `policy.denied`
@@ -31,12 +32,17 @@ async def test_core_denial_has_policy_kind_core_field(
         kind: ClassVar[str] = "deny-all"
 
         async def check(
-            self, identity: Identity, resource: str, action: str,
+            self,
+            identity: Identity,
+            resource: str,
+            action: str,
         ) -> bool:
             return False
 
         async def visible_agents(
-            self, identity: Identity, labels: list[str],
+            self,
+            identity: Identity,
+            labels: list[str],
         ) -> list[str]:
             return []
 
@@ -72,22 +78,18 @@ async def test_core_denial_has_policy_kind_core_field(
 
     # Counter has policy_kind=core tag.
     policy = recording_metrics.find("cassetta.policy.decisions", "increment")
-    assert any(
-        c.tags and c.tags.get("policy_kind") == "core" for c in policy
-    ), [c.tags for c in policy]
+    assert any(c.tags and c.tags.get("policy_kind") == "core" for c in policy), [c.tags for c in policy]
 
     # Event has policy_kind=core in its detail field.
-    denied = [
-        r for r in cassetta_log_capture.records
-        if getattr(r, "event", None) == "policy.denied"
-    ]
+    denied = [r for r in cassetta_log_capture.records if getattr(r, "event", None) == "policy.denied"]
     assert denied, "expected at least one policy.denied event"
     detail = getattr(denied[0], "detail", {}) or {}
     assert detail.get("policy_kind") == "core", detail
 
 
 async def test_additive_tag_preserves_sum(
-    storage_dir, recording_metrics: RecordingMetricsProvider,
+    storage_dir,
+    recording_metrics: RecordingMetricsProvider,
 ) -> None:
     """SC-019 — aggregations summing cassetta.policy.decisions{result=denied}
     while ignoring policy_kind report the SAME total pre vs. post-brief in a
@@ -102,12 +104,17 @@ async def test_additive_tag_preserves_sum(
         kind: ClassVar[str] = "deny-all"
 
         async def check(
-            self, identity: Identity, resource: str, action: str,
+            self,
+            identity: Identity,
+            resource: str,
+            action: str,
         ) -> bool:
             return False
 
         async def visible_agents(
-            self, identity: Identity, labels: list[str],
+            self,
+            identity: Identity,
+            labels: list[str],
         ) -> list[str]:
             return []
 
@@ -138,7 +145,8 @@ async def test_additive_tag_preserves_sum(
 
     # Total denials = 3 regardless of grouping.
     denials = [
-        c for c in recording_metrics.find("cassetta.policy.decisions", "increment")
+        c
+        for c in recording_metrics.find("cassetta.policy.decisions", "increment")
         if c.tags and c.tags.get("result") == "denied"
     ]
     assert len(denials) == 3

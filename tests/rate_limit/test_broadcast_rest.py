@@ -40,8 +40,12 @@ async def _start_mcp(app: Any) -> Any:
 
 
 async def _booted_app(
-    storage_dir: str, recording_metrics: Any, *,
-    rate: str = "10/minute", max_targets: int = 1000, target_count: int = 3,
+    storage_dir: str,
+    recording_metrics: Any,
+    *,
+    rate: str = "10/minute",
+    max_targets: int = 1000,
+    target_count: int = 3,
 ) -> tuple[httpx.AsyncClient, Any, str, Any]:
     """Boot a fresh app with custom rate-limit env, populate active keys."""
     os.environ["CASSETTA_SETUP_TOKEN"] = "rl-test-token"
@@ -49,12 +53,8 @@ async def _booted_app(
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_PER_FILE_MAX"] = "1048576"
     os.environ.pop("CASSETTA_MAX_FILE_SIZE", None)
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
     os.environ["CASSETTA_RATE_LIMIT_BROADCAST"] = rate
@@ -84,21 +84,27 @@ async def _booted_app(
 class TestRestBroadcastRateLimit:
     @pytest.mark.asyncio
     async def test_429_envelope_shape_after_budget_exceeded(
-        self, storage_dir: str, recording_metrics: Any,
+        self,
+        storage_dir: str,
+        recording_metrics: Any,
     ) -> None:
         client, _app, sender, stop_mcp = await _booted_app(
-            storage_dir, recording_metrics, rate="3/minute",
+            storage_dir,
+            recording_metrics,
+            rate="3/minute",
         )
         try:
             for _ in range(3):
                 resp = await client.post(
-                    "/broadcast/x.txt", content=b"hi",
+                    "/broadcast/x.txt",
+                    content=b"hi",
                     headers={"Authorization": f"Bearer {sender}"},
                 )
                 assert resp.status_code == 200, resp.text
 
             resp = await client.post(
-                "/broadcast/x.txt", content=b"hi",
+                "/broadcast/x.txt",
+                content=b"hi",
                 headers={"Authorization": f"Bearer {sender}"},
             )
             assert resp.status_code == 429
@@ -111,7 +117,8 @@ class TestRestBroadcastRateLimit:
             calls = recording_metrics.find("cassetta.rate_limit.hits")
             assert len(calls) == 1
             assert calls[0].tags == {
-                "route": "broadcast", "reason": "rate",
+                "route": "broadcast",
+                "reason": "rate",
             }
         finally:
             await client.aclose()
@@ -119,11 +126,16 @@ class TestRestBroadcastRateLimit:
 
     @pytest.mark.asyncio
     async def test_fanout_cap_envelope_blocks_before_storage_write(
-        self, storage_dir: str, recording_metrics: Any,
+        self,
+        storage_dir: str,
+        recording_metrics: Any,
     ) -> None:
         client, app, sender, stop_mcp = await _booted_app(
-            storage_dir, recording_metrics,
-            rate="100/minute", max_targets=2, target_count=5,
+            storage_dir,
+            recording_metrics,
+            rate="100/minute",
+            max_targets=2,
+            target_count=5,
         )
         try:
             backend = app.state.backends.backend
@@ -137,7 +149,8 @@ class TestRestBroadcastRateLimit:
             backend.open_bundle_write = spy_open  # type: ignore[method-assign]
 
             resp = await client.post(
-                "/broadcast/x.txt", content=b"hi",
+                "/broadcast/x.txt",
+                content=b"hi",
                 headers={"Authorization": f"Bearer {sender}"},
             )
             assert resp.status_code == 429, resp.text
@@ -149,14 +162,13 @@ class TestRestBroadcastRateLimit:
             }
             assert resp.headers["retry-after"] == "0"
 
-            assert opens == [], (
-                "Fan-out cap rejection must precede every storage write."
-            )
+            assert opens == [], "Fan-out cap rejection must precede every storage write."
 
             calls = recording_metrics.find("cassetta.rate_limit.hits")
             assert len(calls) == 1
             assert calls[0].tags == {
-                "route": "broadcast", "reason": "fanout_cap",
+                "route": "broadcast",
+                "reason": "fanout_cap",
             }
         finally:
             await client.aclose()
@@ -164,15 +176,21 @@ class TestRestBroadcastRateLimit:
 
     @pytest.mark.asyncio
     async def test_at_cap_proceeds_no_counter_advance(
-        self, storage_dir: str, recording_metrics: Any,
+        self,
+        storage_dir: str,
+        recording_metrics: Any,
     ) -> None:
         client, _app, sender, stop_mcp = await _booted_app(
-            storage_dir, recording_metrics,
-            rate="100/minute", max_targets=5, target_count=5,
+            storage_dir,
+            recording_metrics,
+            rate="100/minute",
+            max_targets=5,
+            target_count=5,
         )
         try:
             resp = await client.post(
-                "/broadcast/x.txt", content=b"hi",
+                "/broadcast/x.txt",
+                content=b"hi",
                 headers={"Authorization": f"Bearer {sender}"},
             )
             assert resp.status_code == 200, resp.text

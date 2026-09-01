@@ -17,7 +17,10 @@ async def test_scenario_02_two_agents(
 
     # 3. A sends to B's inbox
     await h.send_inline(
-        client, key_a, to="agent-b:proj-b", path="hello.txt",
+        client,
+        key_a,
+        to="agent-b:proj-b",
+        path="hello.txt",
         content=b"from A to B",
     )
 
@@ -33,7 +36,10 @@ async def test_scenario_02_two_agents(
 
     # 5. B sends to A's inbox
     await h.send_inline(
-        client, key_b, to="agent-a:proj-a", path="reply.txt",
+        client,
+        key_b,
+        to="agent-a:proj-a",
+        path="reply.txt",
         content=b"from B to A",
     )
 

@@ -35,17 +35,26 @@ class _Recorder:
     observes: list[_Call] = field(default_factory=list)
 
     def increment(
-        self, name: str, value: int = 1, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: int = 1,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.increments.append(_Call(name, value, tags))
 
     def observe(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.observes.append(_Call(name, value, tags))
 
     def gauge(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.gauges.append(_Call(name, value, tags))
 
@@ -108,18 +117,24 @@ def test_metric_step_failure_does_not_block_request() -> None:
         kind = "boom"
 
         def increment(
-            self, name: str, value: int = 1,
+            self,
+            name: str,
+            value: int = 1,
             tags: dict[str, str] | None = None,
         ) -> None:
             raise RuntimeError("metrics down")
 
         def observe(
-            self, name: str, value: float,
+            self,
+            name: str,
+            value: float,
             tags: dict[str, str] | None = None,
         ) -> None: ...
 
         def gauge(
-            self, name: str, value: float,
+            self,
+            name: str,
+            value: float,
             tags: dict[str, str] | None = None,
         ) -> None: ...
 
@@ -136,14 +151,9 @@ def test_metric_step_failure_does_not_block_request() -> None:
     finally:
         target.removeHandler(handler)
 
-    events = [
-        r for r in captured if getattr(r, "event", None) == "test.event"
-    ]
+    events = [r for r in captured if getattr(r, "event", None) == "test.event"]
     assert len(events) == 1
-    fallbacks = [
-        r for r in captured
-        if "metrics.increment failed" in r.getMessage()
-    ]
+    fallbacks = [r for r in captured if "metrics.increment failed" in r.getMessage()]
     assert len(fallbacks) == 1
     assert fallbacks[0].levelno == logging.ERROR
 
@@ -217,9 +227,7 @@ def test_log_only_skips_metric_when_metric_name_none() -> None:
     finally:
         target.removeHandler(handler)
     assert len(metrics.increments) == 0
-    assert any(
-        getattr(r, "event", None) == "log.only" for r in captured
-    )
+    assert any(getattr(r, "event", None) == "log.only" for r in captured)
 
 
 def test_metric_only_skips_log_when_event_none() -> None:
@@ -239,6 +247,4 @@ def test_metric_only_skips_log_when_event_none() -> None:
     finally:
         target.removeHandler(handler)
     assert len(metrics.increments) == 1
-    assert not any(
-        getattr(r, "event", None) is not None for r in captured
-    )
+    assert not any(getattr(r, "event", None) is not None for r in captured)

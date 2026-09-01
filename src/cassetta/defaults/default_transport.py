@@ -24,7 +24,10 @@ class CoreReferenceTransport:
         self._base = public_base_url.rstrip("/")
 
     def build_download_url(
-        self, bundle_path: str, name: str, token: str,
+        self,
+        bundle_path: str,
+        name: str,
+        token: str,
     ) -> str:
         # token is accepted for ReferenceTransport conformance; header-auth
         # is the core transport's token channel, not a query parameter.

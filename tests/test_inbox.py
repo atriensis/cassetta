@@ -28,9 +28,7 @@ async def inbox_client(
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
 
     app = create_app()
@@ -76,9 +74,7 @@ async def inbox_ttl_client(
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "1"
     os.environ["CASSETTA_MAX_FILE_SIZE"] = "1048576"
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
 
     app = create_app()
@@ -127,15 +123,27 @@ class TestInboxList:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_client
         await seed_inbox_bundle(
-            backend, "test:bob", "first.txt", content=b"1", sender="test:alice",
+            backend,
+            "test:bob",
+            "first.txt",
+            content=b"1",
+            sender="test:alice",
         )
         time.sleep(0.05)
         await seed_inbox_bundle(
-            backend, "test:bob", "second.txt", content=b"2", sender="test:alice",
+            backend,
+            "test:bob",
+            "second.txt",
+            content=b"2",
+            sender="test:alice",
         )
         time.sleep(0.05)
         await seed_inbox_bundle(
-            backend, "test:bob", "third.txt", content=b"3", sender="test:alice",
+            backend,
+            "test:bob",
+            "third.txt",
+            content=b"3",
+            sender="test:alice",
         )
 
         response = await client.get("/inbox/test:bob/", headers=_auth(bob_key))
@@ -154,9 +162,7 @@ class TestInboxList:
             assert "created_at" in f
             assert "remaining_ttl" in f
 
-    async def test_list_empty_inbox(
-        self, inbox_client: tuple[httpx.AsyncClient, FilesystemBackend, str, str]
-    ) -> None:
+    async def test_list_empty_inbox(self, inbox_client: tuple[httpx.AsyncClient, FilesystemBackend, str, str]) -> None:
         client, _backend, _alice_key, bob_key = inbox_client
         response = await client.get("/inbox/test:bob/", headers=_auth(bob_key))
         assert response.status_code == 200
@@ -168,7 +174,11 @@ class TestInboxList:
         client, backend, alice_key, _bob_key = inbox_client
         # Alice sends to bob
         await seed_inbox_bundle(
-            backend, "test:bob", "secret.txt", content=b"data", sender="test:alice",
+            backend,
+            "test:bob",
+            "secret.txt",
+            content=b"data",
+            sender="test:alice",
         )
         # Alice can list bob's inbox (core: no access control)
         response = await client.get("/inbox/test:bob/", headers=_auth(alice_key))
@@ -180,7 +190,11 @@ class TestInboxList:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_ttl_client
         await seed_inbox_bundle(
-            backend, "test:bob", "msg.txt", content=b"data", sender="test:alice",
+            backend,
+            "test:bob",
+            "msg.txt",
+            content=b"data",
+            sender="test:alice",
         )
         response = await client.get("/inbox/test:bob/", headers=_auth(bob_key))
         files = response.json()["files"]
@@ -200,11 +214,15 @@ class TestInboxPick:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_client
         await seed_inbox_bundle(
-            backend, "test:bob", "task.json",
-            content=b'{"do": "this"}', sender="test:alice",
+            backend,
+            "test:bob",
+            "task.json",
+            content=b'{"do": "this"}',
+            sender="test:alice",
         )
         response = await client.post(
-            "/inbox/test:bob/task.json/pick", headers=_auth(bob_key),
+            "/inbox/test:bob/task.json/pick",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 200
         envelope = response.json()
@@ -222,7 +240,8 @@ class TestInboxPick:
     ) -> None:
         client, _backend, _alice_key, bob_key = inbox_client
         response = await client.post(
-            "/inbox/test:bob/missing.txt/pick", headers=_auth(bob_key),
+            "/inbox/test:bob/missing.txt/pick",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 404
 
@@ -231,7 +250,11 @@ class TestInboxPick:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_client
         await seed_inbox_bundle(
-            backend, "test:bob", "msg.txt", content=b"hello", sender="test:alice",
+            backend,
+            "test:bob",
+            "msg.txt",
+            content=b"hello",
+            sender="test:alice",
         )
         await client.post("/inbox/test:bob/msg.txt/pick", headers=_auth(bob_key))
         response = await client.get("/inbox/test:bob/", headers=_auth(bob_key))
@@ -244,10 +267,15 @@ class TestInboxGet:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_client
         await seed_inbox_bundle(
-            backend, "test:bob", "doc.txt", content=b"read me", sender="test:alice",
+            backend,
+            "test:bob",
+            "doc.txt",
+            content=b"read me",
+            sender="test:alice",
         )
         response = await client.get(
-            "/inbox/test:bob/doc.txt", headers=_auth(bob_key),
+            "/inbox/test:bob/doc.txt",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 200
         envelope = response.json()
@@ -264,7 +292,8 @@ class TestInboxGet:
     ) -> None:
         client, _backend, _alice_key, bob_key = inbox_client
         response = await client.get(
-            "/inbox/test:bob/nope.txt", headers=_auth(bob_key),
+            "/inbox/test:bob/nope.txt",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 404
 
@@ -275,10 +304,15 @@ class TestInboxDelete:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_client
         await seed_inbox_bundle(
-            backend, "test:bob", "temp.txt", content=b"temp", sender="test:alice",
+            backend,
+            "test:bob",
+            "temp.txt",
+            content=b"temp",
+            sender="test:alice",
         )
         response = await client.delete(
-            "/inbox/test:bob/temp.txt", headers=_auth(bob_key),
+            "/inbox/test:bob/temp.txt",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 204
         with pytest.raises(FileNotFoundError):
@@ -289,7 +323,8 @@ class TestInboxDelete:
     ) -> None:
         client, _backend, _alice_key, bob_key = inbox_client
         response = await client.delete(
-            "/inbox/test:bob/nope.txt", headers=_auth(bob_key),
+            "/inbox/test:bob/nope.txt",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 404
 
@@ -305,15 +340,24 @@ class TestLatestAlias:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_client
         await seed_inbox_bundle(
-            backend, "test:bob", "old.txt", content=b"old", sender="test:alice",
+            backend,
+            "test:bob",
+            "old.txt",
+            content=b"old",
+            sender="test:alice",
         )
         time.sleep(0.05)
         await seed_inbox_bundle(
-            backend, "test:bob", "new.txt", content=b"newest", sender="test:alice",
+            backend,
+            "test:bob",
+            "new.txt",
+            content=b"newest",
+            sender="test:alice",
         )
 
         response = await client.post(
-            "/inbox/test:bob/latest/pick", headers=_auth(bob_key),
+            "/inbox/test:bob/latest/pick",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 200
         envelope = response.json()
@@ -326,7 +370,8 @@ class TestLatestAlias:
     ) -> None:
         client, _backend, _alice_key, bob_key = inbox_client
         response = await client.post(
-            "/inbox/test:bob/latest/pick", headers=_auth(bob_key),
+            "/inbox/test:bob/latest/pick",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 404
 
@@ -342,7 +387,11 @@ class TestInboxTTL:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_ttl_client
         await seed_inbox_bundle(
-            backend, "test:bob", "expiring.txt", content=b"bye", sender="test:alice",
+            backend,
+            "test:bob",
+            "expiring.txt",
+            content=b"bye",
+            sender="test:alice",
         )
         time.sleep(1.1)
         response = await client.get("/inbox/test:bob/", headers=_auth(bob_key))
@@ -353,10 +402,15 @@ class TestInboxTTL:
     ) -> None:
         client, backend, _alice_key, bob_key = inbox_ttl_client
         await seed_inbox_bundle(
-            backend, "test:bob", "temp.txt", content=b"temp", sender="test:alice",
+            backend,
+            "test:bob",
+            "temp.txt",
+            content=b"temp",
+            sender="test:alice",
         )
         time.sleep(1.1)
         response = await client.post(
-            "/inbox/test:bob/temp.txt/pick", headers=_auth(bob_key),
+            "/inbox/test:bob/temp.txt/pick",
+            headers=_auth(bob_key),
         )
         assert response.status_code == 404

@@ -43,7 +43,9 @@ def _unwrap(result: dict) -> dict:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("compress", [True, False], ids=["gzip", "plain"])
 async def test_batch_roundtrip(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h, compress: bool,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
+    compress: bool,
 ) -> None:
     client, _ = core_app_small_inline
     sender_key = await h.setup_agent(client, "bob", f"batch-{compress}")
@@ -56,19 +58,17 @@ async def test_batch_roundtrip(
     }
     manifest = {
         "file_count": len(files),
-        "files": [
-            {"name": name, "size": len(data)} for name, data in files.items()
-        ],
+        "files": [{"name": name, "size": len(data)} for name, data in files.items()],
     }
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {"to": "alice:main", "path": "project-drop.tgz", "manifest": manifest},
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     body = _unwrap(init)
-    assert body["mode"] == "batch", (
-        f"expected batch for size-forcing test, got {body!r}"
-    )
+    assert body["mode"] == "batch", f"expected batch for size-forcing test, got {body!r}"
     upload_url = body["upload_url"]
     token = body["batch_token"]
     bundle_id = body["bundle_id"]
@@ -93,8 +93,11 @@ async def test_batch_roundtrip(
     recip_sid = await h.mcp_init(client, api_key=recipient_key)
     # The recipient lives under alias `alice:main` — use that inbox.
     inbox = await h.mcp_call(
-        client, "cassetta_inbox", {"agent": "alice:main"},
-        sid=recip_sid, api_key=recipient_key,
+        client,
+        "cassetta_inbox",
+        {"agent": "alice:main"},
+        sid=recip_sid,
+        api_key=recipient_key,
     )
     listing = json.loads(inbox["content"][0]["text"])
     paths = {entry["path"] for entry in listing}
@@ -103,7 +106,8 @@ async def test_batch_roundtrip(
 
 @pytest.mark.asyncio
 async def test_batch_wrong_bundle_path_rejected(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """T030 — batch JWT issued for alice but POSTed to bob's path → 401."""
     client, _ = core_app_small_inline
@@ -115,15 +119,18 @@ async def test_batch_wrong_bundle_path_rejected(
 
     files = {"payload.bin": b"x" * 100}
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "notes.md",
+            "to": "alice:main",
+            "path": "notes.md",
             "manifest": {
                 "file_count": 1,
                 "files": [{"name": "payload.bin", "size": 100}],
             },
         },
-        sid=sid, api_key=sender_key,
+        sid=sid,
+        api_key=sender_key,
     )
     body = _unwrap(init)
     token = body["batch_token"]

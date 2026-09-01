@@ -16,14 +16,17 @@ def _env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("CASSETTA_DEFAULT_TTL", "0")
     monkeypatch.setenv("CASSETTA_PUBLIC_BASE_URL", "http://localhost:16001")
     for v in (
-        "CASSETTA_JWT_KEY", "CASSETTA_JWT_KEY_FILE",
-        "CASSETTA_JWT_KEY_SECONDARY", "CASSETTA_JWT_KEY_SECONDARY_FILE",
+        "CASSETTA_JWT_KEY",
+        "CASSETTA_JWT_KEY_FILE",
+        "CASSETTA_JWT_KEY_SECONDARY",
+        "CASSETTA_JWT_KEY_SECONDARY_FILE",
     ):
         monkeypatch.delenv(v, raising=False)
 
 
 def test_primary_file_wins_over_value(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _env(monkeypatch, tmp_path)
     file_b = base64.b64encode(b"F" * 36).decode("ascii")
@@ -38,7 +41,8 @@ def test_primary_file_wins_over_value(
 
 
 def test_primary_env_source_recorded(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _env(monkeypatch, tmp_path)
     env_b = base64.b64encode(b"E" * 36).decode("ascii")
@@ -49,7 +53,8 @@ def test_primary_env_source_recorded(
 
 
 def test_secondary_file_wins_over_value(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     _env(monkeypatch, tmp_path)
     primary_b = base64.b64encode(b"P" * 36).decode("ascii")

@@ -18,7 +18,9 @@ import pytest
 
 async def _init_raw(h, client, args: dict, sid: str, api_key: str):
     body = {
-        "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
         "params": {"name": "cassetta_send_init", "arguments": args},
     }
     return await h.mcp_post(client, body, sid=sid, api_key=api_key)
@@ -36,7 +38,8 @@ def _error_text(payload: dict) -> str:
 
 @pytest.mark.asyncio
 async def test_traversal_name_rejected_before_policy(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender = await h.setup_agent(client, "bob", "us3-t")
@@ -44,12 +47,15 @@ async def test_traversal_name_rejected_before_policy(
     sid = await h.mcp_init(client, api_key=sender)
 
     resp = await _init_raw(
-        h, client,
+        h,
+        client,
         {
-            "to": "alice:main", "path": "n.md",
+            "to": "alice:main",
+            "path": "n.md",
             "manifest": {"file_count": 1, "files": [{"name": "../escape", "size": 1}]},
         },
-        sid, sender,
+        sid,
+        sender,
     )
     text = _error_text(resp.json())
     assert "invalid_manifest" in text
@@ -58,7 +64,8 @@ async def test_traversal_name_rejected_before_policy(
 
 @pytest.mark.asyncio
 async def test_reserved_name_rejected(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender = await h.setup_agent(client, "bob", "us3-r")
@@ -66,12 +73,15 @@ async def test_reserved_name_rejected(
     sid = await h.mcp_init(client, api_key=sender)
 
     resp = await _init_raw(
-        h, client,
+        h,
+        client,
         {
-            "to": "alice:main", "path": "n.md",
+            "to": "alice:main",
+            "path": "n.md",
             "manifest": {"file_count": 1, "files": [{"name": "meta.json", "size": 1}]},
         },
-        sid, sender,
+        sid,
+        sender,
     )
     text = _error_text(resp.json())
     assert "invalid_manifest" in text
@@ -80,7 +90,8 @@ async def test_reserved_name_rejected(
 
 @pytest.mark.asyncio
 async def test_duplicate_entry_rejected(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender = await h.setup_agent(client, "bob", "us3-d")
@@ -88,9 +99,11 @@ async def test_duplicate_entry_rejected(
     sid = await h.mcp_init(client, api_key=sender)
 
     resp = await _init_raw(
-        h, client,
+        h,
+        client,
         {
-            "to": "alice:main", "path": "n.md",
+            "to": "alice:main",
+            "path": "n.md",
             "manifest": {
                 "file_count": 2,
                 "files": [
@@ -99,7 +112,8 @@ async def test_duplicate_entry_rejected(
                 ],
             },
         },
-        sid, sender,
+        sid,
+        sender,
     )
     text = _error_text(resp.json())
     assert "invalid_manifest" in text
@@ -108,7 +122,8 @@ async def test_duplicate_entry_rejected(
 
 @pytest.mark.asyncio
 async def test_prefix_collision_rejected(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender = await h.setup_agent(client, "bob", "us3-p")
@@ -116,9 +131,11 @@ async def test_prefix_collision_rejected(
     sid = await h.mcp_init(client, api_key=sender)
 
     resp = await _init_raw(
-        h, client,
+        h,
+        client,
         {
-            "to": "alice:main", "path": "n.md",
+            "to": "alice:main",
+            "path": "n.md",
             "manifest": {
                 "file_count": 2,
                 "files": [
@@ -127,7 +144,8 @@ async def test_prefix_collision_rejected(
                 ],
             },
         },
-        sid, sender,
+        sid,
+        sender,
     )
     text = _error_text(resp.json())
     assert "invalid_manifest" in text
@@ -136,7 +154,8 @@ async def test_prefix_collision_rejected(
 
 @pytest.mark.asyncio
 async def test_per_file_cap_exceeded(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Per-file cap rejection raises ``cap_exceeded``."""
@@ -162,12 +181,15 @@ async def test_per_file_cap_exceeded(
     sid = await h.mcp_init(client, api_key=sender)
 
     resp = await _init_raw(
-        h, client,
+        h,
+        client,
         {
-            "to": "alice:main", "path": "n.md",
+            "to": "alice:main",
+            "path": "n.md",
             "manifest": {"file_count": 1, "files": [{"name": "big.bin", "size": 100}]},
         },
-        sid, sender,
+        sid,
+        sender,
     )
     text = _error_text(resp.json())
     assert "cap_exceeded" in text
@@ -176,7 +198,8 @@ async def test_per_file_cap_exceeded(
 
 @pytest.mark.asyncio
 async def test_manifest_invalid_beats_cap_exceeded(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Scenario 9: when BOTH malformed and over cap, manifest error wins."""
     client, _ = core_app
@@ -199,9 +222,11 @@ async def test_manifest_invalid_beats_cap_exceeded(
     sid = await h.mcp_init(client, api_key=sender)
 
     resp = await _init_raw(
-        h, client,
+        h,
+        client,
         {
-            "to": "alice:main", "path": "n.md",
+            "to": "alice:main",
+            "path": "n.md",
             # Both: duplicate names AND oversize.
             "manifest": {
                 "file_count": 2,
@@ -211,7 +236,8 @@ async def test_manifest_invalid_beats_cap_exceeded(
                 ],
             },
         },
-        sid, sender,
+        sid,
+        sender,
     )
     text = _error_text(resp.json())
     # Manifest error wins: we see invalid_manifest, not cap_exceeded.
@@ -221,7 +247,9 @@ async def test_manifest_invalid_beats_cap_exceeded(
 
 @pytest.mark.asyncio
 async def test_rejected_init_leaves_no_on_disk_residue(
-    core_app: tuple[httpx.AsyncClient, str], h, storage_dir: str,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
+    storage_dir: str,
 ) -> None:
     """Rejected send_init must not create any bundle directory on disk."""
     # The core_app fixture uses its own tempdir; collect it from config.
@@ -234,12 +262,15 @@ async def test_rejected_init_leaves_no_on_disk_residue(
     sid = await h.mcp_init(client, api_key=sender)
 
     await _init_raw(
-        h, client,
+        h,
+        client,
         {
-            "to": "alice:main", "path": "note.md",
+            "to": "alice:main",
+            "path": "note.md",
             "manifest": {"file_count": 1, "files": [{"name": "meta.json", "size": 1}]},
         },
-        sid, sender,
+        sid,
+        sender,
     )
     # Even if data_root exists, the specific bundle dir should not.
     if os.path.isdir(data_root):

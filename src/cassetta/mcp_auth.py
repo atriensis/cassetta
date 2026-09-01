@@ -98,15 +98,19 @@ class MCPAuthMiddleware:
     @staticmethod
     async def _send_401(send: Send, detail: str) -> None:
         body = json.dumps({"detail": detail}).encode()
-        await send({
-            "type": "http.response.start",
-            "status": 401,
-            "headers": [
-                [b"content-type", b"application/json"],
-                [b"content-length", str(len(body)).encode()],
-            ],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": body,
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 401,
+                "headers": [
+                    [b"content-type", b"application/json"],
+                    [b"content-length", str(len(body)).encode()],
+                ],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": body,
+            }
+        )

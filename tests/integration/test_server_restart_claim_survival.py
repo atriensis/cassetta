@@ -31,12 +31,8 @@ async def _boot_app(storage_dir: str) -> AsyncIterator[httpx.AsyncClient]:
     os.environ["CASSETTA_SETUP_TOKEN"] = SETUP_TOKEN
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ["CASSETTA_MAX_INLINE_SIZE"] = "32"
     os.environ.pop("CASSETTA_JWT_KEY_FILE", None)
@@ -80,15 +76,20 @@ async def test_claim_survives_restart() -> None:
 
         backend = FilesystemBackend(root_path=storage_dir)
         await seed_inbox_bundle(
-            backend, "alice:main", "survive-me",
+            backend,
+            "alice:main",
+            "survive-me",
             files=[("data.bin", b"S" * 400)],
             sender="bob",
         )
 
         sid = await h.mcp_init(client, api_key=alice_key)
         pick = await h.mcp_call(
-            client, "cassetta_pick", {"path": "survive-me"},
-            sid=sid, api_key=alice_key,
+            client,
+            "cassetta_pick",
+            {"path": "survive-me"},
+            sid=sid,
+            api_key=alice_key,
         )
         envelope = json.loads(pick["content"][0]["text"])
         assert envelope["mode"] == "reference"
@@ -99,9 +100,7 @@ async def test_claim_survives_restart() -> None:
     # Sidecar exists on disk after teardown.
     claims_dir = Path(storage_dir) / ".claims"
     sidecars = list(claims_dir.glob("*.json"))
-    assert len(sidecars) == 1, (
-        f"sidecar should survive app teardown; got {sidecars!r}"
-    )
+    assert len(sidecars) == 1, f"sidecar should survive app teardown; got {sidecars!r}"
 
     # --- Second boot: new app, same data/ ---
     async for client in _boot_app(storage_dir):
@@ -116,13 +115,12 @@ async def test_claim_survives_restart() -> None:
         assert resp.status_code == 200
         listing = resp.json()
         paths = {e["path"] for e in listing["files"]}
-        assert "survive-me" not in paths, (
-            f"bundle should still be hidden after restart; listing: {listing!r}"
-        )
+        assert "survive-me" not in paths, f"bundle should still be hidden after restart; listing: {listing!r}"
 
         # Pre-restart JWT still works.
         dl = await client.get(
-            dl_path, headers={
+            dl_path,
+            headers={
                 "Authorization": f"Bearer {pre_restart_token}",
                 "X-Sender": "alice:main",
             },

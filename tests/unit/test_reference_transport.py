@@ -23,27 +23,29 @@ from cassetta.protocols.reference_transport import ReferenceTransport
 def test_builds_url_with_encoded_bundle_path() -> None:
     transport = CoreReferenceTransport("https://cassetta.local")
     url = transport.build_download_url(
-        "inbox/alice/notes.md", "notes.md", "jwt-placeholder",
+        "inbox/alice/notes.md",
+        "notes.md",
+        "jwt-placeholder",
     )
-    assert url == (
-        "https://cassetta.local/download/inbox%2Falice%2Fnotes.md/notes.md"
-    )
+    assert url == ("https://cassetta.local/download/inbox%2Falice%2Fnotes.md/notes.md")
 
 
 def test_normalises_trailing_slash_on_base() -> None:
     transport = CoreReferenceTransport("https://cassetta.local/")
     url = transport.build_download_url(
-        "store/archive.zip", "archive.zip", "jwt",
+        "store/archive.zip",
+        "archive.zip",
+        "jwt",
     )
-    assert url == (
-        "https://cassetta.local/download/store%2Farchive.zip/archive.zip"
-    )
+    assert url == ("https://cassetta.local/download/store%2Farchive.zip/archive.zip")
 
 
 def test_token_not_embedded_in_url() -> None:
     transport = CoreReferenceTransport("https://cassetta.local")
     url = transport.build_download_url(
-        "inbox/alice/docs", "README.md", "eyJhbGciOiJIUzI1NiJ9.secret",
+        "inbox/alice/docs",
+        "README.md",
+        "eyJhbGciOiJIUzI1NiJ9.secret",
     )
     assert "secret" not in url
     assert "eyJ" not in url
@@ -54,12 +56,12 @@ def test_encodes_slash_in_file_name() -> None:
     """Sub-directory entries in the manifest travel as part of `name`."""
     transport = CoreReferenceTransport("https://cassetta.local")
     url = transport.build_download_url(
-        "inbox/alice/project", "src/main.py", "jwt",
+        "inbox/alice/project",
+        "src/main.py",
+        "jwt",
     )
     # Both the bundle_path's slash AND the name's slash must be encoded.
-    assert url == (
-        "https://cassetta.local/download/inbox%2Falice%2Fproject/src%2Fmain.py"
-    )
+    assert url == ("https://cassetta.local/download/inbox%2Falice%2Fproject/src%2Fmain.py")
 
 
 def test_protocol_conformance() -> None:

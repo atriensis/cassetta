@@ -24,16 +24,12 @@ def test_keystore_protocol_signature() -> None:
     Protocol method."""
     sig = inspect.signature(KeyStoreProtocol.create_key)
     params = sig.parameters
-    assert "user_id" in params, (
-        f"Protocol.create_key missing user_id parameter: {sig}"
-    )
+    assert "user_id" in params, f"Protocol.create_key missing user_id parameter: {sig}"
     user_id_param = params["user_id"]
     assert user_id_param.kind == inspect.Parameter.KEYWORD_ONLY, (
         f"user_id must be KEYWORD_ONLY, got {user_id_param.kind}"
     )
-    assert user_id_param.default is None, (
-        f"user_id must default to None, got {user_id_param.default!r}"
-    )
+    assert user_id_param.default is None, f"user_id must default to None, got {user_id_param.default!r}"
 
 
 @pytest.mark.asyncio
@@ -44,7 +40,8 @@ async def test_file_key_store_accepts_user_id_kwarg() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         store = FileKeyStore(Path(tmpdir) / "keys.json")
         raw_key, info = await store.create_key(
-            "test-label", user_id="alice",
+            "test-label",
+            user_id="alice",
         )
         assert isinstance(raw_key, str)
         assert isinstance(info, KeyInfo)

@@ -70,7 +70,5 @@ def build_core_defaults(config: AppConfig) -> BackendConfig:
         limits_policy=CoreLimitsPolicy(config.limits),
         metrics_provider=DefaultMetricsProvider(),
         reference_transport=CoreReferenceTransport(config.public_base_url),
-        claim_store=FilesystemClaimStorage(
-            Path(config.storage_path) / ".claims"
-        ),
+        claim_store=FilesystemClaimStorage(Path(config.storage_path) / ".claims"),
     )

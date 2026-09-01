@@ -32,9 +32,14 @@ def _unwrap(result: dict) -> dict:
 
 
 def _sign_download_jwt(
-    bundle_path: str, bundle_id: str, recipient: str,
-    file_names: list[str], *, iat: int | None = None,
-    ttl: int = 300, key: bytes | None = None,
+    bundle_path: str,
+    bundle_id: str,
+    recipient: str,
+    file_names: list[str],
+    *,
+    iat: int | None = None,
+    ttl: int = 300,
+    key: bytes | None = None,
 ) -> str:
     """Construct a download JWT directly (avoids pick)."""
     config = load_config()
@@ -53,20 +58,28 @@ def _sign_download_jwt(
 
 
 async def _issue_via_pick(
-    client: httpx.AsyncClient, h, alice_key: str,
+    client: httpx.AsyncClient,
+    h,
+    alice_key: str,
 ) -> tuple[dict, str]:
     """Seed a 2-file bundle and pick it to obtain a reference envelope."""
     storage_root = Path(os.environ["CASSETTA_STORAGE_PATH"])
     backend = FilesystemBackend(root_path=str(storage_root))
     files = [("alpha.bin", b"A" * 200), ("beta.bin", b"B" * 200)]
     await seed_inbox_bundle(
-        backend, "alice:main", "bundle-xyz",
-        files=files, sender="bob",
+        backend,
+        "alice:main",
+        "bundle-xyz",
+        files=files,
+        sender="bob",
     )
     sid = await h.mcp_init(client, api_key=alice_key)
     result = await h.mcp_call(
-        client, "cassetta_pick", {"path": "bundle-xyz"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "bundle-xyz"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = _unwrap(result)
     assert envelope["mode"] == "reference", envelope
@@ -82,7 +95,8 @@ def _url_for(envelope: dict, name: str) -> str:
 
 @pytest.mark.asyncio
 async def test_happy_path_200(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -92,7 +106,8 @@ async def test_happy_path_200(
     token = envelope["download_token"]
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={
+        path,
+        headers={
             "Authorization": f"Bearer {token}",
             "X-Sender": recipient,
         },
@@ -102,7 +117,8 @@ async def test_happy_path_200(
 
 @pytest.mark.asyncio
 async def test_idempotent_200(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -121,7 +137,8 @@ async def test_idempotent_200(
 
 @pytest.mark.asyncio
 async def test_missing_bearer_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -133,14 +150,13 @@ async def test_missing_bearer_401(
     assert resp.status_code == 401, (resp.status_code, resp.text[:200])
     assert resp.json()["error"] == "unauthenticated"
     assert resp.json()["reason"] == "missing_bearer"
-    assert 'Bearer error="invalid_token"' in resp.headers.get(
-        "www-authenticate", ""
-    )
+    assert 'Bearer error="invalid_token"' in resp.headers.get("www-authenticate", "")
 
 
 @pytest.mark.asyncio
 async def test_malformed_jwt_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -149,7 +165,8 @@ async def test_malformed_jwt_401(
 
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={
+        path,
+        headers={
             "Authorization": "Bearer not.a.real.jwt.blob",
             "X-Sender": recipient,
         },
@@ -159,7 +176,8 @@ async def test_malformed_jwt_401(
 
 @pytest.mark.asyncio
 async def test_bad_signature_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -169,12 +187,16 @@ async def test_bad_signature_401(
     bad_key = b"0" * 40  # different key → bad signature
     bundle_id = envelope["bundle"]["bundle_id"]
     bogus = _sign_download_jwt(
-        "inbox/alice:main/bundle-xyz", bundle_id, recipient,
-        ["alpha.bin", "beta.bin"], key=bad_key,
+        "inbox/alice:main/bundle-xyz",
+        bundle_id,
+        recipient,
+        ["alpha.bin", "beta.bin"],
+        key=bad_key,
     )
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={
+        path,
+        headers={
             "Authorization": f"Bearer {bogus}",
             "X-Sender": recipient,
         },
@@ -185,7 +207,8 @@ async def test_bad_signature_401(
 
 @pytest.mark.asyncio
 async def test_expired_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -194,12 +217,17 @@ async def test_expired_401(
 
     bundle_id = envelope["bundle"]["bundle_id"]
     past = _sign_download_jwt(
-        "inbox/alice:main/bundle-xyz", bundle_id, recipient,
-        ["alpha.bin", "beta.bin"], iat=int(time.time()) - 10_000, ttl=1,
+        "inbox/alice:main/bundle-xyz",
+        bundle_id,
+        recipient,
+        ["alpha.bin", "beta.bin"],
+        iat=int(time.time()) - 10_000,
+        ttl=1,
     )
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={"Authorization": f"Bearer {past}", "X-Sender": recipient},
+        path,
+        headers={"Authorization": f"Bearer {past}", "X-Sender": recipient},
     )
     assert resp.status_code == 401, resp.text[:200]
     assert resp.json()["reason"] == "expired"
@@ -207,7 +235,8 @@ async def test_expired_401(
 
 @pytest.mark.asyncio
 async def test_immature_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -216,13 +245,17 @@ async def test_immature_401(
 
     bundle_id = envelope["bundle"]["bundle_id"]
     future = _sign_download_jwt(
-        "inbox/alice:main/bundle-xyz", bundle_id, recipient,
+        "inbox/alice:main/bundle-xyz",
+        bundle_id,
+        recipient,
         ["alpha.bin", "beta.bin"],
-        iat=int(time.time()) + 10_000, ttl=300,
+        iat=int(time.time()) + 10_000,
+        ttl=300,
     )
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={"Authorization": f"Bearer {future}", "X-Sender": recipient},
+        path,
+        headers={"Authorization": f"Bearer {future}", "X-Sender": recipient},
     )
     assert resp.status_code == 401, resp.text[:200]
     assert resp.json()["reason"] == "immature"
@@ -230,7 +263,8 @@ async def test_immature_401(
 
 @pytest.mark.asyncio
 async def test_bundle_path_mismatch_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -240,12 +274,15 @@ async def test_bundle_path_mismatch_401(
     bundle_id = envelope["bundle"]["bundle_id"]
     # JWT for a DIFFERENT bundle_path.
     wrong = _sign_download_jwt(
-        "inbox/alice:main/other-bundle", bundle_id, recipient,
+        "inbox/alice:main/other-bundle",
+        bundle_id,
+        recipient,
         ["alpha.bin", "beta.bin"],
     )
     path = _url_for(envelope, "alpha.bin")  # URL points to /bundle-xyz
     resp = await client.get(
-        path, headers={"Authorization": f"Bearer {wrong}", "X-Sender": recipient},
+        path,
+        headers={"Authorization": f"Bearer {wrong}", "X-Sender": recipient},
     )
     assert resp.status_code == 401, resp.text[:200]
     assert resp.json()["reason"] == "bundle_path_mismatch"
@@ -253,7 +290,8 @@ async def test_bundle_path_mismatch_401(
 
 @pytest.mark.asyncio
 async def test_name_not_in_claim_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -263,13 +301,17 @@ async def test_name_not_in_claim_401(
     bundle_id = envelope["bundle"]["bundle_id"]
     # JWT authorizes only "alpha.bin" but we request "beta.bin".
     restricted = _sign_download_jwt(
-        "inbox/alice:main/bundle-xyz", bundle_id, recipient,
+        "inbox/alice:main/bundle-xyz",
+        bundle_id,
+        recipient,
         ["alpha.bin"],  # beta excluded
     )
     path = _url_for(envelope, "beta.bin")
     resp = await client.get(
-        path, headers={
-            "Authorization": f"Bearer {restricted}", "X-Sender": recipient,
+        path,
+        headers={
+            "Authorization": f"Bearer {restricted}",
+            "X-Sender": recipient,
         },
     )
     assert resp.status_code == 401, resp.text[:200]
@@ -278,7 +320,8 @@ async def test_name_not_in_claim_401(
 
 @pytest.mark.asyncio
 async def test_missing_claim_401(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """JWT missing a required claim (file_names) → 401."""
     client, _ = core_app_small_inline
@@ -302,7 +345,8 @@ async def test_missing_claim_401(
     tok = jwt_tokens.sign(claims, key=config.jwt_primary_key)
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={"Authorization": f"Bearer {tok}", "X-Sender": recipient},
+        path,
+        headers={"Authorization": f"Bearer {tok}", "X-Sender": recipient},
     )
     assert resp.status_code == 401, resp.text[:200]
     # Any of these reasons is acceptable as long as JWT is rejected.
@@ -312,7 +356,8 @@ async def test_missing_claim_401(
 
 @pytest.mark.asyncio
 async def test_name_not_in_manifest_404(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """JWT authorizes a name that isn't in meta.files → 404 name_not_in_manifest."""
     client, _ = core_app_small_inline
@@ -323,17 +368,17 @@ async def test_name_not_in_manifest_404(
     bundle_id = envelope["bundle"]["bundle_id"]
     # Forge a JWT that authorizes a name not in the manifest.
     forged = _sign_download_jwt(
-        "inbox/alice:main/bundle-xyz", bundle_id, recipient,
+        "inbox/alice:main/bundle-xyz",
+        bundle_id,
+        recipient,
         ["phantom.bin"],
     )
-    phantom_path = (
-        "/download/"
-        + urllib.parse.quote("inbox/alice:main/bundle-xyz", safe="")
-        + "/phantom.bin"
-    )
+    phantom_path = "/download/" + urllib.parse.quote("inbox/alice:main/bundle-xyz", safe="") + "/phantom.bin"
     resp = await client.get(
-        phantom_path, headers={
-            "Authorization": f"Bearer {forged}", "X-Sender": recipient,
+        phantom_path,
+        headers={
+            "Authorization": f"Bearer {forged}",
+            "X-Sender": recipient,
         },
     )
     assert resp.status_code == 404, (resp.status_code, resp.text[:200])
@@ -342,7 +387,8 @@ async def test_name_not_in_manifest_404(
 
 @pytest.mark.asyncio
 async def test_bundle_gone_404(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """JWT valid but bundle was deleted → 404 bundle_gone."""
     client, _ = core_app_small_inline
@@ -358,7 +404,8 @@ async def test_bundle_gone_404(
     token = envelope["download_token"]
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={"Authorization": f"Bearer {token}", "X-Sender": recipient},
+        path,
+        headers={"Authorization": f"Bearer {token}", "X-Sender": recipient},
     )
     assert resp.status_code == 404, resp.text[:200]
     assert resp.json()["reason"] == "bundle_gone"
@@ -366,7 +413,8 @@ async def test_bundle_gone_404(
 
 @pytest.mark.asyncio
 async def test_401_www_authenticate_header(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Every 401 MUST carry WWW-Authenticate: Bearer error=invalid_token."""
     client, _ = core_app_small_inline
@@ -377,21 +425,26 @@ async def test_401_www_authenticate_header(
     # Bad signature for the header-presence check.
     bundle_id = envelope["bundle"]["bundle_id"]
     bogus = _sign_download_jwt(
-        "inbox/alice:main/bundle-xyz", bundle_id, recipient,
-        ["alpha.bin"], key=b"\x00" * 40,
+        "inbox/alice:main/bundle-xyz",
+        bundle_id,
+        recipient,
+        ["alpha.bin"],
+        key=b"\x00" * 40,
     )
     path = _url_for(envelope, "alpha.bin")
     resp = await client.get(
-        path, headers={"Authorization": f"Bearer {bogus}", "X-Sender": recipient},
+        path,
+        headers={"Authorization": f"Bearer {bogus}", "X-Sender": recipient},
     )
     assert resp.status_code == 401
-    assert 'Bearer' in resp.headers.get("www-authenticate", "")
+    assert "Bearer" in resp.headers.get("www-authenticate", "")
     assert 'error="invalid_token"' in resp.headers.get("www-authenticate", "")
 
 
 @pytest.mark.asyncio
 async def test_large_file_streams_memory_bounded(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """SC-007 sanity — a 1 MB file round-trips intact under streaming.
 
@@ -408,21 +461,28 @@ async def test_large_file_streams_memory_bounded(
     backend = FilesystemBackend(root_path=str(storage_root))
     payload = os.urandom(1 * 1024 * 1024)
     await seed_inbox_bundle(
-        backend, "alice:main", "fat-bundle",
+        backend,
+        "alice:main",
+        "fat-bundle",
         files=[("big.bin", payload)],
         sender="bob",
     )
     sid = await h.mcp_init(client, api_key=alice)
     result = await h.mcp_call(
-        client, "cassetta_pick", {"path": "fat-bundle"},
-        sid=sid, api_key=alice,
+        client,
+        "cassetta_pick",
+        {"path": "fat-bundle"},
+        sid=sid,
+        api_key=alice,
     )
     envelope = _unwrap(result)
     token = envelope["download_token"]
     path = _url_for(envelope, "big.bin")
     resp = await client.get(
-        path, headers={
-            "Authorization": f"Bearer {token}", "X-Sender": "alice:main",
+        path,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "X-Sender": "alice:main",
         },
     )
     assert resp.status_code == 200

@@ -36,7 +36,4 @@ def test_no_core_callsite_currently_emits_jwt_aud_mismatch() -> None:
         text = path.read_text(encoding="utf-8")
         if '"jwt_aud_mismatch"' in text or "'jwt_aud_mismatch'" in text:
             matches.append(str(path.relative_to(src_root)))
-    assert matches == [], (
-        "Brief 529 R3 reserves jwt_aud_mismatch as a future value. "
-        f"Unexpected callsite(s): {matches}"
-    )
+    assert matches == [], f"Brief 529 R3 reserves jwt_aud_mismatch as a future value. Unexpected callsite(s): {matches}"

@@ -32,9 +32,9 @@ async def test_upload_route_registered(
     app = client._transport.app  # type: ignore[attr-defined]
     schema = app.openapi()
     paths = schema.get("paths", {})
-    assert any(
-        p.startswith("/upload/") for p in paths
-    ), f"no /upload/{{bundle_path}} in OpenAPI paths, got keys {sorted(paths)}"
+    assert any(p.startswith("/upload/") for p in paths), (
+        f"no /upload/{{bundle_path}} in OpenAPI paths, got keys {sorted(paths)}"
+    )
 
 
 @pytest.mark.asyncio
@@ -52,7 +52,8 @@ async def test_upload_route_requires_bearer(
 
 @pytest.mark.asyncio
 async def test_upload_route_rejects_inline_token(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """A token whose mode=='inline' must not be accepted at /upload/..."""
     import json
@@ -62,12 +63,15 @@ async def test_upload_route_rejects_inline_token(
     await h.create_key(client, sender, "alice", "main")
     sid = await h.mcp_init(client, api_key=sender)
     init = await h.mcp_call(
-        client, "cassetta_send_init",
+        client,
+        "cassetta_send_init",
         {
-            "to": "alice:main", "path": "t.md",
+            "to": "alice:main",
+            "path": "t.md",
             "manifest": {"file_count": 1, "files": [{"name": "a.txt", "size": 3}]},
         },
-        sid=sid, api_key=sender,
+        sid=sid,
+        api_key=sender,
     )
     body = json.loads(init["content"][0]["text"])
     assert body["mode"] == "inline"
@@ -87,7 +91,8 @@ async def test_upload_route_rejects_inline_token(
 
 @pytest.mark.asyncio
 async def test_rest_size_mismatch_keeps_wrong_size_reason(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Brief 541 boundary pin: the REST tar upload path carries no per-file
     ``encoding``, so a genuine size mismatch must still report
@@ -101,17 +106,23 @@ async def test_rest_size_mismatch_keeps_wrong_size_reason(
 
     # Manifest declares 100 bytes; the tar member carries 200 → size mismatch.
     init = await h.mcp_call(
-        client, "cassetta_send_init",
-        {"to": "alice:main", "path": "rest.md",
-         "manifest": {"file_count": 1, "files": [{"name": "payload.bin", "size": 100}]}},
-        sid=sid, api_key=sender,
+        client,
+        "cassetta_send_init",
+        {
+            "to": "alice:main",
+            "path": "rest.md",
+            "manifest": {"file_count": 1, "files": [{"name": "payload.bin", "size": 100}]},
+        },
+        sid=sid,
+        api_key=sender,
     )
     body = json.loads(init["content"][0]["text"])
     token = body["batch_token"]
     url_path = urllib.parse.urlparse(body["upload_url"]).path
 
     resp = await client.post(
-        url_path, content=_tar_one("payload.bin", b"x" * 200),
+        url_path,
+        content=_tar_one("payload.bin", b"x" * 200),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/x-tar"},
     )
     assert resp.status_code == 400, resp.text

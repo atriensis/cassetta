@@ -52,7 +52,8 @@ class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         obj: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(
-                record.created, tz=timezone.utc,
+                record.created,
+                tz=timezone.utc,
             ).isoformat(),
             "level": record.levelname,
         }
@@ -234,14 +235,14 @@ def safe_emit(
 
     if metric_name is not None and metrics is not None:
         try:
-            tags_dict: dict[str, str] | None = (
-                dict(metric_tags) if metric_tags is not None else None
-            )
+            tags_dict: dict[str, str] | None = dict(metric_tags) if metric_tags is not None else None
             if gauge:
                 metrics.gauge(metric_name, metric_value, tags=tags_dict)
             else:
                 metrics.increment(
-                    metric_name, value=int(metric_value), tags=tags_dict,
+                    metric_name,
+                    value=int(metric_value),
+                    tags=tags_dict,
                 )
         except Exception:
             if logger is not None:

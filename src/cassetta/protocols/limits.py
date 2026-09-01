@@ -101,11 +101,15 @@ class LimitsPolicy(Protocol):
     kind: ClassVar[str]
 
     async def evaluate_upload(
-        self, ctx: PolicyContext, manifest: UploadManifest,
+        self,
+        ctx: PolicyContext,
+        manifest: UploadManifest,
     ) -> UploadDecision: ...
 
     async def evaluate_download(
-        self, ctx: PolicyContext, entry: DownloadEntry,
+        self,
+        ctx: PolicyContext,
+        entry: DownloadEntry,
     ) -> DownloadDecision: ...
 
     def advertise_limits(self, ctx: PolicyContext) -> LimitsAdvertisement: ...

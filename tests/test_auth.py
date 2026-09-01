@@ -78,9 +78,7 @@ class TestAuthEndpoint:
             response = await client.get("/health")
             assert response.status_code == 200
 
-    async def test_missing_auth_header_returns_401(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_missing_auth_header_returns_401(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         client, setup_token = auth_client
         # First create a key via setup
         response = await client.post(
@@ -97,9 +95,7 @@ class TestAuthEndpoint:
         )
         assert response.status_code in (401, 403)
 
-    async def test_invalid_key_returns_401(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_invalid_key_returns_401(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         client, setup_token = auth_client
         # Setup first
         await client.post(

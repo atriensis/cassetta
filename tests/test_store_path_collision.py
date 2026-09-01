@@ -22,15 +22,11 @@ def _meta(files: list[tuple[str, int, str]]) -> dict[str, object]:
         "created_at": "2026-04-18T16:00:00+00:00",
         "content_type": "application/octet-stream",
         "file_count": len(files),
-        "files": [
-            {"name": n, "size": s, "mime": m} for n, s, m in files
-        ],
+        "files": [{"name": n, "size": s, "mime": m} for n, s, m in files],
     }
 
 
-async def _commit(
-    backend: FilesystemBackend, path: str, files: list[tuple[str, bytes]]
-) -> None:
+async def _commit(backend: FilesystemBackend, path: str, files: list[tuple[str, bytes]]) -> None:
     writer = await backend.open_bundle_write(path)
     for name, data in files:
         await writer.write_file(name, io.BytesIO(data))
@@ -39,9 +35,7 @@ async def _commit(
 
 
 class TestShadowChild:
-    async def test_committed_parent_blocks_child(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_committed_parent_blocks_child(self, backend: FilesystemBackend) -> None:
         await _commit(backend, "store/proj", [("readme.md", b"hi")])
 
         with pytest.raises(BundlePathConflictError) as excinfo:
@@ -51,9 +45,7 @@ class TestShadowChild:
 
 
 class TestShadowParent:
-    async def test_committed_child_blocks_parent(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_committed_child_blocks_parent(self, backend: FilesystemBackend) -> None:
         await _commit(backend, "store/proj/sub/doc", [("f.md", b"x")])
 
         with pytest.raises(BundlePathConflictError) as excinfo:
@@ -63,9 +55,7 @@ class TestShadowParent:
 
 
 class TestInFlightShadowChild:
-    async def test_partial_bundle_still_blocks_child(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_partial_bundle_still_blocks_child(self, backend: FilesystemBackend) -> None:
         writer = await backend.open_bundle_write("store/proj")
         await writer.write_file("f.txt", io.BytesIO(b"partial"))
         # No commit — partial bundle dir exists without meta.json
@@ -76,18 +66,14 @@ class TestInFlightShadowChild:
 
 
 class TestConcurrentMkdir:
-    async def test_second_write_to_same_path_fails(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_second_write_to_same_path_fails(self, backend: FilesystemBackend) -> None:
         await backend.open_bundle_write("store/racy")
         with pytest.raises(BundlePathConflictError):
             await backend.open_bundle_write("store/racy")
 
 
 class TestInboxDoesNotCollide:
-    async def test_inbox_uuid_namespace_never_collides(
-        self, backend: FilesystemBackend
-    ) -> None:
+    async def test_inbox_uuid_namespace_never_collides(self, backend: FilesystemBackend) -> None:
         # Inbox path is {recipient}/{bundle_id}. Two UUIDs never collide.
         a = uuid.uuid4().hex
         b = uuid.uuid4().hex

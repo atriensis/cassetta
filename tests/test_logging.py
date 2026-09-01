@@ -34,8 +34,13 @@ class TestJsonFormatter:
     def test_basic_json_output(self):
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="test.event", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="test.event",
+            args=(),
+            exc_info=None,
         )
         output = formatter.format(record)
         obj = json.loads(output)
@@ -46,8 +51,13 @@ class TestJsonFormatter:
     def test_structured_fields_in_json(self):
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="file.uploaded", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="file.uploaded",
+            args=(),
+            exc_info=None,
         )
         record.event = "file.uploaded"  # type: ignore[attr-defined]
         record.identity_label = "alice"  # type: ignore[attr-defined]
@@ -72,8 +82,13 @@ class TestJsonFormatter:
         token = request_id_var.set("test-uuid-123")
         try:
             record = logging.LogRecord(
-                name="cassetta", level=logging.INFO, pathname="", lineno=0,
-                msg="test.event", args=(), exc_info=None,
+                name="cassetta",
+                level=logging.INFO,
+                pathname="",
+                lineno=0,
+                msg="test.event",
+                args=(),
+                exc_info=None,
             )
             output = formatter.format(record)
             obj = json.loads(output)
@@ -84,8 +99,13 @@ class TestJsonFormatter:
     def test_single_line_jsonl(self):
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="test.event", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="test.event",
+            args=(),
+            exc_info=None,
         )
         output = formatter.format(record)
         assert "\n" not in output
@@ -93,8 +113,13 @@ class TestJsonFormatter:
     def test_optional_fields_omitted_when_none(self):
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="test.event", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="test.event",
+            args=(),
+            exc_info=None,
         )
         output = formatter.format(record)
         obj = json.loads(output)
@@ -105,8 +130,13 @@ class TestJsonFormatter:
     def test_timestamp_is_iso8601(self):
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="test.event", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="test.event",
+            args=(),
+            exc_info=None,
         )
         output = formatter.format(record)
         obj = json.loads(output)
@@ -116,8 +146,13 @@ class TestJsonFormatter:
     def test_identity_extra_included(self):
         formatter = JsonFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="test", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="test",
+            args=(),
+            exc_info=None,
         )
         record.identity_extra = {"team_id": "t1", "user_id": "u1"}  # type: ignore[attr-defined]
         output = formatter.format(record)
@@ -131,8 +166,13 @@ class TestTextFormatter:
     def test_basic_text_output(self):
         formatter = TextFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="File uploaded: path='test.txt', size=100", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="File uploaded: path='test.txt', size=100",
+            args=(),
+            exc_info=None,
         )
         output = formatter.format(record)
         # Should contain the message as-is
@@ -142,8 +182,13 @@ class TestTextFormatter:
     def test_text_format_has_timestamp(self):
         formatter = TextFormatter()
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="test message", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="test message",
+            args=(),
+            exc_info=None,
         )
         output = formatter.format(record)
         # Should have date-like prefix
@@ -216,7 +261,9 @@ class TestLogFormatConfig:
         assert load_config().log_format == "text"
 
     def test_invalid_value_falls_back_to_text(
-        self, monkeypatch: pytest.MonkeyPatch, capsys,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys,
     ):
         _seed_config_env(monkeypatch)
         monkeypatch.setenv("CASSETTA_LOG_FORMAT", "xml")
@@ -243,8 +290,13 @@ class TestStructLog:
         logger = logging.getLogger("cassetta")
         handler = logger.handlers[0]
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg="file.uploaded", args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="file.uploaded",
+            args=(),
+            exc_info=None,
         )
         record.event = "file.uploaded"  # type: ignore[attr-defined]
         record.identity_label = "bob"  # type: ignore[attr-defined]
@@ -265,37 +317,36 @@ class TestSiblingLoggerCoverage:
         """US3 AS-1: cassetta.auth records render through the JSON formatter."""
         configure_logging("json")
         logging.getLogger("cassetta.auth").warning(
-            "test_auth_log", extra={"event": "test_auth_log"},
+            "test_auth_log",
+            extra={"event": "test_auth_log"},
         )
         captured = capsys.readouterr()
         # Records emit to stderr through the configured StreamHandler.
         assert "test_auth_log" in captured.err
         # JSON formatter wraps each record in `{...}` with a timestamp key.
-        line = next(
-            line for line in captured.err.splitlines() if "test_auth_log" in line
-        )
+        line = next(line for line in captured.err.splitlines() if "test_auth_log" in line)
         obj = json.loads(line)
         assert obj["event"] == "test_auth_log"
 
     def test_cassetta_cloud_record_renders_through_json_formatter(
-        self, capsys,
+        self,
+        capsys,
     ):
         """US3 AS-2: cassetta_cloud.* records render through the same handler."""
         configure_logging("json")
         logging.getLogger("cassetta_cloud.foo").warning(
-            "test_cloud_log", extra={"event": "test_cloud_log"},
+            "test_cloud_log",
+            extra={"event": "test_cloud_log"},
         )
         captured = capsys.readouterr()
         assert "test_cloud_log" in captured.err
-        line = next(
-            line for line in captured.err.splitlines()
-            if "test_cloud_log" in line
-        )
+        line = next(line for line in captured.err.splitlines() if "test_cloud_log" in line)
         obj = json.loads(line)
         assert obj["event"] == "test_cloud_log"
 
     def test_repeated_configure_logging_does_not_duplicate_records(
-        self, capsys,
+        self,
+        capsys,
     ):
         """US3 AS-3: configure_logging called twice → exactly one log line."""
         configure_logging("text")
@@ -304,10 +355,7 @@ class TestSiblingLoggerCoverage:
         logger.warning("once_only", extra={"event": "once_only"})
         captured = capsys.readouterr()
         # Filter for our specific marker — exactly one occurrence.
-        marker_lines = [
-            line for line in captured.err.splitlines()
-            if "once_only" in line
-        ]
+        marker_lines = [line for line in captured.err.splitlines() if "once_only" in line]
         assert len(marker_lines) == 1, captured.err
 
     def test_cassetta_cloud_propagate_enabled_after_configure(self):
@@ -327,10 +375,12 @@ class TestSiblingLoggerCoverage:
         assert len(cassetta_cloud_logger.handlers) == 1
         # Both should share the same formatter type after the second call.
         assert isinstance(
-            cassetta_logger.handlers[0].formatter, TextFormatter,
+            cassetta_logger.handlers[0].formatter,
+            TextFormatter,
         )
         assert isinstance(
-            cassetta_cloud_logger.handlers[0].formatter, TextFormatter,
+            cassetta_cloud_logger.handlers[0].formatter,
+            TextFormatter,
         )
 
 
@@ -339,8 +389,13 @@ class TestEventTaxonomy:
 
     def _emit_event(self, formatter, event, **kwargs):
         record = logging.LogRecord(
-            name="cassetta", level=logging.INFO, pathname="", lineno=0,
-            msg=event, args=(), exc_info=None,
+            name="cassetta",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg=event,
+            args=(),
+            exc_info=None,
         )
         record.event = event  # type: ignore[attr-defined]
         for k, v in kwargs.items():
@@ -352,10 +407,18 @@ class TestEventTaxonomy:
         text_fmt = TextFormatter()
 
         events = [
-            "file.uploaded", "file.downloaded", "file.deleted", "file.listed",
-            "inbox.sent", "inbox.picked", "inbox.listed",
-            "key.created", "key.rotated", "key.revoked",
-            "policy.denied", "ttl.cleanup",
+            "file.uploaded",
+            "file.downloaded",
+            "file.deleted",
+            "file.listed",
+            "inbox.sent",
+            "inbox.picked",
+            "inbox.listed",
+            "key.created",
+            "key.rotated",
+            "key.revoked",
+            "policy.denied",
+            "ttl.cleanup",
             "request.completed",
         ]
 

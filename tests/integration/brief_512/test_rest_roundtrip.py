@@ -14,8 +14,12 @@ from cassetta.mime import pick_mime
 
 
 async def seed_inbox_bundle(
-    backend, recipient: str, path: str,
-    *, content: bytes | None = None, sender: str | None = None,
+    backend,
+    recipient: str,
+    path: str,
+    *,
+    content: bytes | None = None,
+    sender: str | None = None,
 ) -> str:
     bundle_path = f"inbox/{recipient}/{path}"
     bundle_id = uuid.uuid4().hex
@@ -27,10 +31,13 @@ async def seed_inbox_bundle(
             await writer.write_file(name, io.BytesIO(data))
             records.append({"name": name, "size": len(data), "mime": pick_mime(name, explicit=None)})
         meta: dict[str, Any] = {
-            "schema_version": 1, "bundle_id": bundle_id, "sender": sender,
+            "schema_version": 1,
+            "bundle_id": bundle_id,
+            "sender": sender,
             "created_at": datetime.now(UTC).isoformat(),
             "content_type": "application/octet-stream",
-            "file_count": len(records), "files": records,
+            "file_count": len(records),
+            "files": records,
         }
         await writer.commit(meta)
         return bundle_id
@@ -60,15 +67,20 @@ async def rest_client(
 
 class TestInboxRoundtrip:
     async def test_put_list_get_pick_delete(
-        self, rest_client: httpx.AsyncClient, backend: FilesystemBackend,
+        self,
+        rest_client: httpx.AsyncClient,
+        backend: FilesystemBackend,
     ) -> None:
         client = rest_client
         # Seed directly — legacy PUT is gone in Brief 514.
         transport = client._transport  # type: ignore[attr-defined]
         live_backend = transport.app.state.backends.backend  # type: ignore[attr-defined]
         bundle_id = await seed_inbox_bundle(
-            live_backend, "dev:agent", "note.md",
-            content=b"# First note", sender="dev:agent",
+            live_backend,
+            "dev:agent",
+            "note.md",
+            content=b"# First note",
+            sender="dev:agent",
         )
         assert bundle_id
 
@@ -98,7 +110,9 @@ class TestInboxRoundtrip:
 
 class TestStoreRoundtrip:
     async def test_put_list_get_delete(
-        self, client: httpx.AsyncClient, backend: FilesystemBackend,
+        self,
+        client: httpx.AsyncClient,
+        backend: FilesystemBackend,
     ) -> None:
         put_resp = await client.put("/files/proj/readme.md", content=b"# Hi")
         assert put_resp.status_code == 201
@@ -121,7 +135,8 @@ class TestStoreRoundtrip:
 
 class TestMultiFileEnvelope:
     async def test_multipart_roundtrip_carries_bundle_envelope(
-        self, client: httpx.AsyncClient,
+        self,
+        client: httpx.AsyncClient,
     ) -> None:
         files = [
             ("files", ("plan.md", b"# Plan", "text/markdown")),
@@ -140,12 +155,11 @@ class TestMultiFileEnvelope:
 
 class TestStoreCollision409:
     async def test_put_under_existing_bundle_returns_409(
-        self, client: httpx.AsyncClient,
+        self,
+        client: httpx.AsyncClient,
     ) -> None:
         await client.put("/files/proj/readme.md", content=b"# hi")
-        resp = await client.put(
-            "/files/proj/readme.md/inner", content=b"nested"
-        )
+        resp = await client.put("/files/proj/readme.md/inner", content=b"nested")
         assert resp.status_code == 409
         body = resp.json()
         assert body["error"] == "bundle_path_conflict"
@@ -153,7 +167,8 @@ class TestStoreCollision409:
         assert body["conflicting_path"] == "store/proj/readme.md"
 
     async def test_put_over_existing_parent_bundle_returns_409(
-        self, client: httpx.AsyncClient,
+        self,
+        client: httpx.AsyncClient,
     ) -> None:
         await client.put("/files/proj/sub/doc.md", content=b"child")
         resp = await client.put("/files/proj/sub", content=b"parent")
@@ -165,15 +180,21 @@ class TestStoreCollision409:
 
 class TestDeleteRemovesBundleDir:
     async def test_inbox_delete_removes_directory(
-        self, rest_client: httpx.AsyncClient, storage_dir: str,
+        self,
+        rest_client: httpx.AsyncClient,
+        storage_dir: str,
     ) -> None:
         from pathlib import Path
+
         client = rest_client
         transport = client._transport  # type: ignore[attr-defined]
         live_backend = transport.app.state.backends.backend  # type: ignore[attr-defined]
         await seed_inbox_bundle(
-            live_backend, "dev:agent", "msg.txt",
-            content=b"hi", sender="dev:agent",
+            live_backend,
+            "dev:agent",
+            "msg.txt",
+            content=b"hi",
+            sender="dev:agent",
         )
         bundle_dir = Path(storage_dir) / "data" / "inbox" / "dev:agent" / "msg.txt"
         assert bundle_dir.is_dir()
@@ -182,9 +203,12 @@ class TestDeleteRemovesBundleDir:
         assert not bundle_dir.exists()
 
     async def test_store_delete_removes_directory(
-        self, client: httpx.AsyncClient, storage_dir: str,
+        self,
+        client: httpx.AsyncClient,
+        storage_dir: str,
     ) -> None:
         from pathlib import Path
+
         await client.put("/files/proj/readme.md", content=b"hi")
         bundle_dir = Path(storage_dir) / "data" / "store" / "proj" / "readme.md"
         assert bundle_dir.is_dir()
@@ -194,7 +218,9 @@ class TestDeleteRemovesBundleDir:
 
 class TestPickLatest:
     async def test_latest_picks_newest_committed_bundle(
-        self, rest_client: httpx.AsyncClient, storage_dir: str,
+        self,
+        rest_client: httpx.AsyncClient,
+        storage_dir: str,
     ) -> None:
         import os
         import time as _time
@@ -204,13 +230,19 @@ class TestPickLatest:
         transport = client._transport  # type: ignore[attr-defined]
         live_backend = transport.app.state.backends.backend  # type: ignore[attr-defined]
         await seed_inbox_bundle(
-            live_backend, "dev:agent", "first.txt",
-            content=b"first", sender="dev:agent",
+            live_backend,
+            "dev:agent",
+            "first.txt",
+            content=b"first",
+            sender="dev:agent",
         )
         _time.sleep(0.05)
         await seed_inbox_bundle(
-            live_backend, "dev:agent", "second.txt",
-            content=b"second", sender="dev:agent",
+            live_backend,
+            "dev:agent",
+            "second.txt",
+            content=b"second",
+            sender="dev:agent",
         )
 
         # Plant a partial (uncommitted) bundle newer than both — must be ignored.

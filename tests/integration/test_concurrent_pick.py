@@ -24,7 +24,8 @@ from .conftest import seed_inbox_bundle
 
 @pytest.mark.asyncio
 async def test_concurrent_pick_serializes(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
     sender = await h.setup_agent(client, "bob", "main")
@@ -33,7 +34,9 @@ async def test_concurrent_pick_serializes(
     storage_root = Path(os.environ["CASSETTA_STORAGE_PATH"])
     backend = FilesystemBackend(root_path=str(storage_root))
     await seed_inbox_bundle(
-        backend, "alice:main", "race-bundle",
+        backend,
+        "alice:main",
+        "race-bundle",
         files=[("data.bin", b"D" * 400)],
         sender="bob",
     )
@@ -42,8 +45,11 @@ async def test_concurrent_pick_serializes(
 
     async def do_pick() -> dict:
         return await h.mcp_call(
-            client, "cassetta_pick", {"path": "race-bundle"},
-            sid=sid, api_key=alice_key,
+            client,
+            "cassetta_pick",
+            {"path": "race-bundle"},
+            sid=sid,
+            api_key=alice_key,
         )
 
     # Both picks race concurrently.
@@ -74,9 +80,7 @@ async def test_concurrent_pick_serializes(
     # Winner's sidecar is on disk.
     claims_dir = storage_root / ".claims"
     sidecars = list(claims_dir.glob("*.json"))
-    assert len(sidecars) == 1, (
-        f"expected exactly one sidecar, got {sidecars!r}"
-    )
+    assert len(sidecars) == 1, f"expected exactly one sidecar, got {sidecars!r}"
 
     # The loser's response MUST NOT leak the file bytes or the
     # would-be JWT — the error surface is a plain "File not found"

@@ -21,21 +21,13 @@ _MODELS_FILE = _CORE_SRC / "models.py"
 
 def _model_class_names(path: Path) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
-    return [
-        node.name
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ClassDef)
-    ]
+    return [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
 
 
 def _production_files() -> list[Path]:
     """All ``.py`` files under ``src/cassetta/`` except ``models.py``
     and ``__pycache__`` artefacts."""
-    return [
-        p
-        for p in _CORE_SRC.rglob("*.py")
-        if p != _MODELS_FILE and "__pycache__" not in p.parts
-    ]
+    return [p for p in _CORE_SRC.rglob("*.py") if p != _MODELS_FILE and "__pycache__" not in p.parts]
 
 
 def _intra_model_edges(path: Path, names: list[str]) -> dict[str, set[str]]:
@@ -49,9 +41,7 @@ def _intra_model_edges(path: Path, names: list[str]) -> dict[str, set[str]]:
             edges[node.name] = {
                 child.id
                 for child in ast.walk(node)
-                if isinstance(child, ast.Name)
-                and child.id in nameset
-                and child.id != node.name
+                if isinstance(child, ast.Name) and child.id in nameset and child.id != node.name
             }
     return edges
 
@@ -94,6 +84,5 @@ def test_no_orphan_models_in_core_models_py() -> None:
     assert not orphans, (
         "Orphan pydantic models in models.py (Brief 535 Fix 6 "
         "deletes models with no production use, or wires them as "
-        "response_model= on a route):\n  "
-        + "\n  ".join(orphans)
+        "response_model= on a route):\n  " + "\n  ".join(orphans)
     )

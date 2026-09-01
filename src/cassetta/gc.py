@@ -39,7 +39,10 @@ class _ReaperBackend(Protocol):
     """Structural subset of ``StorageBackend`` used by the reaper."""
 
     def list_bundles(
-        self, prefix: str, *, include_orphans: bool = False,
+        self,
+        prefix: str,
+        *,
+        include_orphans: bool = False,
     ) -> "Iterable[BundleRef]": ...
 
     async def delete_bundle(self, path: str) -> None: ...
@@ -60,7 +63,9 @@ async def sweep(storage: _ReaperBackend, *, min_age_s: int) -> None:
             refs = list(storage.list_bundles(prefix, include_orphans=True))
         except Exception:
             struct_log(
-                logger, logging.ERROR, "gc_list_failed",
+                logger,
+                logging.ERROR,
+                "gc_list_failed",
                 detail={"prefix": prefix},
             )
             continue
@@ -77,12 +82,16 @@ async def sweep(storage: _ReaperBackend, *, min_age_s: int) -> None:
                 continue
             except Exception:
                 struct_log(
-                    logger, logging.WARNING, "gc_delete_failed",
+                    logger,
+                    logging.WARNING,
+                    "gc_delete_failed",
                     detail={"path": ref.path},
                 )
                 continue
             struct_log(
-                logger, logging.INFO, "gc_reaped",
+                logger,
+                logging.INFO,
+                "gc_reaped",
                 detail={"path": ref.path, "age_seconds": int(age)},
             )
 
@@ -120,7 +129,9 @@ async def sweep_claims(
             claims.append(claim)
     except Exception:
         struct_log(
-            logger, logging.ERROR, "gc_claims_list_failed",
+            logger,
+            logging.ERROR,
+            "gc_claims_list_failed",
         )
         return
 
@@ -142,16 +153,21 @@ async def sweep_claims(
             # Bundle is gone; drop the sidecar.
             await claim_store.delete(claim.jti)
             struct_log(
-                logger, logging.INFO, "download_claim_expired",
+                logger,
+                logging.INFO,
+                "download_claim_expired",
                 detail={
-                    "jti": claim.jti, "bundle_path": claim.bundle_path,
+                    "jti": claim.jti,
+                    "bundle_path": claim.bundle_path,
                     "reason": "bundle_missing",
                 },
             )
             continue
         except Exception:
             struct_log(
-                logger, logging.WARNING, "gc_claims_read_meta_failed",
+                logger,
+                logging.WARNING,
+                "gc_claims_read_meta_failed",
                 detail={"jti": claim.jti, "bundle_path": claim.bundle_path},
             )
             continue
@@ -162,25 +178,29 @@ async def sweep_claims(
         is_inbox = claim.bundle_path.startswith("inbox/")
 
         if complete and is_inbox:
-            total_bytes = sum(
-                int(f.get("size", 0)) for f in meta.get("files", [])
-            )
+            total_bytes = sum(int(f.get("size", 0)) for f in meta.get("files", []))
             try:
                 await storage.delete_bundle(claim.bundle_path)
             except FileNotFoundError:
                 pass
             except Exception:
                 struct_log(
-                    logger, logging.WARNING, "gc_claims_delete_bundle_failed",
+                    logger,
+                    logging.WARNING,
+                    "gc_claims_delete_bundle_failed",
                     detail={"jti": claim.jti, "bundle_path": claim.bundle_path},
                 )
                 # Still drop the sidecar — we can't recover the bundle.
             await claim_store.delete(claim.jti)
             struct_log(
-                logger, logging.INFO, "download_claim_completed",
+                logger,
+                logging.INFO,
+                "download_claim_completed",
                 detail={
-                    "jti": claim.jti, "bundle_id": claim.bundle_id,
-                    "total_bytes": total_bytes, "namespace": "inbox",
+                    "jti": claim.jti,
+                    "bundle_id": claim.bundle_id,
+                    "total_bytes": total_bytes,
+                    "namespace": "inbox",
                     "via": "reaper",
                 },
             )
@@ -188,9 +208,12 @@ async def sweep_claims(
             # Incomplete — release the bundle by dropping the claim only.
             await claim_store.delete(claim.jti)
             struct_log(
-                logger, logging.INFO, "download_claim_expired",
+                logger,
+                logging.INFO,
+                "download_claim_expired",
                 detail={
-                    "jti": claim.jti, "bundle_path": claim.bundle_path,
+                    "jti": claim.jti,
+                    "bundle_path": claim.bundle_path,
                     "reason": "incomplete",
                     "fetched": sorted(fetched),
                     "expected": sorted(manifest_names),
@@ -208,9 +231,10 @@ async def _reaper_loop(
 ) -> None:
     """Run :func:`sweep` (+ optional :func:`sweep_claims`) every ``interval_s``."""
     struct_log(
-        logger, logging.INFO, "gc_scheduled",
-        detail={"interval_s": interval_s, "min_age_s": min_age_s,
-                "with_claims": claim_store is not None},
+        logger,
+        logging.INFO,
+        "gc_scheduled",
+        detail={"interval_s": interval_s, "min_age_s": min_age_s, "with_claims": claim_store is not None},
     )
     while True:
         try:
@@ -218,13 +242,17 @@ async def _reaper_loop(
             await sweep(storage, min_age_s=min_age_s)
             if claim_store is not None:
                 await sweep_claims(
-                    claim_store, storage, ttl_s=download_claim_ttl_s,
+                    claim_store,
+                    storage,
+                    ttl_s=download_claim_ttl_s,
                 )
         except asyncio.CancelledError:
             raise
         except Exception:
             struct_log(
-                logger, logging.ERROR, "gc_loop_error",
+                logger,
+                logging.ERROR,
+                "gc_loop_error",
                 detail={"interval_s": interval_s},
             )
 

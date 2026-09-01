@@ -41,7 +41,8 @@ class TestSourceAndReasonLiterals:
 
 class TestRecordingFixture:
     def test_recording_provider_satisfies_protocol(
-        self, recording_metrics: RecordingMetricsProvider,
+        self,
+        recording_metrics: RecordingMetricsProvider,
     ) -> None:
         assert isinstance(recording_metrics, MetricsProvider)
 
@@ -64,10 +65,7 @@ class TestEmitAuthFailure:
             reason=reason,  # type: ignore[arg-type]
         )
 
-        records = [
-            r for r in auth_log_capture
-            if getattr(r, "event", None) == "auth.failure"
-        ]
+        records = [r for r in auth_log_capture if getattr(r, "event", None) == "auth.failure"]
         assert len(records) == 1
         rec = records[0]
         assert rec.levelno == logging.WARNING
@@ -78,7 +76,8 @@ class TestEmitAuthFailure:
         }
 
         increments = recording_metrics.find(
-            "cassetta.auth.failures", method="increment",
+            "cassetta.auth.failures",
+            method="increment",
         )
         assert len(increments) == 1
         assert increments[0].tags == {"source": source, "reason": reason}
@@ -95,10 +94,7 @@ class TestEmitAuthFailure:
             reason="missing_bearer",
             identity_hint=None,
         )
-        rec = next(
-            r for r in auth_log_capture
-            if getattr(r, "event", None) == "auth.failure"
-        )
+        rec = next(r for r in auth_log_capture if getattr(r, "event", None) == "auth.failure")
         assert rec.detail["identity_hint"] is None  # type: ignore[attr-defined]
 
     def test_identity_hint_max_length(
@@ -112,10 +108,7 @@ class TestEmitAuthFailure:
             reason="invalid_key",
             identity_hint="abcd1234efgh",
         )
-        rec = next(
-            r for r in auth_log_capture
-            if getattr(r, "event", None) == "auth.failure"
-        )
+        rec = next(r for r in auth_log_capture if getattr(r, "event", None) == "auth.failure")
         assert rec.detail["identity_hint"] == "abcd1234efgh"  # type: ignore[attr-defined]
 
     def test_identity_hint_short_prefix_passthrough(
@@ -129,17 +122,16 @@ class TestEmitAuthFailure:
             reason="invalid_key",
             identity_hint="abc",
         )
-        rec = next(
-            r for r in auth_log_capture
-            if getattr(r, "event", None) == "auth.failure"
-        )
+        rec = next(r for r in auth_log_capture if getattr(r, "event", None) == "auth.failure")
         assert rec.detail["identity_hint"] == "abc"  # type: ignore[attr-defined]
 
     @pytest.mark.skipif(
-        not __debug__, reason="defence-in-depth assert is removed under -O",
+        not __debug__,
+        reason="defence-in-depth assert is removed under -O",
     )
     def test_identity_hint_too_long_raises_assert(
-        self, recording_metrics: RecordingMetricsProvider,
+        self,
+        recording_metrics: RecordingMetricsProvider,
     ) -> None:
         with pytest.raises(AssertionError):
             emit_auth_failure(
@@ -154,24 +146,31 @@ class TestBestEffortWrap:
     """FR-012 — emission failures must NOT propagate to the auth path."""
 
     def test_metrics_increment_raising_does_not_propagate(
-        self, auth_log_capture: list[logging.LogRecord],
+        self,
+        auth_log_capture: list[logging.LogRecord],
     ) -> None:
         class BoomProvider:
             kind = "boom"
 
             def increment(
-                self, name: str, value: int = 1,
+                self,
+                name: str,
+                value: int = 1,
                 tags: dict[str, str] | None = None,
             ) -> None:
                 raise RuntimeError("metrics down")
 
             def observe(
-                self, name: str, value: float,
+                self,
+                name: str,
+                value: float,
                 tags: dict[str, str] | None = None,
             ) -> None: ...
 
             def gauge(
-                self, name: str, value: float,
+                self,
+                name: str,
+                value: float,
                 tags: dict[str, str] | None = None,
             ) -> None: ...
 
@@ -181,10 +180,7 @@ class TestBestEffortWrap:
             reason="missing_bearer",
         )
 
-        fallbacks = [
-            r for r in auth_log_capture
-            if "auth observability emission failed" in r.getMessage()
-        ]
+        fallbacks = [r for r in auth_log_capture if "auth observability emission failed" in r.getMessage()]
         assert len(fallbacks) == 1
         assert fallbacks[0].levelno == logging.ERROR
 
@@ -207,10 +203,7 @@ class TestBestEffortWrap:
             reason="missing_bearer",
         )
 
-        fallbacks = [
-            r for r in auth_log_capture
-            if "auth observability emission failed" in r.getMessage()
-        ]
+        fallbacks = [r for r in auth_log_capture if "auth observability emission failed" in r.getMessage()]
         assert len(fallbacks) == 1
 
     def test_logger_exception_raising_swallowed_silently(

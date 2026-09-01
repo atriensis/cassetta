@@ -27,11 +27,14 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 async def _init(client: httpx.AsyncClient) -> str:
     resp = await client.post(
         "/mcp/",
-        json=_jsonrpc("initialize", {
-            "protocolVersion": "2025-03-26",
-            "capabilities": {},
-            "clientInfo": {"name": "parity-test", "version": "1.0.0"},
-        }),
+        json=_jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "parity-test", "version": "1.0.0"},
+            },
+        ),
         headers=MCP_HEADERS,
     )
     assert resp.status_code == 200
@@ -45,7 +48,9 @@ async def _call_mcp(client: httpx.AsyncClient, name: str, sid: str) -> dict:
     resp = await client.post(
         "/mcp/",
         json=_jsonrpc(
-            "tools/call", {"name": name, "arguments": {}}, req_id=2,
+            "tools/call",
+            {"name": name, "arguments": {}},
+            req_id=2,
         ),
         headers=headers,
     )

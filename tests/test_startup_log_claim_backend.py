@@ -20,12 +20,8 @@ async def test_startup_log_filesystem(
     os.environ["CASSETTA_SETUP_TOKEN"] = ""
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
 
@@ -50,7 +46,8 @@ async def test_startup_log_filesystem(
     # carries ``event="claim_storage_backend"`` with ``detail.kind`` set
     # to the active backend (``filesystem`` on the default path).
     matching = [
-        r for r in caplog.records
+        r
+        for r in caplog.records
         if getattr(r, "event", None) == "claim_storage_backend"
         and (getattr(r, "detail", None) or {}).get("kind") == "filesystem"
     ]

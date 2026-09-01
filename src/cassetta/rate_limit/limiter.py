@@ -68,6 +68,7 @@ def _record_rate_limit_hit(
     ``MetricsProvider`` posture matches every other counter call site.
     """
     from cassetta.structured_log import safe_emit
+
     metrics = request.app.state.backends.metrics_provider
     safe_emit(
         metric_name="cassetta.rate_limit.hits",

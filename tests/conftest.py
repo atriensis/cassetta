@@ -34,8 +34,10 @@ def make_backends() -> Callable[..., BackendConfig]:
     ``--import-mode=importlib`` does not place on sys.path alongside the
     parent ``conftest.py`` — still receive it via dependency injection.
     """
+
     def _make(config: AppConfig, **overrides: Any) -> BackendConfig:
         return replace(build_core_defaults(config), **overrides)
+
     return _make
 
 
@@ -55,9 +57,7 @@ async def seed_inbox_bundle(
     """
     if (content is None) == (files is None):
         raise ValueError("pass exactly one of content or files")
-    file_parts: list[tuple[str, bytes]] = (
-        list(files) if files is not None else [(path.split("/")[-1], content or b"")]
-    )
+    file_parts: list[tuple[str, bytes]] = list(files) if files is not None else [(path.split("/")[-1], content or b"")]
     bundle_path = f"inbox/{recipient}/{path}"
     bundle_id = uuid.uuid4().hex
     writer = await backend.open_bundle_write(bundle_path)
@@ -65,11 +65,13 @@ async def seed_inbox_bundle(
         records: list[dict[str, Any]] = []
         for name, data in file_parts:
             await writer.write_file(name, io.BytesIO(data))
-            records.append({
-                "name": name,
-                "size": len(data),
-                "mime": pick_mime(name, explicit=None),
-            })
+            records.append(
+                {
+                    "name": name,
+                    "size": len(data),
+                    "mime": pick_mime(name, explicit=None),
+                }
+            )
         meta: dict[str, Any] = {
             "schema_version": 1,
             "bundle_id": bundle_id,
@@ -138,7 +140,8 @@ ClaimStorageFactory = Callable[..., Awaitable[ClaimStorage]]
 
 @pytest.fixture(params=["filesystem"])
 async def claim_storage_factory(
-    request: pytest.FixtureRequest, tmp_path: Path,
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
 ) -> AsyncIterator[ClaimStorageFactory]:
     """Yield a ``(base_dir=None) -> ClaimStorage`` async factory.
 
@@ -223,10 +226,7 @@ def _restore_logging_state() -> Iterator[None]:
     for DRY and so it also covers ``unit/``.
     """
     names = ("cassetta", "cassetta.auth", "cassetta_cloud")
-    saved = [
-        (lg, list(lg.handlers), lg.level, lg.propagate)
-        for lg in (logging.getLogger(n) for n in names)
-    ]
+    saved = [(lg, list(lg.handlers), lg.level, lg.propagate) for lg in (logging.getLogger(n) for n in names)]
     try:
         yield
     finally:
@@ -261,7 +261,8 @@ def env_setup(storage_dir: str, monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 async def client(
-    env_setup: None, storage_dir: str,
+    env_setup: None,
+    storage_dir: str,
 ) -> AsyncIterator[httpx.AsyncClient]:
     """Async test client with dev mode (no auth required)."""
     app = create_app()
@@ -312,7 +313,8 @@ def auth_log_capture() -> Iterator[list[logging.LogRecord]]:
 
 @pytest.fixture
 async def auth_client(
-    storage_dir: str, monkeypatch: pytest.MonkeyPatch,
+    storage_dir: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> AsyncIterator[tuple[httpx.AsyncClient, str]]:
     """Async test client with auth enabled. Returns (client, setup_token).
 

@@ -14,9 +14,7 @@ import pytest
 
 class TestBroadcastUrl:
     @pytest.mark.asyncio
-    async def test_path_style_url_works(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_path_style_url_works(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         """POST /broadcast/<path> is the canonical Brief 525 form."""
         client, token = auth_client
         setup_resp = await client.post(
@@ -38,9 +36,7 @@ class TestBroadcastUrl:
         assert "total_delivered" in body
 
     @pytest.mark.asyncio
-    async def test_query_string_form_returns_404(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_query_string_form_returns_404(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         """POST /broadcast?path=... is gone — no compat shim."""
         client, token = auth_client
         setup_resp = await client.post(
@@ -60,9 +56,7 @@ class TestBroadcastUrl:
         assert resp.status_code in (307, 404, 405)
 
     @pytest.mark.asyncio
-    async def test_encoded_slash_in_path_is_decoded(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_encoded_slash_in_path_is_decoded(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         """%2F in the URL is decoded by FastAPI's `:path` converter."""
         client, token = auth_client
         setup_resp = await client.post(
@@ -82,9 +76,7 @@ class TestBroadcastUrl:
         assert body["path"] == "foo/bar.md"
 
     @pytest.mark.asyncio
-    async def test_no_segment_returns_404(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_no_segment_returns_404(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         """POST /broadcast (no segment) does not match the route."""
         client, token = auth_client
         setup_resp = await client.post(
@@ -103,9 +95,7 @@ class TestBroadcastUrl:
         assert resp.status_code in (307, 404, 405)
 
     @pytest.mark.asyncio
-    async def test_empty_trailing_segment(
-        self, auth_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_empty_trailing_segment(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
         """POST /broadcast/ — observed behavior pinned (FastAPI returns 404 or 422)."""
         client, token = auth_client
         setup_resp = await client.post(

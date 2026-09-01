@@ -25,12 +25,16 @@ from cassetta.protocols.limits import (
 
 class _FakePolicy:
     async def evaluate_upload(
-        self, ctx: PolicyContext, manifest: UploadManifest,
+        self,
+        ctx: PolicyContext,
+        manifest: UploadManifest,
     ) -> UploadDecision:
         return {"mode": "inline", "reason": None}
 
     async def evaluate_download(
-        self, ctx: PolicyContext, entry: DownloadEntry,
+        self,
+        ctx: PolicyContext,
+        entry: DownloadEntry,
     ) -> DownloadDecision:
         return {"mode": "inline", "reason": None}
 
@@ -100,7 +104,8 @@ async def test_limits_policy_override(_dev_env: None, make_backends) -> None:
 
 @pytest.mark.asyncio
 async def test_get_limits_policy_dependency(
-    _dev_env: None, make_backends,
+    _dev_env: None,
+    make_backends,
 ) -> None:
     fake = _FakePolicy()
     config = load_config()
@@ -112,7 +117,8 @@ async def test_get_limits_policy_dependency(
 
 @pytest.mark.asyncio
 async def test_limits_policy_constructed_from_env(
-    monkeypatch: pytest.MonkeyPatch, _dev_env: None,
+    monkeypatch: pytest.MonkeyPatch,
+    _dev_env: None,
 ) -> None:
     monkeypatch.setenv("CASSETTA_PER_FILE_MAX", "1234")
     app = create_app()

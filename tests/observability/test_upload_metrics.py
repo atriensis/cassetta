@@ -35,7 +35,8 @@ def _set_env(storage_dir: str) -> None:
 
 @pytest.fixture
 async def upload_client(
-    storage_dir: str, recording_metrics: RecordingMetricsProvider,
+    storage_dir: str,
+    recording_metrics: RecordingMetricsProvider,
 ):
     from cassetta.app import create_app
     from cassetta.config import load_config
@@ -45,7 +46,8 @@ async def upload_client(
     _set_env(storage_dir)
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -58,7 +60,9 @@ async def upload_client(
 
 
 def _mint_batch_token(
-    config, bundle_path: str, manifest_files: list[dict],
+    config,
+    bundle_path: str,
+    manifest_files: list[dict],
 ) -> str:
     now = int(time.time())
     claims = {
@@ -157,15 +161,14 @@ async def test_midstream_error_increments_error_only(upload_client) -> None:
 
     ops = metrics.find("cassetta.upload.operations", "increment")
     # tar parse error counts as mid-stream error per FR-002 / SC-022.
-    assert any(
-        c.tags and c.tags.get("result") == "error" for c in ops
-    ), [c.tags for c in ops]
+    assert any(c.tags and c.tags.get("result") == "error" for c in ops), [c.tags for c in ops]
     bytes_calls = metrics.find("cassetta.upload.bytes", "increment")
     assert not bytes_calls, "mid-stream error MUST NOT increment upload.bytes"
 
 
 async def test_denied_403_does_not_increment_upload_counters(
-    storage_dir, recording_metrics: RecordingMetricsProvider,
+    storage_dir,
+    recording_metrics: RecordingMetricsProvider,
 ) -> None:
     """A 401 (no bearer) MUST NOT increment cassetta.upload.* — the metric
     is emitted only after JWT verification (which is the auth boundary)."""
@@ -177,7 +180,8 @@ async def test_denied_403_does_not_increment_upload_counters(
     _set_env(storage_dir)
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=recording_metrics,
+        build_core_defaults(config),
+        metrics_provider=recording_metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -188,12 +192,10 @@ async def test_denied_403_does_not_increment_upload_counters(
         recording_metrics.calls.clear()
         # No Authorization → 401.
         resp = await client.post(
-            "/upload/inbox%2Falice%2Fx.tar", content=b"",
+            "/upload/inbox%2Falice%2Fx.tar",
+            content=b"",
         )
         assert resp.status_code == 401
 
-    upload_metrics = [
-        c for c in recording_metrics.calls
-        if c.name.startswith("cassetta.upload.")
-    ]
+    upload_metrics = [c for c in recording_metrics.calls if c.name.startswith("cassetta.upload.")]
     assert not upload_metrics

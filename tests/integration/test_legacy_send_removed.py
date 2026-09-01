@@ -33,7 +33,8 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 
 @pytest.mark.asyncio
 async def test_legacy_mcp_send_removed(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """MCP tool enumeration confirms ``cassetta_send`` is gone."""
     client, _ = core_app
@@ -43,7 +44,9 @@ async def test_legacy_mcp_send_removed(
     headers["Authorization"] = f"Bearer {api_key}"
     headers["mcp-session-id"] = sid
     resp = await client.post(
-        "/mcp/", json=_jsonrpc("tools/list", {}, req_id=2), headers=headers,
+        "/mcp/",
+        json=_jsonrpc("tools/list", {}, req_id=2),
+        headers=headers,
     )
     assert resp.status_code == 200
     names = {t["name"] for t in resp.json()["result"]["tools"]}
@@ -54,7 +57,8 @@ async def test_legacy_mcp_send_removed(
 
 @pytest.mark.asyncio
 async def test_legacy_rest_send_returns_410(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """``PUT /inbox/{agent}/{path}`` returns 410 with the structured body."""
     client, _ = core_app
@@ -81,9 +85,7 @@ def test_migration_doc_has_brief_514_section() -> None:
     # parents[2] = the repository root
     migration = Path(__file__).resolve().parents[2] / "MIGRATION.md"
     text = migration.read_text(encoding="utf-8")
-    assert "Brief 514 — Upload flow" in text, (
-        f"Expected 'Brief 514 — Upload flow' heading in {migration}"
-    )
+    assert "Brief 514 — Upload flow" in text, f"Expected 'Brief 514 — Upload flow' heading in {migration}"
 
 
 # Silence pyright on unused json import when this file is collected alone.

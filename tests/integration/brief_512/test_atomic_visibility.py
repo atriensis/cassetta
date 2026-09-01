@@ -53,9 +53,7 @@ class TestPartialBundleInvisible:
         backend: FilesystemBackend,
     ) -> None:
         # Seed a partial inbox bundle; confirm invisible
-        bundle_dir = _seed_partial_bundle(
-            storage_dir, "inbox/alice/notes.txt", b"hidden"
-        )
+        bundle_dir = _seed_partial_bundle(storage_dir, "inbox/alice/notes.txt", b"hidden")
         response = await client.get("/inbox/alice/")
         assert response.json()["files"] == []
 
@@ -75,26 +73,20 @@ class TestPartialBundleInvisible:
         assert listing[0]["path"] == "notes.txt"
         assert listing[0]["bundle_id"] == "handcrafted"
         assert listing[0]["files"][0] == {
-            "name": "notes.txt", "size": 6, "mime": "text/plain",
+            "name": "notes.txt",
+            "size": 6,
+            "mime": "text/plain",
         }
 
 
 class TestInflightCollision:
-    async def test_partial_bundle_blocks_shadow_child(
-        self, client: httpx.AsyncClient, storage_dir: str
-    ) -> None:
+    async def test_partial_bundle_blocks_shadow_child(self, client: httpx.AsyncClient, storage_dir: str) -> None:
         """An uncommitted bundle at ``store/proj/`` blocks PUTs at ``store/proj/X``."""
-        os.makedirs(
-            os.path.join(storage_dir, "data", "store", "proj"), exist_ok=True
-        )
+        os.makedirs(os.path.join(storage_dir, "data", "store", "proj"), exist_ok=True)
         # Plant a partial-bundle marker (file directly in proj/ with no meta)
-        Path(
-            os.path.join(storage_dir, "data", "store", "proj", "draft.txt")
-        ).write_bytes(b"draft")
+        Path(os.path.join(storage_dir, "data", "store", "proj", "draft.txt")).write_bytes(b"draft")
 
-        response = await client.put(
-            "/files/proj/readme.md", content=b"# Readme"
-        )
+        response = await client.put("/files/proj/readme.md", content=b"# Readme")
         assert response.status_code == 409
         body = response.json()
         assert body["error"] == "bundle_path_conflict"
@@ -102,9 +94,7 @@ class TestInflightCollision:
 
 
 class TestCommitInvariant:
-    async def test_abort_cleans_bundle_dir(
-        self, backend: FilesystemBackend, storage_dir: str
-    ) -> None:
+    async def test_abort_cleans_bundle_dir(self, backend: FilesystemBackend, storage_dir: str) -> None:
         writer = await backend.open_bundle_write("store/doomed")
         await writer.write_file("a.txt", io.BytesIO(b"partial"))
         await writer.abort()

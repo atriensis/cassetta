@@ -38,5 +38,8 @@ class AliasResolver(Protocol):
     kind: ClassVar[str]
 
     async def resolve(
-        self, name: str, *, sender_label: str | None = None,
+        self,
+        name: str,
+        *,
+        sender_label: str | None = None,
     ) -> ResolvedRecipient | None: ...

@@ -60,10 +60,9 @@ def __getattr__(name: str) -> Any:
     """
     if name == "FilesystemClaimStorage":
         from cassetta.backends.filesystem import claim_storage as _cs
+
         return getattr(_cs, name)
-    raise AttributeError(
-        f"module 'cassetta.claims' has no attribute {name!r}"
-    )
+    raise AttributeError(f"module 'cassetta.claims' has no attribute {name!r}")
 
 
 __all__ = [

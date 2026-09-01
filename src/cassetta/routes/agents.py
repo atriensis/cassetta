@@ -77,11 +77,13 @@ async def _write_inbox_bundle(
         records: list[dict[str, Any]] = []
         for name, data, explicit_mime in files:
             await writer.write_file(name, io.BytesIO(data))
-            records.append({
-                "name": name,
-                "size": len(data),
-                "mime": pick_mime(name, explicit=explicit_mime),
-            })
+            records.append(
+                {
+                    "name": name,
+                    "size": len(data),
+                    "mime": pick_mime(name, explicit=explicit_mime),
+                }
+            )
         meta: dict[str, Any] = {
             "schema_version": SCHEMA_VERSION,
             "bundle_id": bundle_id,
@@ -116,7 +118,9 @@ async def list_agents(
         visible_labels = await access_policy.visible_agents(identity, labels)
     except Exception:
         struct_log(
-            logger, logging.ERROR, "agents.visibility_failed",
+            logger,
+            logging.ERROR,
+            "agents.visibility_failed",
             identity_label=identity.label,
             result="error",
         )
@@ -124,14 +128,9 @@ async def list_agents(
 
     visible_set = set(visible_labels)
     visible_keys = [k for k in active if k.label in visible_set]
-    agents = [
-        {"label": k.label, "created_at": k.created_at.isoformat()}
-        for k in visible_keys
-    ]
+    agents = [{"label": k.label, "created_at": k.created_at.isoformat()} for k in visible_keys]
 
-    result_tag = (
-        "unfiltered" if len(visible_labels) == len(labels) else "filtered"
-    )
+    result_tag = "unfiltered" if len(visible_labels) == len(labels) else "filtered"
     safe_emit(
         metric_name="cassetta.agents.list",
         metric_tags={"result": result_tag},
@@ -197,8 +196,7 @@ async def broadcast(
 
     # 1) Limits check — raises LimitsRejection (handled at app.py:210 → 413/422).
     manifest_files: list[ManifestFile] = [
-        {"name": name, "size": len(data), "mime": mime}
-        for name, data, mime in file_parts
+        {"name": name, "size": len(data), "mime": mime} for name, data, mime in file_parts
     ]
     manifest: UploadManifest = {
         "file_count": len(manifest_files),
@@ -208,10 +206,13 @@ async def broadcast(
     decision = await limits_policy.evaluate_upload(ctx, manifest)
     if "error" in decision:
         from cassetta.defaults.default_limits import LimitsRejection, _format_reason
+
         constraint = decision["constraint"]
         reason = _format_reason(
-            decision["error"], constraint,
-            decision.get("limit"), decision["observed"],
+            decision["error"],
+            constraint,
+            decision.get("limit"),
+            decision["observed"],
         )
         raise LimitsRejection(
             error=decision["error"],
@@ -223,9 +224,7 @@ async def broadcast(
 
     # 2) Active labels excluding sender.
     keys = await key_store.list_keys()
-    candidate_labels = [
-        k.label for k in keys if k.is_active and k.label != sender
-    ]
+    candidate_labels = [k.label for k in keys if k.is_active and k.label != sender]
 
     # 2a) Fan-out cap — Brief 531 FR-007. Reject before any storage
     # write. The handler at app.py emits the structured 429 envelope
@@ -239,11 +238,14 @@ async def broadcast(
     visibility_failed = False
     try:
         visible_labels = await access_policy.visible_agents(
-            identity, candidate_labels,
+            identity,
+            candidate_labels,
         )
     except Exception:
         struct_log(
-            logger, logging.ERROR, "broadcast.visibility_failed",
+            logger,
+            logging.ERROR,
+            "broadcast.visibility_failed",
             identity_label=identity.label,
             detail={"path": path, "sender": sender},
         )
@@ -258,13 +260,16 @@ async def broadcast(
         # 4) Resolve.
         try:
             resolved = await alias_resolver.resolve(
-                label, sender_label=sender,
+                label,
+                sender_label=sender,
             )
         except Exception as exc:
-            failed.append({
-                "target": label,
-                "error": f"resolver_error: {exc}",
-            })
+            failed.append(
+                {
+                    "target": label,
+                    "error": f"resolver_error: {exc}",
+                }
+            )
             continue
         if resolved is None:
             failed.append({"target": label, "error": "resolver_unknown"})
@@ -273,7 +278,9 @@ async def broadcast(
         # 5) Policy check.
         try:
             allowed = await access_policy.check(
-                identity, f"inbox:{label}", "write",
+                identity,
+                f"inbox:{label}",
+                "write",
             )
         except Exception:
             denied.append({"target": label, "reason": "check_error"})
@@ -287,14 +294,18 @@ async def broadcast(
             _field_kind = _kind if _kind in ("core", "cloud") else "core"
             _tag_kind = "team" if _field_kind == "cloud" else "core"
             safe_emit(
-                logger, logging.INFO, "policy.denied",
+                logger,
+                logging.INFO,
+                "policy.denied",
                 identity_label=identity.label,
-                resource=f"inbox:{label}", action="write",
+                resource=f"inbox:{label}",
+                action="write",
                 result="denied",
                 detail={"policy_kind": _field_kind},
                 metric_name="cassetta.policy.decisions",
                 metric_tags={
-                    "result": "denied", "action": "write",
+                    "result": "denied",
+                    "action": "write",
                     "policy_kind": _tag_kind,
                 },
                 metrics=metrics,
@@ -311,15 +322,20 @@ async def broadcast(
                     pass
                 bundle_id = uuid.uuid4().hex
                 await _write_inbox_bundle(
-                    backend, bundle_path, file_parts,
-                    sender=sender, bundle_id=bundle_id,
+                    backend,
+                    bundle_path,
+                    file_parts,
+                    sender=sender,
+                    bundle_id=bundle_id,
                 )
             delivered.append(label)
         except Exception as exc:
-            failed.append({
-                "target": label,
-                "error": f"write_error: {exc}",
-            })
+            failed.append(
+                {
+                    "target": label,
+                    "error": f"write_error: {exc}",
+                }
+            )
 
     # 7) Result-tag matrix (R11) + log + response.
     if visibility_failed:
@@ -334,11 +350,14 @@ async def broadcast(
         result = "error"
 
     safe_emit(
-        logger, logging.INFO, "broadcast.sent",
+        logger,
+        logging.INFO,
+        "broadcast.sent",
         identity_label=identity.label,
         result=result,
         detail={
-            "path": path, "sender": sender,
+            "path": path,
+            "sender": sender,
             "delivered": len(delivered),
             "denied": len(denied),
             "failed": len(failed),

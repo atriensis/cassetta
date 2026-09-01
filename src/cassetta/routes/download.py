@@ -49,7 +49,9 @@ class DownloadError(Exception):
     """
 
     def __init__(
-        self, status_code: int, body: dict[str, Any],
+        self,
+        status_code: int,
+        body: dict[str, Any],
         headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(f"download_error:{status_code}:{body}")
@@ -75,7 +77,8 @@ def _unauth(reason: str, extra: dict[str, Any] | None = None) -> DownloadError:
     if extra:
         body.update(extra)
     return DownloadError(
-        status_code=status.HTTP_401_UNAUTHORIZED, body=body,
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        body=body,
         headers={"WWW-Authenticate": _WWW_AUTHENTICATE},
     )
 
@@ -85,7 +88,8 @@ def _forbidden(reason: str, extra: dict[str, Any] | None = None) -> DownloadErro
     if extra:
         body.update(extra)
     return DownloadError(
-        status_code=status.HTTP_403_FORBIDDEN, body=body,
+        status_code=status.HTTP_403_FORBIDDEN,
+        body=body,
     )
 
 
@@ -118,11 +122,14 @@ def _jwt_error_to_reason(exc: jwt_tokens.TokenError) -> Reason:
 
 
 async def download_error_handler(
-    _request: Request, exc: DownloadError,
+    _request: Request,
+    exc: DownloadError,
 ) -> JSONResponse:
     """App-level handler registered in :mod:`cassetta.app`."""
     return JSONResponse(
-        status_code=exc.status_code, content=exc.body, headers=exc.headers,
+        status_code=exc.status_code,
+        content=exc.body,
+        headers=exc.headers,
     )
 
 
@@ -172,7 +179,7 @@ def _split_raw_path(request: Request) -> tuple[str, str]:
         raw_str = raw_str.split("?", 1)[0]
     if not raw_str.startswith("/download/"):
         raise _not_found("bundle_gone")
-    remainder = raw_str[len("/download/"):]
+    remainder = raw_str[len("/download/") :]
     if "/" not in remainder:
         # Only one segment — no bundle_path/name separator.
         raise _not_found("bundle_gone")
@@ -238,7 +245,9 @@ async def download_file(
     claim_recipient = str(claims["recipient"])
     if identity_label != "*" and identity_label != claim_recipient:
         struct_log(
-            logger, logging.WARNING, "download_identity_mismatch",
+            logger,
+            logging.WARNING,
+            "download_identity_mismatch",
             detail={
                 "identity_label": identity_label,
                 "claim_recipient": claim_recipient,
@@ -285,7 +294,8 @@ async def download_file(
     # Step 7: stream. Open handle first, then wrap in StreamingResponse.
     try:
         handle = await backend.open_bundle_file_read(
-            claim_bundle_path, decoded_name,
+            claim_bundle_path,
+            decoded_name,
         )
     except FileNotFoundError as exc:
         safe_emit(
@@ -313,7 +323,9 @@ async def download_file(
         metrics=metrics,
     )
     return StreamingResponse(
-        body, media_type=mime, headers=response_headers,
+        body,
+        media_type=mime,
+        headers=response_headers,
     )
 
 
@@ -342,7 +354,9 @@ async def _body_generator(
     finally:
         handle.close()
     struct_log(
-        logger, logging.DEBUG, "download_file_fetched",
+        logger,
+        logging.DEBUG,
+        "download_file_fetched",
         detail={
             "bundle_id": bundle_id,
             "jti": jti,
@@ -406,7 +420,9 @@ async def _post_stream_claim_accounting(
         await claim_store.delete(jti)
         total_bytes = sum(int(f.get("size", 0)) for f in manifest_files)
         struct_log(
-            logger, logging.INFO, "download_claim_completed",
+            logger,
+            logging.INFO,
+            "download_claim_completed",
             detail={
                 "bundle_id": bundle_id,
                 "jti": jti,

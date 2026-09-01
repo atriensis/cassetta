@@ -29,7 +29,8 @@ def _unwrap_text(result: dict) -> str:
 
 @pytest.mark.asyncio
 async def test_single_file_inline_returns_envelope(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     """Single-file bundle → unified envelope, NOT a bare string."""
     client, _ = core_app
@@ -39,15 +40,20 @@ async def test_single_file_inline_returns_envelope(
     storage_root = Path(os.environ["CASSETTA_STORAGE_PATH"])
     backend = FilesystemBackend(root_path=str(storage_root))
     await seed_inbox_bundle(
-        backend, "alice:main", "note.md",
+        backend,
+        "alice:main",
+        "note.md",
         content=b"# Hello\nmeeting notes\n",
         sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     result = await h.mcp_call(
-        client, "cassetta_pick", {"path": "note.md"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "note.md"},
+        sid=sid,
+        api_key=alice_key,
     )
     raw = _unwrap_text(result)
     # Parseable as JSON envelope — NOT a bare string.
@@ -64,7 +70,8 @@ async def test_single_file_inline_returns_envelope(
 
 @pytest.mark.asyncio
 async def test_multi_file_inline_returns_envelope(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "main")
@@ -77,13 +84,20 @@ async def test_multi_file_inline_returns_envelope(
         ("bar.txt", b"hello\n"),
     ]
     await seed_inbox_bundle(
-        backend, "alice:main", "pair", files=files, sender="bob",
+        backend,
+        "alice:main",
+        "pair",
+        files=files,
+        sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     result = await h.mcp_call(
-        client, "cassetta_pick", {"path": "pair"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "pair"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = json.loads(_unwrap_text(result))
     assert envelope["mode"] == "inline"
@@ -95,7 +109,8 @@ async def test_multi_file_inline_returns_envelope(
 
 @pytest.mark.asyncio
 async def test_non_utf8_inline_returns_base64(
-    core_app: tuple[httpx.AsyncClient, str], h,
+    core_app: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "main")
@@ -106,14 +121,20 @@ async def test_non_utf8_inline_returns_base64(
     # A 1-byte PNG-ish binary: invalid UTF-8.
     payload = b"\x89PNG\r\n\x1a\n\xff\xfe"
     await seed_inbox_bundle(
-        backend, "alice:main", "image.png",
-        content=payload, sender="bob",
+        backend,
+        "alice:main",
+        "image.png",
+        content=payload,
+        sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     result = await h.mcp_call(
-        client, "cassetta_pick", {"path": "image.png"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "image.png"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = json.loads(_unwrap_text(result))
     assert envelope["mode"] == "inline"

@@ -64,9 +64,7 @@ async def identity_client(
 
 class TestUnifiedIdentity:
     @pytest.mark.asyncio
-    async def test_setup_token_yields_operator_identity(
-        self, identity_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_setup_token_yields_operator_identity(self, identity_client: tuple[httpx.AsyncClient, str]) -> None:
         client, setup_token = identity_client
         # /setup accepts the setup token and should succeed (operator identity
         # passes the admin-level policy.check under DefaultAccessPolicy).
@@ -79,9 +77,7 @@ class TestUnifiedIdentity:
         assert resp.json()["label"] == "test:first-key"
 
     @pytest.mark.asyncio
-    async def test_bearer_token_yields_user_identity(
-        self, identity_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_bearer_token_yields_user_identity(self, identity_client: tuple[httpx.AsyncClient, str]) -> None:
         client, setup_token = identity_client
         # Create a key first
         resp = await client.post(
@@ -99,18 +95,14 @@ class TestUnifiedIdentity:
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_missing_auth_returns_401(
-        self, identity_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_missing_auth_returns_401(self, identity_client: tuple[httpx.AsyncClient, str]) -> None:
         client, _ = identity_client
         # No auth header on a protected route
         resp = await client.get("/files/")
         assert resp.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_setup_token_precedes_bearer(
-        self, identity_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_setup_token_precedes_bearer(self, identity_client: tuple[httpx.AsyncClient, str]) -> None:
         client, setup_token = identity_client
         # Create a bearer key
         resp = await client.post(
@@ -131,9 +123,7 @@ class TestUnifiedIdentity:
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_invalid_bearer_returns_401(
-        self, identity_client: tuple[httpx.AsyncClient, str]
-    ) -> None:
+    async def test_invalid_bearer_returns_401(self, identity_client: tuple[httpx.AsyncClient, str]) -> None:
         client, _ = identity_client
         resp = await client.get(
             "/files/",
@@ -144,9 +134,7 @@ class TestUnifiedIdentity:
 
 class TestDevModeIdentity:
     @pytest.mark.asyncio
-    async def test_dev_mode_allows_unauthenticated(
-        self, client: httpx.AsyncClient
-    ) -> None:
+    async def test_dev_mode_allows_unauthenticated(self, client: httpx.AsyncClient) -> None:
         # Dev-mode fixture (from conftest) sets CASSETTA_SETUP_TOKEN=""
         resp = await client.get("/files/")
         assert resp.status_code == 200

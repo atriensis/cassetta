@@ -17,10 +17,7 @@ def _ctx() -> PolicyContext:
 
 
 def _manifest(*sizes: int) -> UploadManifest:
-    files: list[ManifestFile] = [
-        {"name": f"f{i}.bin", "size": s, "mime": None}
-        for i, s in enumerate(sizes)
-    ]
+    files: list[ManifestFile] = [{"name": f"f{i}.bin", "size": s, "mime": None} for i, s in enumerate(sizes)]
     return {"file_count": len(files), "files": files}
 
 
@@ -128,10 +125,12 @@ async def test_empty_files_returns_inline() -> None:
 async def test_download_inline_and_reference() -> None:
     p = CoreLimitsPolicy(LimitsConfig(max_inline_size=100))
     inline = await p.evaluate_download(
-        _ctx(), {"file_count": 1, "total_size": 50},
+        _ctx(),
+        {"file_count": 1, "total_size": 50},
     )
     ref = await p.evaluate_download(
-        _ctx(), {"file_count": 1, "total_size": 500},
+        _ctx(),
+        {"file_count": 1, "total_size": 500},
     )
     assert inline["mode"] == "inline"
     assert ref["mode"] == "reference"
@@ -141,7 +140,8 @@ async def test_download_inline_and_reference() -> None:
 async def test_download_unset_always_inline() -> None:
     p = CoreLimitsPolicy(LimitsConfig(max_inline_size=None))
     decision = await p.evaluate_download(
-        _ctx(), {"file_count": 99, "total_size": 10**9},
+        _ctx(),
+        {"file_count": 99, "total_size": 10**9},
     )
     assert decision["mode"] == "inline"
 

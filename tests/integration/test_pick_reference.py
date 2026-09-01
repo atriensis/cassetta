@@ -31,7 +31,9 @@ def _unwrap(result: dict) -> dict | str:
 
 @pytest.mark.asyncio
 async def test_pick_returns_reference_envelope_and_completes(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h, tmp_path: Path,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
+    tmp_path: Path,
 ) -> None:
     client, _ = core_app_small_inline
     _ = tmp_path
@@ -51,14 +53,20 @@ async def test_pick_returns_reference_envelope_and_completes(
         ("docs/arch.md", b"## Architecture\n" + b"b" * 150),
     ]
     await seed_inbox_bundle(
-        backend, "alice:main", "project-docs",
-        files=files, sender="bob",
+        backend,
+        "alice:main",
+        "project-docs",
+        files=files,
+        sender="bob",
     )
 
     sid = await h.mcp_init(client, api_key=alice_key)
     pick = await h.mcp_call(
-        client, "cassetta_pick", {"path": "project-docs"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "project-docs"},
+        sid=sid,
+        api_key=alice_key,
     )
     envelope = _unwrap(pick)
     assert isinstance(envelope, dict), f"expected JSON envelope, got: {envelope!r}"
@@ -73,9 +81,7 @@ async def test_pick_returns_reference_envelope_and_completes(
         assert "name" in file_entry
         assert "size" in file_entry
         assert "mime" in file_entry
-        assert "content" not in file_entry, (
-            f"reference envelope MUST NOT carry content: {file_entry!r}"
-        )
+        assert "content" not in file_entry, f"reference envelope MUST NOT carry content: {file_entry!r}"
 
     # Claim sidecar is on disk under data/.claims/.
     storage_root = Path(_storage_path_of(client))
@@ -96,10 +102,7 @@ async def test_pick_returns_reference_envelope_and_completes(
     for file_entry in envelope["files"]:
         url_path = urllib.parse.urlparse(file_entry["url"]).path
         resp = await client.get(url_path, headers=headers)
-        assert resp.status_code == 200, (
-            f"expected 200 for {file_entry['name']}; got {resp.status_code}: "
-            f"{resp.text}"
-        )
+        assert resp.status_code == 200, f"expected 200 for {file_entry['name']}; got {resp.status_code}: {resp.text}"
         fetched[file_entry["name"]] = resp.content
 
     # Bytes match sender's originals.
@@ -109,8 +112,11 @@ async def test_pick_returns_reference_envelope_and_completes(
     # Bundle is gone after last GET — a follow-up pick MUST raise
     # "File not found" (FR-009 + FR-015).
     follow = await h.mcp_call(
-        client, "cassetta_pick", {"path": "project-docs"},
-        sid=sid, api_key=alice_key,
+        client,
+        "cassetta_pick",
+        {"path": "project-docs"},
+        sid=sid,
+        api_key=alice_key,
     )
     # MCP tool errors come back as `isError=True` content items.
     assert follow.get("isError") is True, follow

@@ -66,9 +66,7 @@ async def test_peek_never_calls_open_bundle_file_read() -> None:
     backend = FilesystemBackend(root_path=storage)
     await _seed(backend, "store/thing", "thing.txt", b"payload")
 
-    spy = MagicMock(side_effect=AssertionError(
-        "peek must not read bundle bytes — open_bundle_file_read was called"
-    ))
+    spy = MagicMock(side_effect=AssertionError("peek must not read bundle bytes — open_bundle_file_read was called"))
     original = backend.open_bundle_file_read
     backend.open_bundle_file_read = spy  # type: ignore[method-assign]
 
@@ -85,9 +83,7 @@ async def test_peek_never_calls_open_bundle_file_read() -> None:
         limits_policy=CoreLimitsPolicy(cfg.limits),
         metrics_provider=DefaultMetricsProvider(),
         reference_transport=CoreReferenceTransport(""),
-        claim_store=FilesystemClaimStorage(
-            Path(tempfile.mkdtemp()) / ".claims"
-        ),
+        claim_store=FilesystemClaimStorage(Path(tempfile.mkdtemp()) / ".claims"),
     )
     configure(cfg, backends)
     set_current_identity(Identity(label="auditor"))

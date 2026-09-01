@@ -79,9 +79,14 @@ def _extract_jti(token: str) -> str:
 
 
 def _expires_iso(now_epoch: int, ttl_s: int) -> str:
-    return datetime.fromtimestamp(
-        now_epoch + ttl_s, UTC,
-    ).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.fromtimestamp(
+            now_epoch + ttl_s,
+            UTC,
+        )
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 async def build_reference_payload_for_inbox(
@@ -111,7 +116,11 @@ async def build_reference_payload_for_inbox(
     ttl_s = _download_ttl(policy, identity)
     now_epoch = int(time.time())
     claims = _build_claims(
-        bundle_path, meta, recipient, ttl_s, iat=now_epoch,
+        bundle_path,
+        meta,
+        recipient,
+        ttl_s,
+        iat=now_epoch,
     )
     token = jwt_tokens.sign(claims, key=config.jwt_primary_key)
     jti = _extract_jti(token)
@@ -131,7 +140,9 @@ async def build_reference_payload_for_inbox(
         # propagates to the caller which translates it to "not found".
         await claim_store.issue(record)
         struct_log(
-            logger, logging.INFO, "download_claim_issued",
+            logger,
+            logging.INFO,
+            "download_claim_issued",
             identity_label=identity.label,
             detail={
                 "bundle_id": str(meta.get("bundle_id", "")),
@@ -145,8 +156,11 @@ async def build_reference_payload_for_inbox(
 
     expires_at = _expires_iso(now_epoch, ttl_s)
     return build_reference_envelope_with_path(
-        meta=meta, bundle_path=bundle_path, transport=transport,
-        token=token, expires_at=expires_at,
+        meta=meta,
+        bundle_path=bundle_path,
+        transport=transport,
+        token=token,
+        expires_at=expires_at,
     )
 
 
@@ -164,13 +178,19 @@ def build_reference_payload_for_store(
     ttl_s = _download_ttl(policy, identity)
     now_epoch = int(time.time())
     claims = _build_claims(
-        bundle_path, meta, recipient, ttl_s, iat=now_epoch,
+        bundle_path,
+        meta,
+        recipient,
+        ttl_s,
+        iat=now_epoch,
     )
     token = jwt_tokens.sign(claims, key=config.jwt_primary_key)
     jti = _extract_jti(token)
 
     struct_log(
-        logger, logging.INFO, "download_claim_issued",
+        logger,
+        logging.INFO,
+        "download_claim_issued",
         identity_label=identity.label,
         detail={
             "bundle_id": str(meta.get("bundle_id", "")),
@@ -184,6 +204,9 @@ def build_reference_payload_for_store(
 
     expires_at = _expires_iso(now_epoch, ttl_s)
     return build_reference_envelope_with_path(
-        meta=meta, bundle_path=bundle_path, transport=transport,
-        token=token, expires_at=expires_at,
+        meta=meta,
+        bundle_path=bundle_path,
+        transport=transport,
+        token=token,
+        expires_at=expires_at,
     )

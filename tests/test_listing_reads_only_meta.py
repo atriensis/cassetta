@@ -43,7 +43,8 @@ async def spied_client(
 
 class TestListingReadsOnlyMeta:
     async def test_store_listing_never_reads_file_bytes(
-        self, spied_client: tuple[httpx.AsyncClient, _ReadSpy],
+        self,
+        spied_client: tuple[httpx.AsyncClient, _ReadSpy],
     ) -> None:
         client, spy = spied_client
         await client.put("/files/a.md", content=b"# a")
@@ -53,21 +54,25 @@ class TestListingReadsOnlyMeta:
         response = await client.get("/files/")
         assert response.status_code == 200
         assert len(response.json()["files"]) == 2
-        assert spy.calls == [], (
-            f"Store listing read file bytes: {spy.calls}"
-        )
+        assert spy.calls == [], f"Store listing read file bytes: {spy.calls}"
 
     async def test_inbox_listing_never_reads_file_bytes(
-        self, spied_client: tuple[httpx.AsyncClient, _ReadSpy],
+        self,
+        spied_client: tuple[httpx.AsyncClient, _ReadSpy],
     ) -> None:
         client, spy = spied_client
         transport = client._transport  # type: ignore[attr-defined]
         backend: FilesystemBackend = transport.app.state.backends.backend  # type: ignore[attr-defined]
         await seed_inbox_bundle(
-            backend, "dev:agent", "note.md", content=b"# note",
+            backend,
+            "dev:agent",
+            "note.md",
+            content=b"# note",
         )
         await seed_inbox_bundle(
-            backend, "dev:agent", "pack",
+            backend,
+            "dev:agent",
+            "pack",
             files=[("x.md", b"# x"), ("y.md", b"# y")],
         )
         spy.calls.clear()
@@ -75,6 +80,4 @@ class TestListingReadsOnlyMeta:
         response = await client.get("/inbox/dev:agent/")
         assert response.status_code == 200
         assert len(response.json()["files"]) == 2
-        assert spy.calls == [], (
-            f"Inbox listing read file bytes: {spy.calls}"
-        )
+        assert spy.calls == [], f"Inbox listing read file bytes: {spy.calls}"

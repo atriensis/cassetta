@@ -50,9 +50,7 @@ def wire_env(wire_storage_dir: str) -> None:
     os.environ["CASSETTA_SETUP_TOKEN"] = ""
     os.environ["CASSETTA_STORAGE_PATH"] = wire_storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
     os.environ["CASSETTA_JWT_KEY"] = _TEST_JWT_KEY_B64
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_JWT_KEY_FILE", None)
@@ -84,7 +82,9 @@ async def _start_mcp(app) -> tuple:  # noqa: ANN001
 
 
 def _configured_app(
-    storage_dir: str, limits: LimitsConfig, make_backends,
+    storage_dir: str,
+    limits: LimitsConfig,
+    make_backends,
 ) -> tuple:
     policy = CoreLimitsPolicy(limits)
     config: AppConfig = load_config()
@@ -103,7 +103,8 @@ def _configured_app(
         limits=limits,
     )
     app = create_app(
-        config, backends=make_backends(config, limits_policy=policy),
+        config,
+        backends=make_backends(config, limits_policy=policy),
     )
     backends = app.state.backends
     backend = backends.backend
@@ -113,7 +114,9 @@ def _configured_app(
 
 @pytest.fixture
 async def wire_client(
-    wire_env: None, wire_storage_dir: str, make_backends,
+    wire_env: None,
+    wire_storage_dir: str,
+    make_backends,
 ) -> AsyncIterator[tuple[httpx.AsyncClient, FilesystemBackend]]:
     limits = LimitsConfig(
         per_file_max=1024,
@@ -148,9 +151,7 @@ async def test_rest_cap_exceeded_per_file(
         "limit": 1024,
         "observed": 2000,
     }
-    assert not os.path.isdir(
-        os.path.join(wire_storage_dir, "data", "store", "big.bin")
-    )
+    assert not os.path.isdir(os.path.join(wire_storage_dir, "data", "store", "big.bin"))
 
 
 @pytest.mark.asyncio
@@ -221,7 +222,9 @@ async def test_mcp_send_init_inbox_cap_exceeded(
     set_sender_label("test:alice")
 
     result = await _call_mcp(
-        client, sid, "cassetta_send_init",
+        client,
+        sid,
+        "cassetta_send_init",
         {
             "to": "test:alice",
             "path": "huge.bin",
@@ -236,9 +239,7 @@ async def test_mcp_send_init_inbox_cap_exceeded(
     assert text.startswith("Error executing tool cassetta_send_init: cap_exceeded:")
     assert "per_file_max" in text
     # No bundle committed — inbox dir must not exist.
-    assert not os.path.isdir(
-        os.path.join(wire_storage_dir, "data", "inbox", "test:alice", "huge.bin")
-    )
+    assert not os.path.isdir(os.path.join(wire_storage_dir, "data", "inbox", "test:alice", "huge.bin"))
 
 
 # MCP surface
@@ -247,11 +248,14 @@ async def test_mcp_send_init_inbox_cap_exceeded(
 async def _init_mcp(client: httpx.AsyncClient) -> str:
     resp = await client.post(
         "/mcp/",
-        json=_jsonrpc("initialize", {
-            "protocolVersion": "2025-03-26",
-            "capabilities": {},
-            "clientInfo": {"name": "wire-test", "version": "1.0.0"},
-        }),
+        json=_jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "wire-test", "version": "1.0.0"},
+            },
+        ),
         headers=MCP_HEADERS,
     )
     assert resp.status_code == 200
@@ -259,7 +263,10 @@ async def _init_mcp(client: httpx.AsyncClient) -> str:
 
 
 async def _call_mcp(
-    client: httpx.AsyncClient, sid: str, name: str, args: dict,
+    client: httpx.AsyncClient,
+    sid: str,
+    name: str,
+    args: dict,
 ) -> dict:
     headers = dict(MCP_HEADERS)
     if sid:
@@ -277,7 +284,9 @@ async def test_mcp_cap_exceeded(
     sid = await _init_mcp(client)
 
     result = await _call_mcp(
-        client, sid, "cassetta_put",
+        client,
+        sid,
+        "cassetta_put",
         {"path": "big.bin", "content": "x" * 2000},
     )
     assert result["isError"] is True
@@ -294,7 +303,9 @@ async def test_mcp_batch_required(
     sid = await _init_mcp(client)
 
     result = await _call_mcp(
-        client, sid, "cassetta_put",
+        client,
+        sid,
+        "cassetta_put",
         {"path": "mid.bin", "content": "x" * 800},
     )
     assert result["isError"] is True
@@ -316,7 +327,9 @@ async def test_mcp_send_init_cap_exceeded(
     set_sender_label("test:alice")
 
     result = await _call_mcp(
-        client, sid, "cassetta_send_init",
+        client,
+        sid,
+        "cassetta_send_init",
         {
             "to": "test:alice",
             "path": "big.bin",
@@ -342,7 +355,9 @@ async def test_mcp_broadcast_batch_required(
     set_sender_label("test:alice")
 
     result = await _call_mcp(
-        client, sid, "cassetta_broadcast",
+        client,
+        sid,
+        "cassetta_broadcast",
         {"path": "fan.bin", "content": "x" * 800},
     )
     assert result["isError"] is True

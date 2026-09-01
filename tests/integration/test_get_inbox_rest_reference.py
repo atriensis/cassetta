@@ -22,7 +22,8 @@ from .conftest import seed_inbox_bundle
 
 @pytest.mark.asyncio
 async def test_rest_get_inbox_returns_reference_no_sidecar(
-    core_app_small_inline: tuple[httpx.AsyncClient, str], h,
+    core_app_small_inline: tuple[httpx.AsyncClient, str],
+    h,
 ) -> None:
     client, _ = core_app_small_inline
 
@@ -36,8 +37,11 @@ async def test_rest_get_inbox_returns_reference_no_sidecar(
         ("b.bin", b"B" * 200),
     ]
     await seed_inbox_bundle(
-        backend, "alice:main", "archive",
-        files=files, sender="bob",
+        backend,
+        "alice:main",
+        "archive",
+        files=files,
+        sender="bob",
     )
 
     headers = {"Authorization": f"Bearer {alice_key}"}

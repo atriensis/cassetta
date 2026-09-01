@@ -30,9 +30,7 @@ async def _fast_sleep(_seconds: float) -> None:
 
 class TestCleanupAcquiresLease:
     @patch("cassetta.app.asyncio.sleep", side_effect=_fast_sleep)
-    async def test_cleanup_acquires_and_releases_lease(
-        self, mock_sleep: object, storage_dir: str
-    ) -> None:
+    async def test_cleanup_acquires_and_releases_lease(self, mock_sleep: object, storage_dir: str) -> None:
         backend = FilesystemBackend(root_path=storage_dir)
         config = _make_config(storage_path=storage_dir, default_ttl=3600)
 
@@ -69,9 +67,7 @@ class TestCleanupAcquiresLease:
                 pass
 
     @patch("cassetta.app.asyncio.sleep", side_effect=_fast_sleep)
-    async def test_cleanup_skips_if_lease_held(
-        self, mock_sleep: object, storage_dir: str
-    ) -> None:
+    async def test_cleanup_skips_if_lease_held(self, mock_sleep: object, storage_dir: str) -> None:
         backend = FilesystemBackend(root_path=storage_dir)
         config = _make_config(storage_path=storage_dir, default_ttl=3600)
 
@@ -119,9 +115,7 @@ class TestCleanupAcquiresLease:
         await backend.release_lease("ttl-cleanup", lease_id)
 
     @patch("cassetta.app.asyncio.sleep", side_effect=_fast_sleep)
-    async def test_cleanup_handles_no_ttl(
-        self, mock_sleep: object, storage_dir: str
-    ) -> None:
+    async def test_cleanup_handles_no_ttl(self, mock_sleep: object, storage_dir: str) -> None:
         backend = FilesystemBackend(root_path=storage_dir)
         config = _make_config(storage_path=storage_dir, default_ttl=0)
 

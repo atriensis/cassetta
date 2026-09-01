@@ -33,11 +33,14 @@ def _jsonrpc(method: str, params: dict | None = None, req_id: int = 1) -> dict:
 async def _init_mcp(client: httpx.AsyncClient) -> str:
     resp = await client.post(
         "/mcp/",
-        json=_jsonrpc("initialize", {
-            "protocolVersion": "2025-03-26",
-            "capabilities": {},
-            "clientInfo": {"name": "rl-test", "version": "1.0.0"},
-        }),
+        json=_jsonrpc(
+            "initialize",
+            {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {},
+                "clientInfo": {"name": "rl-test", "version": "1.0.0"},
+            },
+        ),
         headers=MCP_HEADERS,
     )
     assert resp.status_code == 200
@@ -45,7 +48,10 @@ async def _init_mcp(client: httpx.AsyncClient) -> str:
 
 
 async def _call_mcp(
-    client: httpx.AsyncClient, sid: str, name: str, args: dict,
+    client: httpx.AsyncClient,
+    sid: str,
+    name: str,
+    args: dict,
 ) -> dict:
     headers = dict(MCP_HEADERS)
     if sid:
@@ -61,20 +67,20 @@ def storage_dir() -> str:
 
 
 async def _booted_app(
-    storage_dir: str, recording_metrics: Any, *,
-    rate: str = "10/minute", max_targets: int = 1000, target_count: int = 3,
+    storage_dir: str,
+    recording_metrics: Any,
+    *,
+    rate: str = "10/minute",
+    max_targets: int = 1000,
+    target_count: int = 3,
 ) -> AsyncIterator[tuple[httpx.AsyncClient, Any]]:
     os.environ["CASSETTA_SETUP_TOKEN"] = ""  # dev mode
     os.environ["CASSETTA_STORAGE_PATH"] = storage_dir
     os.environ["CASSETTA_DEFAULT_TTL"] = "0"
     os.environ["CASSETTA_PER_FILE_MAX"] = "1048576"
     os.environ.pop("CASSETTA_MAX_FILE_SIZE", None)
-    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = (
-        "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
-    )
-    os.environ["CASSETTA_JWT_KEY"] = (
-        "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
-    )
+    os.environ["CASSETTA_MCP_ALLOWED_HOSTS"] = "localhost,localhost:16001,127.0.0.1,127.0.0.1:16001"
+    os.environ["CASSETTA_JWT_KEY"] = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
     os.environ["CASSETTA_PUBLIC_BASE_URL"] = "http://localhost:16001"
     os.environ.pop("CASSETTA_KEYS_FILE", None)
     os.environ["CASSETTA_RATE_LIMIT_BROADCAST"] = rate
@@ -126,21 +132,29 @@ def _parse_error_text(result: dict) -> tuple[str, dict]:
 class TestMcpBroadcastRateLimit:
     @pytest.mark.asyncio
     async def test_per_tool_call_429_envelope_via_mcp(
-        self, storage_dir: str, recording_metrics: Any,
+        self,
+        storage_dir: str,
+        recording_metrics: Any,
     ) -> None:
         async for client, _app in _booted_app(
-            storage_dir, recording_metrics, rate="3/minute",
+            storage_dir,
+            recording_metrics,
+            rate="3/minute",
         ):
             sid = await _init_mcp(client)
             for _ in range(3):
                 ok = await _call_mcp(
-                    client, sid, "cassetta_broadcast",
+                    client,
+                    sid,
+                    "cassetta_broadcast",
                     {"path": "x.txt", "content": "hi"},
                 )
                 assert ok.get("isError", False) is False, ok
 
             rejected = await _call_mcp(
-                client, sid, "cassetta_broadcast",
+                client,
+                sid,
+                "cassetta_broadcast",
                 {"path": "x.txt", "content": "hi"},
             )
             _, body = _parse_error_text(rejected)
@@ -151,20 +165,28 @@ class TestMcpBroadcastRateLimit:
             calls = recording_metrics.find("cassetta.rate_limit.hits")
             assert len(calls) == 1
             assert calls[0].tags == {
-                "route": "broadcast", "reason": "rate",
+                "route": "broadcast",
+                "reason": "rate",
             }
 
     @pytest.mark.asyncio
     async def test_fanout_cap_via_mcp(
-        self, storage_dir: str, recording_metrics: Any,
+        self,
+        storage_dir: str,
+        recording_metrics: Any,
     ) -> None:
         async for client, _app in _booted_app(
-            storage_dir, recording_metrics,
-            rate="100/minute", max_targets=2, target_count=5,
+            storage_dir,
+            recording_metrics,
+            rate="100/minute",
+            max_targets=2,
+            target_count=5,
         ):
             sid = await _init_mcp(client)
             rejected = await _call_mcp(
-                client, sid, "cassetta_broadcast",
+                client,
+                sid,
+                "cassetta_broadcast",
                 {"path": "x.txt", "content": "hi"},
             )
             _, body = _parse_error_text(rejected)
@@ -176,5 +198,6 @@ class TestMcpBroadcastRateLimit:
             calls = recording_metrics.find("cassetta.rate_limit.hits")
             assert len(calls) == 1
             assert calls[0].tags == {
-                "route": "broadcast", "reason": "fanout_cap",
+                "route": "broadcast",
+                "reason": "fanout_cap",
             }

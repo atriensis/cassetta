@@ -14,15 +14,18 @@ def _base_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CASSETTA_STORAGE_PATH", tempfile.mkdtemp())
     monkeypatch.setenv("CASSETTA_DEFAULT_TTL", "0")
     for var in (
-        "CASSETTA_JWT_KEY", "CASSETTA_JWT_KEY_FILE",
-        "CASSETTA_JWT_KEY_SECONDARY", "CASSETTA_JWT_KEY_SECONDARY_FILE",
+        "CASSETTA_JWT_KEY",
+        "CASSETTA_JWT_KEY_FILE",
+        "CASSETTA_JWT_KEY_SECONDARY",
+        "CASSETTA_JWT_KEY_SECONDARY_FILE",
         "CASSETTA_PUBLIC_BASE_URL",
     ):
         monkeypatch.delenv(var, raising=False)
 
 
 def test_exits_when_no_primary_key(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     _base_env(monkeypatch)
     monkeypatch.setenv("CASSETTA_PUBLIC_BASE_URL", "http://localhost:16001")
@@ -34,7 +37,8 @@ def test_exits_when_no_primary_key(
 
 
 def test_exits_when_public_base_url_missing(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     _base_env(monkeypatch)
     monkeypatch.setenv(
@@ -48,7 +52,8 @@ def test_exits_when_public_base_url_missing(
 
 
 def test_exits_when_public_base_url_lacks_scheme(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     _base_env(monkeypatch)
     monkeypatch.setenv(

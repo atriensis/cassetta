@@ -45,17 +45,26 @@ class RecordingMetrics:
         self.calls: list[MetricCall] = []
 
     def increment(
-        self, name: str, value: int = 1, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: int = 1,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("increment", name, value, tags))
 
     def observe(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("observe", name, value, tags))
 
     def gauge(
-        self, name: str, value: float, tags: dict[str, str] | None = None,
+        self,
+        name: str,
+        value: float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         self.calls.append(MetricCall("gauge", name, value, tags))
 
@@ -79,7 +88,8 @@ async def download_app_client(
 
     config = load_config()
     backends = replace(
-        build_core_defaults(config), metrics_provider=metrics,
+        build_core_defaults(config),
+        metrics_provider=metrics,
     )
     app = create_app(config, backends=backends)
     configure_mcp(config, backends)
@@ -141,30 +151,22 @@ async def test_expired_jwt_emits_auth_failure_download_jwt_expired(
     )
 
     assert response.status_code == 401
-    records = [
-        r for r in auth_log_capture
-        if getattr(r, "event", None) == "auth.failure"
-    ]
+    records = [r for r in auth_log_capture if getattr(r, "event", None) == "auth.failure"]
     assert len(records) == 1
     assert records[0].detail == {  # type: ignore[attr-defined]
         "source": "download",
         "reason": "jwt_expired",
         "identity_hint": None,
     }
-    increments = [
-        c for c in metrics.calls
-        if c.name == "cassetta.auth.failures" and c.method == "increment"
-    ]
+    increments = [c for c in metrics.calls if c.name == "cassetta.auth.failures" and c.method == "increment"]
     assert len(increments) == 1
     assert increments[0].tags == {
-        "source": "download", "reason": "jwt_expired",
+        "source": "download",
+        "reason": "jwt_expired",
     }
 
     # R4 alignment — old event name no longer appears.
-    old = [
-        r for r in auth_log_capture
-        if getattr(r, "event", None) == "download_jwt_validation_failed"
-    ]
+    old = [r for r in auth_log_capture if getattr(r, "event", None) == "download_jwt_validation_failed"]
     assert old == []
 
 
@@ -183,21 +185,16 @@ async def test_invalid_signature_jwt_emits_auth_failure_download_jwt_invalid(
     )
 
     assert response.status_code == 401
-    records = [
-        r for r in auth_log_capture
-        if getattr(r, "event", None) == "auth.failure"
-    ]
+    records = [r for r in auth_log_capture if getattr(r, "event", None) == "auth.failure"]
     assert len(records) == 1
     assert records[0].detail == {  # type: ignore[attr-defined]
         "source": "download",
         "reason": "jwt_invalid",
         "identity_hint": None,
     }
-    increments = [
-        c for c in metrics.calls
-        if c.name == "cassetta.auth.failures" and c.method == "increment"
-    ]
+    increments = [c for c in metrics.calls if c.name == "cassetta.auth.failures" and c.method == "increment"]
     assert len(increments) == 1
     assert increments[0].tags == {
-        "source": "download", "reason": "jwt_invalid",
+        "source": "download",
+        "reason": "jwt_invalid",
     }

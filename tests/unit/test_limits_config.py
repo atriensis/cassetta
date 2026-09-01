@@ -68,7 +68,8 @@ def test_each_env_var_parses(monkeypatch: pytest.MonkeyPatch) -> None:
     ],
 )
 def test_empty_string_on_cap_fields_unsets(
-    monkeypatch: pytest.MonkeyPatch, var: str,
+    monkeypatch: pytest.MonkeyPatch,
+    var: str,
 ) -> None:
     monkeypatch.setenv(var, "")
     cfg = load_limits_config()
@@ -86,7 +87,8 @@ def test_empty_string_on_cap_fields_unsets(
     ],
 )
 def test_empty_string_on_ttl_fields_returns_default(
-    monkeypatch: pytest.MonkeyPatch, var: str,
+    monkeypatch: pytest.MonkeyPatch,
+    var: str,
 ) -> None:
     monkeypatch.setenv(var, "")
     cfg = load_limits_config()
@@ -114,7 +116,8 @@ def test_empty_string_on_ttl_fields_returns_default(
     ],
 )
 def test_invalid_integer_fails_fast(
-    monkeypatch: pytest.MonkeyPatch, var: str,
+    monkeypatch: pytest.MonkeyPatch,
+    var: str,
 ) -> None:
     monkeypatch.setenv(var, "not-a-number")
     with pytest.raises(SystemExit):
@@ -131,7 +134,8 @@ def test_invalid_integer_fails_fast(
     ],
 )
 def test_negative_cap_fails_fast(
-    monkeypatch: pytest.MonkeyPatch, var: str,
+    monkeypatch: pytest.MonkeyPatch,
+    var: str,
 ) -> None:
     monkeypatch.setenv(var, "-1")
     with pytest.raises(SystemExit):
@@ -148,7 +152,8 @@ def test_negative_cap_fails_fast(
     ],
 )
 def test_non_positive_ttl_fails_fast(
-    monkeypatch: pytest.MonkeyPatch, var: str,
+    monkeypatch: pytest.MonkeyPatch,
+    var: str,
 ) -> None:
     monkeypatch.setenv(var, "0")
     with pytest.raises(SystemExit):
@@ -156,7 +161,8 @@ def test_non_positive_ttl_fails_fast(
 
 
 def test_stale_max_file_size_warns(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.setenv("CASSETTA_MAX_FILE_SIZE", "999999")
     for var in (

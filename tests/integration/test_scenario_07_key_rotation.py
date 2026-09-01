@@ -17,7 +17,10 @@ async def test_scenario_07_key_rotation(
 
     # 2. Send a message to own inbox before rotation (Brief 514 flow)
     await h.send_inline(
-        client, old_key, to="rot:agent", path="pre-rotate.txt",
+        client,
+        old_key,
+        to="rot:agent",
+        path="pre-rotate.txt",
         content=b"before rotation",
     )
 

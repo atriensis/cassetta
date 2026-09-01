@@ -83,7 +83,10 @@ async def _write_bundle(
 
 
 def _configure(
-    backend: FilesystemBackend, config: AppConfig, *, access_policy=None,
+    backend: FilesystemBackend,
+    config: AppConfig,
+    *,
+    access_policy=None,
 ) -> None:
     # FileKeyStore treats a missing file as empty; mkstemp would create an
     # empty file that fails JSON parse. Point at a non-existent path inside
@@ -98,9 +101,7 @@ def _configure(
         limits_policy=CoreLimitsPolicy(config.limits),
         metrics_provider=DefaultMetricsProvider(),
         reference_transport=CoreReferenceTransport(""),
-        claim_store=FilesystemClaimStorage(
-            Path(tempfile.mkdtemp()) / ".claims"
-        ),
+        claim_store=FilesystemClaimStorage(Path(tempfile.mkdtemp()) / ".claims"),
     )
     configure(config, backends)
     set_current_identity(Identity(label="alice"))
@@ -109,7 +110,10 @@ def _configure(
 @pytest.mark.asyncio
 async def test_peek_returns_meta(backend: FilesystemBackend) -> None:
     await _write_bundle(
-        backend, "store/notes.md", [("notes.md", b"hello")], sender=None,
+        backend,
+        "store/notes.md",
+        [("notes.md", b"hello")],
+        sender=None,
     )
     _configure(backend, _base_config())
 
@@ -140,7 +144,8 @@ async def test_peek_does_not_open_bytes(
 
 @pytest.mark.asyncio
 async def test_peek_does_not_change_mtime(
-    backend: FilesystemBackend, storage_root: str,
+    backend: FilesystemBackend,
+    storage_root: str,
 ) -> None:
     await _write_bundle(backend, "store/stable", [("a.md", b"x")])
     _configure(backend, _base_config())
@@ -158,7 +163,8 @@ async def test_peek_does_not_change_mtime(
 
 @pytest.mark.asyncio
 async def test_peek_orphan_raises_not_found(
-    backend: FilesystemBackend, storage_root: str,
+    backend: FilesystemBackend,
+    storage_root: str,
 ) -> None:
     # Create a bundle-shaped directory without meta.json
     orphan_dir = Path(storage_root) / "data" / "store" / "orphan"
@@ -172,11 +178,15 @@ async def test_peek_orphan_raises_not_found(
 
 @pytest.mark.asyncio
 async def test_peek_ttl_expired_does_not_delete(
-    backend: FilesystemBackend, storage_root: str,
+    backend: FilesystemBackend,
+    storage_root: str,
 ) -> None:
     old = datetime.now(UTC) - timedelta(seconds=60)
     await _write_bundle(
-        backend, "store/old", [("a.md", b"x")], created_at=old,
+        backend,
+        "store/old",
+        [("a.md", b"x")],
+        created_at=old,
     )
     _configure(backend, _base_config(default_ttl=10))
 
@@ -219,8 +229,10 @@ async def test_peek_default_access_policy_allows(
 @pytest.mark.asyncio
 async def test_peek_inbox_prefix(backend: FilesystemBackend) -> None:
     await _write_bundle(
-        backend, "inbox/alice/notes.md",
-        [("notes.md", b"hi")], sender="bob",
+        backend,
+        "inbox/alice/notes.md",
+        [("notes.md", b"hi")],
+        sender="bob",
     )
     _configure(backend, _base_config())
 
