@@ -48,6 +48,5 @@ Implemented at `src/cassetta/defaults/factory.py` (`BackendConfig`,
 
 - PR: <https://github.com/ximera239/cassetta/pull/41>
 - Issue: <https://github.com/ximera239/cassetta/issues/38>
-- Constitution: [§VII Three-Layer Architecture](../../.specify/memory/constitution.md)
-- Background: [ADR 001](001-three-layer-architecture.md); analyst archive
+- Background: §VII Three-Layer Architecture — [ADR 001](001-three-layer-architecture.md); analyst archive
   `cassetta-backendconfig-public-api.md` (not in this repo).

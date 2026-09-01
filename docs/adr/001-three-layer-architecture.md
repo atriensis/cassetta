@@ -47,7 +47,7 @@ Layer 2 code.
 
 ## Links
 
-- Source: [constitution §VII](../../.specify/memory/constitution.md) (Principle
-  VII, Three-Layer Architecture) and Principle V (Open-Core Separation).
+- Source: the project's architectural principles — §VII (Three-Layer Architecture)
+  and §V (Open-Core Separation). This document is their canonical statement here.
 - Realised incrementally by Briefs 505 (extract layers), 518 (core defaults
   factory), and 520 (see [ADR 002](002-backendconfig-public-api.md)).

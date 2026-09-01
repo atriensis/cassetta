@@ -17,6 +17,7 @@ You will need Docker and Docker Compose v2.
 ```bash
 cp .env.example .env
 # Edit .env and set CASSETTA_SETUP_TOKEN to a long random string.
+mkdir -p data data.keys   # bind-mount sources; Docker will not create them for you
 docker compose up -d
 ```
 
@@ -80,7 +81,7 @@ Your agent can now call `cassetta_put`, `cassetta_get`, `cassetta_list`,
 `cassetta_send`, `cassetta_inbox`, `cassetta_pick`, and `cassetta_peek`.
 The non-destructive `cassetta_peek` tool (and the matching
 `GET /.../peek` REST endpoints) returns bundle metadata without
-consuming the bundle; see `specs/513-peek-and-limits-policy/` for
+consuming the bundle; see [docs/REST_API.md](docs/REST_API.md) for
 details.
 
 **Why `settings.local.json` and not committed config?** Each (machine, project)
@@ -128,9 +129,6 @@ image rebuild is needed.
 
 Cassetta is designed to be self-hosted on any small Linux machine you control:
 a Raspberry Pi at home, a $5 VPS, an old laptop, or a corporate sandbox.
-
-For Kubernetes deployments, see the [Helm chart](../deploy/helm/cassetta/README.md)
-in `deploy/helm/cassetta/`.
 
 ### Server preparation
 

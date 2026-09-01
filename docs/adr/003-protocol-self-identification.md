@@ -48,6 +48,5 @@ Protocols under `src/cassetta/protocols/`, and `BlobClaimStorage.kind ==
 
 - PR: <https://github.com/ximera239/cassetta/pull/40>
 - Issue: <https://github.com/ximera239/cassetta/issues/37>
-- Constitution: [§VII Three-Layer Architecture](../../.specify/memory/constitution.md)
-- Background: [ADR 001](001-three-layer-architecture.md); analyst archive
+- Background: §VII Three-Layer Architecture — [ADR 001](001-three-layer-architecture.md); analyst archive
   `cassetta-protocol-self-identification.md` (not in this repo).
