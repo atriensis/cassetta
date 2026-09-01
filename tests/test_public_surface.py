@@ -10,6 +10,10 @@ survived that move, and each has a guard here:
 * a README quickstart documenting an API the server does not serve;
 * a deployment surface that is either missing or still built for the whole workspace.
 
+A sixth guard keeps links out of the private repository this one was split from. The concrete
+route back is known: the coder's inherited archive index carries a pull-request URL per historical
+brief, so an ADR written with provenance taken from that index reintroduces them by hand.
+
 A fifth guard catches the same defect spelled differently: a pointer into a directory that
 stayed behind in the monorepo (``specs/…``, ``deploy/helm/…``) is just as broken as a ``core/``
 path, and reads to an outside contributor as a repository with missing parts.
@@ -218,4 +222,31 @@ def test_no_dangling_repo_links() -> None:
     assert not dangling, (
         "shipped documentation points at paths that do not exist in this repository:\n  "
         + "\n  ".join(sorted(dangling))
+    )
+
+
+# The private monorepo this repository was split out of. ``(?![\w-])`` is what separates it from
+# this repository's own ``…/cassetta-core`` URLs, which are legitimate and expected.
+_PREDECESSOR_URL_RE = re.compile(r"github\.com/ximera239/cassetta(?![\w-])")
+
+
+def test_no_links_into_the_private_predecessor() -> None:
+    """Shipped prose must not link into the private repository this one was split from.
+
+    Two ADRs cited the pull request and issue that implemented their decision. Those live in the
+    monorepo, which is private and stays that way, so a published document was sending readers to
+    a 404 and disclosing the shape of a backlog they cannot read.
+
+    The route back is specific rather than hypothetical: the coder's inherited archive index lists
+    one such URL per historical brief, and an ADR that takes its provenance from there picks them
+    up again.
+    """
+    offenders = [
+        f"{doc.relative_to(REPO_ROOT)}:{i}"
+        for doc in _prose_files()
+        for i, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1)
+        if _PREDECESSOR_URL_RE.search(line)
+    ]
+    assert not offenders, "shipped documentation links into the private predecessor repository:\n  " + "\n  ".join(
+        offenders
     )
