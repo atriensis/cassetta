@@ -216,16 +216,19 @@ def _restore_logging_state() -> Iterator[None]:
     """Brief 539 — restore logger state after every test (Principle IX, research §3).
 
     ``configure_logging()`` mutates process-global logger state (handlers,
-    level, ``propagate``). Brief 529 set ``cassetta_cloud.propagate=False`` and
-    broke caplog-based cloud tests when the suite ran whole; ``test_gc_reaper``/
-    ``test_limits_policy_evaluate`` free-rode on a leaked low ``cassetta`` level.
-    This autouse guard snapshots and restores ``handlers``/``level``/
-    ``propagate`` for the ``cassetta``/``cassetta.auth``/``cassetta_cloud`` trees
-    around each test, so a logging tweak in one test cannot leak into the next.
-    Placed at the core root (not the four subtree conftests named in the brief)
-    for DRY and so it also covers ``unit/``.
+    level, ``propagate``), and ``logging.getLogger`` interns every name for the
+    life of the interpreter — so a tree one test configures is still configured
+    when the next one runs. That has bitten this suite before: a test that
+    disabled propagation broke later caplog-based assertions when the suite ran
+    whole, and ``test_gc_reaper``/``test_limits_policy_evaluate`` free-rode on a
+    leaked low ``cassetta`` level. This autouse guard snapshots and restores
+    ``handlers``/``level``/``propagate`` around each test for the project's own
+    two trees and for the example tree the ``extra_log_trees`` tests supply, so
+    a logging tweak in one test cannot leak into the next. Placed at the core
+    root (not the four subtree conftests named in the brief) for DRY and so it
+    also covers ``unit/``.
     """
-    names = ("cassetta", "cassetta.auth", "cassetta_cloud")
+    names = ("cassetta", "cassetta.auth", "example_embedder")
     saved = [(lg, list(lg.handlers), lg.level, lg.propagate) for lg in (logging.getLogger(n) for n in names)]
     try:
         yield

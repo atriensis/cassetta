@@ -1,4 +1,9 @@
-"""Brief 533 FR-040/FR-041/FR-042 / SC-007 — auth logger isolation."""
+"""Brief 533 FR-040/FR-041/FR-042 / SC-007 — auth logger isolation.
+
+Also covers the other half of the same function's contract: the logger trees a
+caller supplies, which are configured by this project but governed by whoever
+supplied them.
+"""
 
 from __future__ import annotations
 
@@ -11,12 +16,17 @@ import pytest
 
 from cassetta.structured_log import configure_logging
 
+# A stand-in for a caller's own logger tree. It names no real distribution and
+# is an example throughout — nothing here depends on who a supplied tree belongs
+# to, which is the property these tests exist to pin.
+_EXTRA_TREE = "example_embedder"
+
 
 @pytest.fixture(autouse=True)
 def _restore_logging() -> Iterator[None]:
     """Snapshot/restore the logger tree so each test runs hermetically."""
     yield
-    for name in ("cassetta", "cassetta.auth", "cassetta_cloud"):
+    for name in ("cassetta", "cassetta.auth", _EXTRA_TREE):
         target = logging.getLogger(name)
         for h in list(target.handlers):
             target.removeHandler(h)
@@ -107,10 +117,57 @@ def test_configure_logging_idempotent_on_auth_subtree() -> None:
     assert len(captured) == 0
 
 
-def test_cassetta_cloud_propagate_unchanged() -> None:
-    """D-6 — ``cassetta_cloud`` propagation behavior UNCHANGED from
-    brief 529 (``propagate=True`` preserved for caplog compatibility).
+def test_extra_log_trees_receive_the_configured_handler() -> None:
+    """A supplied tree is routed through the same handler as this project's own.
+
+    Object identity, not type equality: one handler is built per call and
+    attached everywhere, so a supplied tree holding that same object is the
+    strongest available statement of "the same handler".
     """
-    configure_logging("text")
-    cloud_logger = logging.getLogger("cassetta_cloud")
-    assert cloud_logger.propagate is True
+    configure_logging("json", (_EXTRA_TREE,))
+
+    own = logging.getLogger("cassetta")
+    supplied = logging.getLogger(_EXTRA_TREE)
+
+    assert supplied.handlers == own.handlers, "supplied tree did not receive the configured handler"
+    assert supplied.level == own.level == logging.DEBUG
+
+    # Re-route that handler to a buffer so we can read what reached it.
+    stream = io.StringIO()
+    for h in supplied.handlers:
+        h.stream = stream  # type: ignore[attr-defined]
+
+    logging.getLogger(f"{_EXTRA_TREE}.submodule").info(
+        "supplied.test",
+        extra={"event": "supplied.test"},
+    )
+
+    contents = stream.getvalue()
+    assert contents, "expected at least one record on the configured handler"
+    for line in contents.splitlines():
+        obj = json.loads(line)
+        assert obj.get("event") == "supplied.test"
+
+
+def test_extra_log_trees_propagation_is_left_untouched() -> None:
+    """A supplied tree's ``propagate`` stays whatever the caller left it as.
+
+    Configuring a tree and governing it are different things: the handler and the
+    level are this project's to set, propagation is not. Both directions are
+    asserted — a default left alone, and an explicit ``False`` left alone — and
+    the handler assertion in each half is what stops either from passing
+    vacuously on a tree the function never visited.
+    """
+    supplied = logging.getLogger(_EXTRA_TREE)
+
+    # Direction 1 — the caller never touched it: the default survives.
+    assert supplied.propagate is True, "precondition: the tree starts at the logging default"
+    configure_logging("text", (_EXTRA_TREE,))
+    assert supplied.handlers, "the function never visited this tree"
+    assert supplied.propagate is True, "propagation was disabled on a supplied tree"
+
+    # Direction 2 — the caller set it themselves: their choice survives.
+    supplied.propagate = False
+    configure_logging("text", (_EXTRA_TREE,))
+    assert supplied.handlers, "the function never visited this tree"
+    assert supplied.propagate is False, "propagation was enabled on a supplied tree"

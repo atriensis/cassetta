@@ -15,17 +15,22 @@ from cassetta.structured_log import (
 
 _TEST_JWT_KEY_B64 = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
 
+# A stand-in for a caller's own logger tree, used wherever these tests exercise
+# the ``extra_log_trees`` contract. It names no real distribution — nothing in
+# the contract depends on who a supplied tree belongs to.
+_EXTRA_TREE = "example_embedder"
+
 
 @pytest.fixture(autouse=True)
 def _clean_logger():
-    """Reset the cassetta + cassetta_cloud loggers between tests."""
+    """Reset the project's own tree and the example supplied tree between tests."""
     cassetta_logger = logging.getLogger("cassetta")
-    cassetta_cloud_logger = logging.getLogger("cassetta_cloud")
+    extra_logger = logging.getLogger(_EXTRA_TREE)
     cassetta_logger.handlers.clear()
-    cassetta_cloud_logger.handlers.clear()
+    extra_logger.handlers.clear()
     yield
     cassetta_logger.handlers.clear()
-    cassetta_cloud_logger.handlers.clear()
+    extra_logger.handlers.clear()
 
 
 class TestJsonFormatter:
@@ -310,8 +315,8 @@ class TestStructLog:
 
 
 class TestSiblingLoggerCoverage:
-    """Brief 529 US3 — configure_logging covers ``cassetta.auth`` and
-    ``cassetta_cloud.*`` logger trees through the same handler stack."""
+    """Brief 529 US3 — configure_logging covers the ``cassetta.auth`` sub-tree
+    and every logger tree the caller supplies through the same handler stack."""
 
     def test_cassetta_auth_record_renders_through_json_formatter(self, capsys):
         """US3 AS-1: cassetta.auth records render through the JSON formatter."""
@@ -328,21 +333,21 @@ class TestSiblingLoggerCoverage:
         obj = json.loads(line)
         assert obj["event"] == "test_auth_log"
 
-    def test_cassetta_cloud_record_renders_through_json_formatter(
+    def test_supplied_tree_record_renders_through_json_formatter(
         self,
         capsys,
     ):
-        """US3 AS-2: cassetta_cloud.* records render through the same handler."""
-        configure_logging("json")
-        logging.getLogger("cassetta_cloud.foo").warning(
-            "test_cloud_log",
-            extra={"event": "test_cloud_log"},
+        """US3 AS-2: records on a supplied tree render through the same handler."""
+        configure_logging("json", (_EXTRA_TREE,))
+        logging.getLogger(f"{_EXTRA_TREE}.foo").warning(
+            "test_supplied_log",
+            extra={"event": "test_supplied_log"},
         )
         captured = capsys.readouterr()
-        assert "test_cloud_log" in captured.err
-        line = next(line for line in captured.err.splitlines() if "test_cloud_log" in line)
+        assert "test_supplied_log" in captured.err
+        line = next(line for line in captured.err.splitlines() if "test_supplied_log" in line)
         obj = json.loads(line)
-        assert obj["event"] == "test_cloud_log"
+        assert obj["event"] == "test_supplied_log"
 
     def test_repeated_configure_logging_does_not_duplicate_records(
         self,
@@ -358,28 +363,45 @@ class TestSiblingLoggerCoverage:
         marker_lines = [line for line in captured.err.splitlines() if "once_only" in line]
         assert len(marker_lines) == 1, captured.err
 
-    def test_cassetta_cloud_propagate_enabled_after_configure(self):
-        """``cassetta_cloud`` keeps propagate=True so caplog (root-attached
-        in pytest) captures records from cloud-side log-assertion tests.
-        The local handler attached by configure_logging still emits;
-        propagation merely lets pytest's LogCaptureHandler observe."""
-        configure_logging("text")
-        assert logging.getLogger("cassetta_cloud").propagate is True
+    def test_supplied_tree_still_reaches_a_root_attached_handler(self):
+        """A supplied tree keeps its own propagation, so a handler on root —
+        pytest's ``caplog`` being the case that matters in practice — still
+        observes its records. The local handler attached by configure_logging
+        emits either way; propagation is what lets an observer above it look on,
+        and this function does not take that away from the caller."""
+        configure_logging("text", (_EXTRA_TREE,))
+
+        seen: list[logging.LogRecord] = []
+
+        class _RootHandler(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                if record.name.startswith(_EXTRA_TREE):
+                    seen.append(record)
+
+        root = logging.getLogger()
+        handler = _RootHandler()
+        root.addHandler(handler)
+        try:
+            logging.getLogger(f"{_EXTRA_TREE}.foo").warning("observed_from_root")
+        finally:
+            root.removeHandler(handler)
+
+        assert [r.getMessage() for r in seen] == ["observed_from_root"]
 
     def test_repeated_configure_clears_handlers_on_both_trees(self):
-        configure_logging("json")
-        configure_logging("text")
+        configure_logging("json", (_EXTRA_TREE,))
+        configure_logging("text", (_EXTRA_TREE,))
         cassetta_logger = logging.getLogger("cassetta")
-        cassetta_cloud_logger = logging.getLogger("cassetta_cloud")
+        extra_logger = logging.getLogger(_EXTRA_TREE)
         assert len(cassetta_logger.handlers) == 1
-        assert len(cassetta_cloud_logger.handlers) == 1
+        assert len(extra_logger.handlers) == 1
         # Both should share the same formatter type after the second call.
         assert isinstance(
             cassetta_logger.handlers[0].formatter,
             TextFormatter,
         )
         assert isinstance(
-            cassetta_cloud_logger.handlers[0].formatter,
+            extra_logger.handlers[0].formatter,
             TextFormatter,
         )
 

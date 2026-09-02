@@ -4,7 +4,8 @@ Provides:
 - ``JsonFormatter``: one JSON object per line (JSONL) for production/cloud
 - ``TextFormatter``: human-readable output matching pre-507 behavior
 - ``request_id_var``: contextvars.ContextVar for per-request UUID
-- ``configure_logging()``: sets up the ``cassetta`` logger with the chosen format
+- ``configure_logging()``: sets up this project's own logger trees — and any
+  additional trees the caller names — with the chosen format
 - ``struct_log()``: helper to emit structured log events with consistent fields
 - ``safe_emit()``: Brief 533 helper — funnel ``struct_log`` + counter/gauge
   through two INDEPENDENT best-effort exception handlers so an observability
@@ -16,7 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -26,6 +27,10 @@ if TYPE_CHECKING:
 
 # Per-request context — set by RequestIdMiddleware, read by formatters.
 request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
+
+# The logger trees this project owns. It configures these AND sets their
+# propagation policy; a tree a caller supplies gets the configuration only.
+_OWN_LOG_TREES = ("cassetta", "cassetta.auth")
 
 
 class JsonFormatter(logging.Formatter):
@@ -98,29 +103,62 @@ class TextFormatter(logging.Formatter):
         return super().format(record)
 
 
-def configure_logging(log_format: str = "text") -> None:
-    """Configure the ``cassetta``, ``cassetta.auth``, and ``cassetta_cloud``
-    logger trees.
+def _attach_managed_handler(name: str, handler: logging.Handler) -> logging.Logger:
+    """Give one logger tree the managed handler and the shared level.
 
-    Builds one ``StreamHandler`` with the chosen formatter and attaches it
-    to the ``cassetta`` top-level logger, the ``cassetta.auth`` sub-tree
-    (Brief 533 FR-040), AND the ``cassetta_cloud`` top-level logger so
-    records emitted on any of them render through the same handler.
+    Clears only the handlers this module installed previously — the
+    ``_cassetta_managed`` marker — so handlers attached by tests or operators
+    survive re-invocation (Brief 533 FR-042).
 
-    Both ``cassetta`` and ``cassetta.auth`` set ``propagate=False`` — the
-    auth sub-tree gets its own handler so future propagation-chain
-    mutations cannot silently disconnect it from the configured handler
-    (Brief 533 FR-041). ``cassetta_cloud`` keeps default ``propagate=True``
-    so pytest's ``caplog`` (attached to root) continues to capture records
-    from cloud-side log-assertion tests (D-6).
+    Propagation is deliberately not touched here. It is policy, and policy
+    belongs to whoever owns the tree; the caller of this helper decides whether
+    it owns any.
+    """
+    target = logging.getLogger(name)
+    for existing in list(target.handlers):
+        if getattr(existing, "_cassetta_managed", False):
+            target.removeHandler(existing)
+    target.addHandler(handler)
+    target.setLevel(logging.DEBUG)
+    return target
 
-    Idempotent — re-invocation clears prior handlers on every configured
-    logger before re-attaching, so repeated calls do not stack handlers
-    (Brief 533 FR-042).
+
+def configure_logging(log_format: str = "text", extra_log_trees: Sequence[str] = ()) -> None:
+    """Configure this project's logger trees, plus any the caller supplies.
+
+    Builds one ``StreamHandler`` with the chosen formatter and attaches it to
+    the ``cassetta`` top-level logger, the ``cassetta.auth`` sub-tree (Brief 533
+    FR-040), and every tree named in ``extra_log_trees``, so records emitted on
+    any of them render through the same handler.
+
+    The division of responsibility is the contract:
+
+    * **This project's own trees are configured and governed.** ``cassetta`` and
+      ``cassetta.auth`` get the handler, ``DEBUG``, and ``propagate=False``. The
+      auth sub-tree carries its own handler so a later change to the propagation
+      chain cannot silently disconnect it (Brief 533 FR-041).
+    * **A supplied tree is configured, not governed.** It gets the same handler
+      and the same level; its ``propagate`` attribute is left untouched — not
+      set true, not set false, not read. A caller wanting different propagation
+      sets it themselves, before or after this call.
+
+    Own trees are configured first, then the supplied ones in the order given. A
+    supplied name that duplicates one of the project's own trees is treated as
+    already configured, so the policy just applied to it is not undone.
+
+    Idempotent — re-invocation clears only the handlers this function installed
+    before re-attaching, on supplied trees exactly as on the project's own, so
+    repeated calls neither stack handlers nor discard a handler someone else
+    attached (Brief 533 FR-042).
 
     Args:
         log_format: ``"text"`` for human-readable (default),
                     ``"json"`` for JSONL output.
+        extra_log_trees: names of additional logger trees to route through the
+                    same handler — the tree of an application or distribution
+                    embedding this server, so one process produces one log
+                    stream. Empty by default, so a caller wanting only this
+                    project's own logging passes nothing.
     """
     handler = logging.StreamHandler()
     if log_format == "json":
@@ -132,18 +170,15 @@ def configure_logging(log_format: str = "text") -> None:
     # ``auth_log_capture`` fixture — intact.
     handler._cassetta_managed = True  # type: ignore[attr-defined]
 
-    # Brief 533 FR-040/FR-041/FR-042: ``cassetta.auth`` gets its own handler
-    # and propagate=False so the auth sub-tree is structurally isolated.
-    for name in ("cassetta", "cassetta.auth", "cassetta_cloud"):
-        target = logging.getLogger(name)
-        # Only clear handlers WE installed previously, so external
-        # handlers attached by tests/operators survive re-invocation.
-        for existing in list(target.handlers):
-            if getattr(existing, "_cassetta_managed", False):
-                target.removeHandler(existing)
-        target.addHandler(handler)
-        target.setLevel(logging.DEBUG)
-        target.propagate = name == "cassetta_cloud"
+    for name in _OWN_LOG_TREES:
+        own = _attach_managed_handler(name, handler)
+        own.propagate = False
+
+    for name in extra_log_trees:
+        # Already configured above, and its propagation policy is ours to keep.
+        if name in _OWN_LOG_TREES:
+            continue
+        _attach_managed_handler(name, handler)
 
 
 def new_request_id() -> str:
