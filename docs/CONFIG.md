@@ -1,49 +1,61 @@
 # Cassetta configuration reference
 
-All Cassetta configuration is read from environment variables at
-startup. This document enumerates each variable, its default, and its
-effect.
+All Cassetta configuration is read from environment variables at startup.
+This document enumerates every variable the server reads, its default,
+and its effect.
+
+Three variables are required; everything else has a built-in default, so
+a variable you never set behaves as documented here. `.env.example` in
+the repository root is a copyable starting point with the same values.
 
 Sections:
 
+- [Required](#required)
+- [Upload flow](#upload-flow)
 - [Storage](#storage)
-- [Authentication](#authentication)
-- [Discovery & aliases](#discovery--aliases)
+- [Identity](#identity)
 - [Limits policy](#limits-policy)
-- [Upload flow (brief 514)](#upload-flow-brief-514)
-- [Logging & observability](#logging--observability)
-- [MCP](#mcp)
+- [Rate limiting and fan-out](#rate-limiting-and-fan-out)
+- [MCP and logging](#mcp-and-logging)
+- [Command-line client](#command-line-client)
 
-> This file is populated alongside brief 513. Sections not directly
-> touched by 513/514 are tracked elsewhere for now (see `README.md`)
-> and will be folded in as briefs refresh them.
+## Required
 
-## Upload flow (brief 514)
+The server exits at startup, with a message naming the variable, if any
+of these is missing.
 
-Brief 514 introduced a two-phase upload flow (`cassetta_send_init` →
-`cassetta_send_inline` / `POST /upload/{bundle_path}`) backed by HS256
-JWT credentials. Three environment variables below are required for
-the server to boot; two more are optional and enable verify-only key
-rotation.
+| Env var | Meaning |
+|---|---|
+| `CASSETTA_SETUP_TOKEN` | Token that the one-time `POST /setup` call must present to mint the first API key. Set it to a long random string. Setting it to the **empty string** is accepted and enables dev mode — no authentication at all — which is for local experiments only. |
+| `CASSETTA_PUBLIC_BASE_URL` | Absolute base URL that agents can reach. It composes the upload and download URLs returned in batch responses, so it must be the externally reachable address, not the internal bind address when those differ. |
+| `CASSETTA_JWT_KEY` | Base64-encoded HS256 signing key for upload and download credentials. Required unless `CASSETTA_JWT_KEY_FILE` is set instead. |
+| `CASSETTA_JWT_KEY_FILE` | Path to a file whose contents are the base64-encoded signing key. Wins over `CASSETTA_JWT_KEY` when both are set — the managed-secret arrangement. |
 
-### JWT signing keys
+`CASSETTA_PUBLIC_BASE_URL` is validated for shape: the scheme must be
+`http` or `https` and the host must be non-empty. Trailing slashes are
+stripped. A missing or malformed value aborts the boot rather than
+producing unreachable URLs at runtime later:
 
-The server signs each upload credential with the **primary** key. Each
-credential is accepted for verification if its signature matches
-either the primary or, if configured, the **secondary** key. The
-secondary key is verify-only and never used to sign.
+```bash
+export CASSETTA_PUBLIC_BASE_URL=http://localhost:16001
+```
 
-| Env var | Required | Meaning |
+## Upload flow
+
+Sending a bundle is a two-phase flow (`cassetta_send_init` →
+`cassetta_send_inline` or `POST /upload/{bundle_path}`) backed by HS256
+JWT credentials. The primary key above signs them; the variables below
+are optional and exist for zero-downtime key rotation.
+
+| Env var | Default | Meaning |
 |---|---|---|
-| `CASSETTA_JWT_KEY` | primary required if `..._FILE` unset | Raw base64-encoded primary signing key value. |
-| `CASSETTA_JWT_KEY_FILE` | primary required if `...` unset | Path to a file whose contents are the base64-encoded primary key. `_FILE` wins if both are set. |
-| `CASSETTA_JWT_KEY_SECONDARY` | no | Raw base64-encoded verify-only secondary key (for rotation). |
-| `CASSETTA_JWT_KEY_SECONDARY_FILE` | no | Path variant of `CASSETTA_JWT_KEY_SECONDARY`. |
+| `CASSETTA_JWT_KEY_SECONDARY` | unset | Base64-encoded verify-only second key. Accepted for verification, never used to sign. |
+| `CASSETTA_JWT_KEY_SECONDARY_FILE` | unset | Path form of `CASSETTA_JWT_KEY_SECONDARY`. Wins when both are set. |
+| `CASSETTA_JWT_KEY_OVERLAP_TTL` | `600` | Seconds a just-demoted key stays valid after a `SIGHUP` rotation, so credentials issued moments before the rotation keep verifying. Must be greater than zero. |
 
-**Minimum key length is 32 bytes (decoded).** The server validates
-this at startup and aborts with a clear error if the key is shorter;
-HS256 rejects shorter keys anyway (pyjwt's
-`enforce_minimum_key_length` constraint).
+**Minimum key length is 32 bytes (decoded).** The server validates this
+at startup and aborts with a clear error if the key is shorter; HS256
+rejects shorter keys anyway.
 
 Generate a key with OpenSSL:
 
@@ -55,122 +67,119 @@ chmod 600 ~/.config/cassetta/jwt.key
 export CASSETTA_JWT_KEY_FILE=$HOME/.config/cassetta/jwt.key
 ```
 
-#### Key rotation procedure
+Set `CASSETTA_JWT_KEY_OVERLAP_TTL` to at least
+`max(CASSETTA_DOWNLOAD_CLAIM_TTL, CASSETTA_UPLOAD_TOKEN_TTL)`. Below
+that, the server still starts but logs a `config_validation_warning` at
+boot, and clients can see spurious `401`s mid-transfer after a rotation.
 
-The credential TTL is short (default 5 minutes, `CASSETTA_UPLOAD_TOKEN_TTL`),
-so rotation is zero-downtime as long as both keys are accepted during
-the overlap window:
+### Key rotation procedure
+
+Credential lifetimes are short (5 minutes by default,
+`CASSETTA_UPLOAD_TOKEN_TTL`), so rotation is zero-downtime as long as
+both keys are accepted during the overlap window:
 
 1. Generate the new key (call it **B**). Keep the current key (**A**)
    reachable on the host.
 2. Deploy with **primary = B** and **secondary = A**:
 
    ```bash
-   export CASSETTA_JWT_KEY_SECONDARY_FILE=$HOME/.config/cassetta/jwt.key       # old A
-   export CASSETTA_JWT_KEY_FILE=$HOME/.config/cassetta/jwt.new.key            # new B
-   # restart cassetta — new inits sign with B; in-flight A-signed tokens still verify.
-   ```
-3. Wait at least `CASSETTA_UPLOAD_TOKEN_TTL` seconds (default 300 s)
-   so every credential signed by A has expired.
-4. Drop the secondary:
-
-   ```bash
-   unset CASSETTA_JWT_KEY_SECONDARY_FILE
-   rm ~/.config/cassetta/jwt.key
-   # restart cassetta — only B is accepted now.
+   export CASSETTA_JWT_KEY_SECONDARY_FILE=$HOME/.config/cassetta/jwt.key   # old A
+   export CASSETTA_JWT_KEY_FILE=$HOME/.config/cassetta/jwt.new.key         # new B
+   # restart cassetta — new credentials sign with B; in-flight A-signed ones still verify.
    ```
 
-On the wire, a rotation in progress is detected by the `config_loaded`
-startup log line (`secondary_key: "configured"` vs `null`). Failed
-verifications surface as `jwt_validation_failed` structured log
-entries.
+3. Wait at least `CASSETTA_UPLOAD_TOKEN_TTL` seconds (300 by default) so
+   every credential signed by A has expired.
+4. Drop the secondary and restart. Only B is accepted from then on.
 
-### Public base URL
+A rotation in progress is visible on the wire: the `config_loaded`
+startup line reports `secondary_key` as configured or null. Failed
+verifications surface as `jwt_validation_failed` log entries.
 
-The batch-mode `upload_url` returned by `cassetta_send_init` is
-composed from this variable, so it must be set to the absolute URL
-that agents can reach (not the internal bind address, if those
-differ).
+## Storage
 
-| Env var | Required | Meaning |
+| Env var | Default | Meaning |
 |---|---|---|
-| `CASSETTA_PUBLIC_BASE_URL` | **yes, unconditionally** | Absolute base URL (scheme mandatory). Trailing slash optional. |
+| `CASSETTA_STORAGE_PATH` | `./data` | Root of the storage tree. Inside the container image this is `/data`, which is the mount point `docker-compose.yml` uses. |
+| `CASSETTA_KEYS_FILE` | `<storage path>.keys/.cassetta-keys.json` | Where the API-key store lives. The default is a **sibling** of the storage root, not a child, so key material never appears in a `/files/` listing. Set this for a custom layout. |
+| `CASSETTA_DEFAULT_TTL` | `0` | Default file lifetime in seconds. `0` disables expiry: nothing is ever reported expired and the cleanup sweep does no work. Must not be negative. |
+| `CASSETTA_ALLOWED_PATH_CHARS` | `a-zA-Z0-9\-_./` | Regular-expression character class a stored path may use. Checked on every route and tool that accepts a path, in addition to the unconditional rejection of absolute paths and `..` segments. |
 
-The server validates the shape at startup: `scheme` must be `http` or
-`https` and `netloc` must be non-empty. Examples:
+## Identity
 
-```bash
-# Local dev
-export CASSETTA_PUBLIC_BASE_URL=http://localhost:16001
-
-# Pi / home-lab production
-export CASSETTA_PUBLIC_BASE_URL=https://cassetta.home.arpa
-```
-
-If unset or malformed, the server aborts boot with:
-
-```
-ERROR: CASSETTA_PUBLIC_BASE_URL is required (http://... or https://...).
-       Example (Pi):    CASSETTA_PUBLIC_BASE_URL=https://cassetta.home.arpa
-       Example (local): CASSETTA_PUBLIC_BASE_URL=http://localhost:16001
-```
-
-### TTL (overlaps with limits policy)
-
-`CASSETTA_UPLOAD_TOKEN_TTL` (default 300 s, documented in the limits
-section below) controls how long a credential stays valid. It is also
-the minimum wait during rotation step 3 above.
-
+| Env var | Default | Meaning |
+|---|---|---|
+| `CASSETTA_KEY_LABEL_CHARS` | `a-zA-Z0-9_\-` | Intended as the character class allowed in the host and project fields of an API-key label. **Not currently applied**: the label validator builds its pattern from a built-in constant, so setting this variable changes nothing. The built-in class is the same as the default above, so no deployment behaves differently than this table describes. |
+| `CASSETTA_INVITE_TTL_SECONDS` | `604800` (7 days) | Invite-token lifetime in seconds. Parsed and range-checked at startup — a non-integer or non-positive value stops the server — but no route in this repository issues or redeems invite tokens, so the value has no further effect here. |
 
 ## Limits policy
 
-Introduced by brief 513. Environment variables are parsed by
-`load_limits_config()` in `src/cassetta/config.py` into a
-`LimitsConfig` dataclass that parameterises `CoreLimitsPolicy` (the
-default `LimitsPolicy` implementation).
-
-See "Cap fields" below for the semantic contract.
+Parsed into a `LimitsConfig` that parameterises the default limits
+policy. A negative cap, or a TTL that is not a positive integer, exits
+at startup with status 1.
 
 ### Cap fields
 
-| Env var | Default | Purpose |
+| Env var | Default | Meaning |
 |---|---|---|
-| `CASSETTA_PER_FILE_MAX` | unset | Maximum bytes for any single file inside a bundle. Empty string → unset (no cap). |
-| `CASSETTA_PER_BUNDLE_TOTAL_MAX` | unset | Maximum sum of file sizes in a bundle. Empty string → unset. |
-| `CASSETTA_PER_BUNDLE_FILE_COUNT_MAX` | `25` | Maximum number of files per bundle. Empty string → unset (unlimited). |
-| `CASSETTA_MAX_INLINE_SIZE` | `102400` (100 KiB) | Payloads whose total size is `<= max_inline_size` are accepted inline; larger payloads require the batch transport (brief 514). Empty string → unset → always inline. |
+| `CASSETTA_PER_FILE_MAX` | unset | Maximum bytes for any single file inside a bundle. |
+| `CASSETTA_PER_BUNDLE_TOTAL_MAX` | unset | Maximum sum of file sizes in a bundle. |
+| `CASSETTA_PER_BUNDLE_FILE_COUNT_MAX` | `25` | Maximum number of files per bundle. |
+| `CASSETTA_MAX_INLINE_SIZE` | `102400` (100 KiB) | Payloads whose total size is at or below this are accepted inline; larger ones require the batch upload flow. |
 
-For caps, the **"empty string = unset"** idiom lets operators
-explicitly clear an unset cap via configuration management tools that
-cannot distinguish absent variables from empty ones. A negative value
-fails fast at startup (`SystemExit(1)`).
+For all four, the **empty string means "unset"** — no cap, unlimited
+count, always inline. That is deliberate: configuration-management tools
+that cannot distinguish an absent variable from an empty one can still
+clear a cap explicitly.
 
 ### TTL fields
 
-All TTL values are integers measured in seconds; all must be `> 0`.
+All are integer seconds and all must be greater than zero.
 
-| Env var | Default | Purpose |
+| Env var | Default | Meaning |
 |---|---|---|
-| `CASSETTA_UPLOAD_TOKEN_TTL` | `300` | Lifespan of an upload token once issued. (Consumed by brief 514.) |
-| `CASSETTA_DOWNLOAD_CLAIM_TTL` | `300` | Lifespan of a download claim. (Consumed by brief 515.) |
-| `CASSETTA_PASSIVE_GC_MIN_AGE` | `3600` | Minimum age before the passive GC sweep considers an orphan. |
-| `CASSETTA_PASSIVE_GC_INTERVAL` | `600` | Interval between passive GC sweeps. |
+| `CASSETTA_UPLOAD_TOKEN_TTL` | `300` | Lifespan of an upload credential once issued. |
+| `CASSETTA_DOWNLOAD_CLAIM_TTL` | `300` | Lifespan of a download claim. |
+| `CASSETTA_PASSIVE_GC_MIN_AGE` | `3600` | Minimum age before the passive sweep treats a bundle as an orphan. |
+| `CASSETTA_PASSIVE_GC_INTERVAL` | `600` | Interval between passive sweeps. |
 
-Brief 513 plumbs these fields through to `CoreLimitsPolicy.ttls()` so
-downstream briefs can read them without re-parsing env vars; the
-active TTL cleanup loop continues to key off `CASSETTA_DEFAULT_TTL`
-in this release.
+File expiry is separate from these and keys off `CASSETTA_DEFAULT_TTL`
+in the [Storage](#storage) section.
 
-### Deprecated
+The limits policy is distinct from the access policy, which decides
+whether an identity may read, write, or peek at a bundle. There is no
+environment variable for it: the built-in policy allows every action,
+which is the right answer for single-user self-hosting.
+
+### Retired
 
 | Env var | Handling |
 |---|---|
-| `CASSETTA_MAX_FILE_SIZE` | **Retired in brief 513.** The value is ignored; setting it triggers a one-line stderr warning at startup. Migrate to `CASSETTA_PER_FILE_MAX`. |
+| `CASSETTA_MAX_FILE_SIZE` | **Retired.** The value is ignored; setting it prints one warning to stderr at startup. Use `CASSETTA_PER_FILE_MAX`. |
 
-### Access action verb
+## Rate limiting and fan-out
 
-`LimitsPolicy` is distinct from `AccessPolicy`, but brief 513 also
-introduces a new `"peek"` access action verb used by the
-`cassetta_peek` MCP tool and the two `/peek` REST endpoints. The
-default access policy allows it unconditionally. Custom policies
-receive the same verb through the `AccessPolicy` protocol.
+| Env var | Default | Meaning |
+|---|---|---|
+| `CASSETTA_RATE_LIMIT_ONBOARD` | `5/minute` | Budget for the onboarding endpoint. Format is `<int>/<unit>`, where unit is one of `sec`, `second`, `min`, `minute`, `hour`, `hourly`; short forms are normalised to long ones. A malformed value exits at startup. |
+| `CASSETTA_RATE_LIMIT_BROADCAST` | `10/minute` | Budget **shared** across the REST `/broadcast` route and the `cassetta_broadcast` tool — one bucket, not one each. Same format. |
+| `CASSETTA_BROADCAST_MAX_TARGETS` | `1000` | Fan-out cap. A broadcast addressed to more recipients than this is rejected before any storage write. Must be greater than zero. |
+| `CASSETTA_TRUSTED_PROXIES` | empty | Comma-separated CIDR list identifying your reverse proxy. The server reads it and reports it in the `config_loaded` startup line but does not act on it: pass the same list to uvicorn as `--forwarded-allow-ips`. Without it uvicorn ignores `X-Forwarded-For`, and every request is attributed to the proxy's address — which turns the per-client budgets above into one global budget. The empty default is correct only when the server is exposed directly. |
+
+## MCP and logging
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `CASSETTA_MCP_ALLOWED_HOSTS` | empty | Comma-separated allowlist of `Host` header values accepted at the MCP endpoint — DNS-rebinding protection. Empty means localhost only; set your external hostnames to reach MCP from another machine. |
+| `CASSETTA_LOG_FORMAT` | `text` | `text` or `json`. Any other value falls back to `text` with a warning on stderr rather than failing the boot. Every structured-log event renders in the chosen format. |
+
+## Command-line client
+
+`cassetta send` resolves its configuration from `--url` and `--api-key`
+first, then from these. Missing either one, with no flag, fails before
+any network call.
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `CASSETTA_URL` | unset | Server base URL, used when `--url` is absent. |
+| `CASSETTA_API_KEY` | unset | Bearer API key, used when `--api-key` is absent. |
