@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -185,8 +185,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Brief 533 FR-026: claim_storage_backend emission via safe_emit so the
     # record parses as JSON under CASSETTA_LOG_FORMAT=json. The cloud-side
-    # duplicate at ``cloud/src/cassetta_cloud/app_setup.py`` was deleted per
-    # FR-025 — this is now the single canonical emission.
+    # duplicate was deleted per FR-025 — this is now the single canonical
+    # emission.
     safe_emit(
         logger,
         logging.INFO,
@@ -235,12 +235,25 @@ def create_app(
     config: AppConfig | None = None,
     *,
     backends: BackendConfig | None = None,
+    extra_log_trees: Sequence[str] = (),
 ) -> FastAPI:
-    """Create and configure the FastAPI application."""
+    """Create and configure the FastAPI application.
+
+    Args:
+        config: application configuration; loaded from the environment when
+            omitted.
+        backends: ready-made backend implementations; the core defaults are
+            built from ``config`` when omitted.
+        extra_log_trees: names of additional logger trees to route through the
+            configured handler, forwarded verbatim to
+            :func:`cassetta.structured_log.configure_logging`. An application
+            embedding this server passes its own tree here so one process
+            produces one log stream. Empty by default.
+    """
     if config is None:
         config = load_config()
 
-    configure_logging(config.log_format)
+    configure_logging(config.log_format, extra_log_trees)
 
     if backends is None:
         backends = build_core_defaults(config)

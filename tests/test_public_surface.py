@@ -10,6 +10,12 @@ survived that move, and each has a guard here:
 * a README quickstart documenting an API the server does not serve;
 * a deployment surface that is either missing or still built for the whole workspace.
 
+A seventh guard keeps the name of the private half's Python package out of ``src/``. The library
+used to configure that package's top-level logger by name and branch on it, which published a
+private arrangement as shipped code and pointed a reader at a dependency they cannot install. The
+extension point that replaced it takes the tree name from the caller, so nothing under ``src/``
+needs to know it any more.
+
 A sixth guard keeps links out of the private repository this one was split from. The concrete
 route back is known: the coder's inherited archive index carries a pull-request URL per historical
 brief, so an ADR written with provenance taken from that index reintroduces them by hand.
@@ -64,10 +70,15 @@ _CLOUD_ENV_VARS = (
     "CASSETTA_ADMIN_ROUTES",
 )
 
+# The Python package of the private half. Named once, here, and referenced by both guards that
+# check for it — the Dockerfile marker list below and the ``src/`` scan further down — so the two
+# can never drift apart into two spellings of the same rule.
+_PRIVATE_PACKAGE = "cassetta_cloud"
+
 # Workspace machinery from the monorepo's Dockerfile: ``--package`` selected one member of a uv
 # workspace and ``ARG BACKEND`` switched the entrypoint to a proprietary factory. This repository
 # has one package and one app factory, so none of these can ever be correct here.
-_WORKSPACE_BUILD_MARKERS = ("--package", "ARG BACKEND", "COPY cloud/", "cassetta_cloud")
+_WORKSPACE_BUILD_MARKERS = ("--package", "ARG BACKEND", "COPY cloud/", _PRIVATE_PACKAGE)
 
 _DEPLOY_FILES = ("Dockerfile", "docker-compose.yml", ".dockerignore", ".env.example")
 
@@ -78,13 +89,16 @@ _COMPOSE_ROOT_CONTEXT_RE = re.compile(r"^\s*(?:build|context):\s*['\"]?\.['\"]?\
 _CURL_JSON_PAYLOAD_RE = re.compile(r"-d\s+'(\{.*?\})'", re.DOTALL)
 
 
+def _text_files_under(root: str) -> list[Path]:
+    """Every readable text file below one repository directory, in a stable order."""
+    return [path for path in sorted((REPO_ROOT / root).rglob("*")) if path.is_file() and path.suffix in _TEXT_SUFFIXES]
+
+
 def _shipped_text_files() -> list[Path]:
     """Every text file on the shipped surface, in a stable order."""
     files = [REPO_ROOT / name for name in _SHIPPED_FILES]
     for root in _SHIPPED_ROOTS:
-        files.extend(
-            path for path in sorted((REPO_ROOT / root).rglob("*")) if path.is_file() and path.suffix in _TEXT_SUFFIXES
-        )
+        files.extend(_text_files_under(root))
     return files
 
 
@@ -113,6 +127,38 @@ def test_no_monorepo_paths_in_shipped_surfaces() -> None:
     assert not offenders, (
         "Monorepo paths survive on the shipped surface. This repository is the flattened "
         "`core/` subtree — `core/src` means `src`, `core/MIGRATION.md` means `MIGRATION.md`:\n" + "\n".join(offenders)
+    )
+
+
+def test_src_does_not_name_the_private_package() -> None:
+    """``src/`` names no Python package belonging to the private half.
+
+    The library used to configure that package's top-level logger by name, and its propagation line
+    branched on that one name — so the shipped code both depended on a package nobody outside can
+    install and disclosed which consumer it was written for. ``configure_logging`` now takes the
+    tree names from its caller, and this guard is what keeps the name from coming back the next time
+    someone wants "just one more" tree wired up here.
+
+    ``src/`` only, deliberately. ``MIGRATION.md`` names the same package legitimately — it is the
+    operator-facing chronicle of changes that happened, including changes to that package — and
+    rewriting history is not what this guard is for.
+    """
+    scanned = _text_files_under("src")
+    # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
+    assert len(scanned) >= 30, f"scanned only {len(scanned)} files — the source root is wrong"
+
+    offenders = [
+        f"{path.relative_to(REPO_ROOT)}:{lineno}: {line.strip()}"
+        for path in scanned
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if _PRIVATE_PACKAGE in line
+    ]
+
+    assert not offenders, (
+        f"the shipped package names `{_PRIVATE_PACKAGE}`, which lives in a private repository and "
+        "cannot be installed from this one. A caller supplies its own logger trees via "
+        "`configure_logging(..., extra_log_trees=...)`; nothing here needs to know their names:\n"
+        + "\n".join(offenders)
     )
 
 
