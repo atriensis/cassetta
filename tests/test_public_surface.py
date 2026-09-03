@@ -28,6 +28,13 @@ A fourth guard keeps the private half's environment variables out of ``.env.exam
 Constitution V this repository has *no knowledge* of cloud features, so even a commented-out
 "cloud-only" line is the leak, not a courtesy.
 
+Two more guards hold ``docs/CONFIG.md`` to what it claims to be. The file is titled "Cassetta
+configuration reference", and ``.env.example`` sends the reader to it as the full reference, so a
+variable the server reads but the file omits is a promise the repository does not keep — the eighth
+guard derives the expected set from ``src/`` and refuses the omission. The ninth is its mirror: a
+name belonging to the private half must not appear there either, for the same reason it must not
+appear in ``.env.example``.
+
 These are regression **locks**, not a one-off cleanup script: each must keep failing if what it
 describes comes back.
 """
@@ -44,7 +51,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # ``core/`` used as a repository-path prefix. The lookbehind is the whole design:
 #
-#   matches        core/src  core/tests  core/MIGRATION.md  core/docs  cd core/  `core/`
+#   matches        core/src  core/tests  core/README.md  core/docs  cd core/  `core/`
 #   not the word   open-core  build_core_defaults  CoreLimitsPolicy  "the open-core split"
 #   not a slug     cassetta-core/  github.com/ximera239/cassetta-core/
 #
@@ -54,7 +61,7 @@ _MONOREPO_PATH_RE = re.compile(r"(?<![\w-])core/")
 
 # The shipped surface: everything a reader of the public repository can see.
 _SHIPPED_ROOTS = ("src", "docs")
-_SHIPPED_FILES = ("README.md", "MIGRATION.md")
+_SHIPPED_FILES = ("README.md",)
 
 # A suffix allowlist rather than a swallowed UnicodeDecodeError: an allowlist states what is
 # covered, where a bare ``except`` silently skips a file that should have been read
@@ -69,6 +76,14 @@ _CLOUD_ENV_VARS = (
     "CASSETTA_KEYSTORE_BACKEND",
     "CASSETTA_ADMIN_ROUTES",
 )
+
+# A whole ``CASSETTA_*`` variable name. The trailing ``[A-Z0-9]`` is what makes it a *name*: prose
+# writes the family as ``CASSETTA_`` or ``CASSETTA_RATE_LIMIT_``, and neither is a variable anyone
+# can set. Whole-name matching also keeps ``CASSETTA_JWT_KEY`` from standing in for
+# ``CASSETTA_JWT_KEY_FILE`` — they are four separate entries, not one prefix.
+_ENV_VAR_RE = re.compile(r"CASSETTA_[A-Z0-9_]*[A-Z0-9]")
+
+_CONFIG_REFERENCE = "docs/CONFIG.md"
 
 # The Python package of the private half. Named once, here, and referenced by both guards that
 # check for it — the Dockerfile marker list below and the ``src/`` scan further down — so the two
@@ -112,7 +127,7 @@ def _readme_setup_example() -> str:
 
 
 def test_no_monorepo_paths_in_shipped_surfaces() -> None:
-    """No ``core/``-prefixed path in ``src/``, ``README.md``, ``MIGRATION.md`` or ``docs/``."""
+    """No ``core/``-prefixed path in ``src/``, ``README.md`` or ``docs/``."""
     scanned = _shipped_text_files()
     # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
     assert len(scanned) >= 10, f"scanned only {len(scanned)} files — the shipped roots are wrong"
@@ -126,7 +141,7 @@ def test_no_monorepo_paths_in_shipped_surfaces() -> None:
 
     assert not offenders, (
         "Monorepo paths survive on the shipped surface. This repository is the flattened "
-        "`core/` subtree — `core/src` means `src`, `core/MIGRATION.md` means `MIGRATION.md`:\n" + "\n".join(offenders)
+        "`core/` subtree — `core/src` means `src`, `core/README.md` means `README.md`:\n" + "\n".join(offenders)
     )
 
 
@@ -139,9 +154,10 @@ def test_src_does_not_name_the_private_package() -> None:
     tree names from its caller, and this guard is what keeps the name from coming back the next time
     someone wants "just one more" tree wired up here.
 
-    ``src/`` only, deliberately. ``MIGRATION.md`` names the same package legitimately — it is the
-    operator-facing chronicle of changes that happened, including changes to that package — and
-    rewriting history is not what this guard is for.
+    ``src/`` only, deliberately. This guard is about what the shipped *package* imports and
+    configures, which is a stricter rule than what prose may mention: an ADR recording why three
+    classes in the private half needed a ``kind`` marker names them because that is the decision
+    it records. Narrow the scope to code and the guard says one thing precisely.
     """
     scanned = _text_files_under("src")
     # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
@@ -214,6 +230,63 @@ def test_env_example_carries_no_cloud_vars() -> None:
     text = env_example.read_text(encoding="utf-8")
     leaked = [name for name in _CLOUD_ENV_VARS if name in text]
     assert not leaked, ".env.example names variables of the private cloud repository: " + ", ".join(
+        repr(name) for name in leaked
+    )
+
+
+def _env_var_names(text: str) -> set[str]:
+    """Every whole ``CASSETTA_*`` variable name mentioned in one file."""
+    return set(_ENV_VAR_RE.findall(text))
+
+
+def test_config_reference_documents_every_env_var() -> None:
+    """``docs/CONFIG.md`` documents every ``CASSETTA_*`` variable the source reads.
+
+    The expected set is derived from ``src/``, never written down here. A literal list would be a
+    second place to forget a variable, and forgetting one is the defect this guard exists to catch:
+    the reference is what ``.env.example`` calls the full reference, so a name the server reads and
+    the document omits sends an operator looking through source for the value that starts the server.
+    """
+    sources = _text_files_under("src")
+    # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
+    assert len(sources) >= 30, f"scanned only {len(sources)} files — the source root is wrong"
+
+    expected: set[str] = set()
+    for path in sources:
+        expected |= _env_var_names(path.read_text(encoding="utf-8"))
+    assert len(expected) >= 25, f"found only {len(expected)} variable names in src/ — the pattern is wrong"
+
+    reference = REPO_ROOT / _CONFIG_REFERENCE
+    assert reference.is_file(), f"{_CONFIG_REFERENCE} is missing — .env.example points readers at it"
+
+    missing = sorted(expected - _env_var_names(reference.read_text(encoding="utf-8")))
+
+    assert not missing, (
+        f"the source reads {len(expected)} environment variables; {_CONFIG_REFERENCE} documents "
+        f"{len(expected) - len(missing)} of them. Undocumented:\n  " + "\n  ".join(missing)
+    )
+
+
+def test_config_reference_names_no_private_half_var() -> None:
+    """``docs/CONFIG.md`` names no variable belonging to the private cloud repository.
+
+    The mirror of ``test_env_example_carries_no_cloud_vars``, and the same rule: this repository has
+    no knowledge of cloud features, so a reference entry for one — even phrased as an absence, even
+    as a note that other variables exist elsewhere — is the leak rather than a courtesy. Both guards
+    read the same ``_CLOUD_ENV_VARS``, so the rule cannot drift into two spellings.
+    """
+    reference = REPO_ROOT / _CONFIG_REFERENCE
+    assert reference.is_file(), f"{_CONFIG_REFERENCE} is missing — .env.example points readers at it"
+
+    text = reference.read_text(encoding="utf-8")
+    # Non-vacuity: an empty or truncated file names no forbidden variable either.
+    documented = _env_var_names(text)
+    assert len(documented) >= 20, (
+        f"{_CONFIG_REFERENCE} names only {len(documented)} variables — it is not the reference"
+    )
+
+    leaked = [name for name in _CLOUD_ENV_VARS if name in text]
+    assert not leaked, f"{_CONFIG_REFERENCE} names variables of the private cloud repository: " + ", ".join(
         repr(name) for name in leaked
     )
 

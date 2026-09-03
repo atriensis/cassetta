@@ -4,16 +4,12 @@ Covers:
 (a) MCP tool enumeration: ``cassetta_send`` is absent; both
     ``cassetta_send_init`` and ``cassetta_send_inline`` are registered.
 (b) Legacy REST URL ``PUT /inbox/{agent}/{path}`` returns 410 Gone with
-    the structured body specified by the ``legacySendRemoved`` shape in
-    ``contracts/rest-upload.yaml``.
-(c) ``MIGRATION.md`` contains a "Brief 514 — Upload flow" section
-    (grep assertion).
+    a structured body naming the route that replaces it.
 """
 
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import httpx
 import pytest
@@ -70,22 +66,13 @@ async def test_legacy_rest_send_returns_410(
     )
     assert resp.status_code == 410
     body = resp.json()
-    # Match contracts/rest-upload.yaml `legacySendRemoved` exactly.
+    # Asserted whole, not field by field: a field added here reaches every client holding an
+    # old URL, so it should have to be written down in two places.
     assert body == {
         "error": "gone",
-        "reason": "replaced_by_514",
+        "reason": "replaced_by_two_phase_upload",
         "replacement": "POST /upload/{bundle_path}",
-        "migration_guide": "MIGRATION.md#brief-514",
     }
-
-
-def test_migration_doc_has_brief_514_section() -> None:
-    """``MIGRATION.md`` contains the Brief 514 migration heading."""
-    # __file__: tests/integration/test_legacy_send_removed.py
-    # parents[2] = the repository root
-    migration = Path(__file__).resolve().parents[2] / "MIGRATION.md"
-    text = migration.read_text(encoding="utf-8")
-    assert "Brief 514 — Upload flow" in text, f"Expected 'Brief 514 — Upload flow' heading in {migration}"
 
 
 # Silence pyright on unused json import when this file is collected alone.

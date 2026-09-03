@@ -1,7 +1,7 @@
 """Integration test: send validation under the Brief 514 flow.
 
 The legacy ``PUT /inbox/{agent}/{path}`` endpoint is removed — the test
-now validates that it returns 410 with the structured migration body.
+now validates that it returns 410 with the structured body.
 """
 
 from __future__ import annotations
@@ -27,9 +27,8 @@ async def test_scenario_05_send_validation(
     body = resp.json()
     assert body == {
         "error": "gone",
-        "reason": "replaced_by_514",
+        "reason": "replaced_by_two_phase_upload",
         "replacement": "POST /upload/{bundle_path}",
-        "migration_guide": "MIGRATION.md#brief-514",
     }
 
     # 3. Verify nothing was stored — listing returns empty.

@@ -137,8 +137,7 @@ caps and HTTP 422 with `{"error": "batch_required", ...}` when a
 payload exceeds `max_inline_size` (the inline-transport threshold).
 MCP tool errors use the stable `cap_exceeded: ` / `batch_required: `
 prefix. See `docs/CONFIG.md` for the `CASSETTA_PER_*` /
-`CASSETTA_MAX_INLINE_SIZE` env-var reference and `MIGRATION.md`
-for the retirement of `CASSETTA_MAX_FILE_SIZE`.
+`CASSETTA_MAX_INLINE_SIZE` env-var reference.
 
 ## Handshake: discovering server capabilities
 
