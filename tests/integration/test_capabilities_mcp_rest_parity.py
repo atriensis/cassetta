@@ -1,4 +1,4 @@
-"""MCP ↔ REST parity for the capabilities surface (Brief 516 US3 / SC-002 / FR-013).
+"""MCP ↔ REST parity for the capabilities surface.
 
 One dev-mode server; query both surfaces with equivalent identities;
 assert the parsed JSON documents are dict-equal.
@@ -71,5 +71,5 @@ async def test_mcp_and_rest_return_same_document(
     assert rest_resp.status_code == 200
     rest_doc = rest_resp.json()
 
-    # FR-013 / SC-002: parsed dicts are equal across surfaces.
+    # Parsed dicts are equal across surfaces.
     assert mcp_doc == rest_doc

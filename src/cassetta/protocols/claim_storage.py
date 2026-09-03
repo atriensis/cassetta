@@ -24,8 +24,7 @@ class BundleClaimedError(Exception):
     """Raised by ``ClaimStorage.issue`` when another writer won the race.
 
     Callers MUST translate this into the same "bundle not found" error
-    surface a late-comer would see — never expose the race itself
-    (FR-011a).
+    surface a late-comer would see — never expose the race itself.
     """
 
     def __init__(self, bundle_path: str) -> None:
@@ -38,7 +37,7 @@ class ClaimStorage(Protocol):
     """Abstract contract for download-claim storage.
 
     Implementations provide a vendor-specific concurrency primitive
-    that makes ``issue()`` atomic (FR-008 — "only one pick wins").
+    that makes ``issue()`` atomic — only one pick wins.
     """
 
     kind: ClassVar[str]

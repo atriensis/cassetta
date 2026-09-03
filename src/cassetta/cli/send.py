@@ -1,4 +1,4 @@
-"""``cassetta send`` subcommand (Brief 548).
+"""``cassetta send`` subcommand.
 
 One-shot directed send: **phase 1** mints an upload session (``POST /uploads`` →
 ``batch_token`` + ``upload_url``), **phase 2** streams a tar of the named files to

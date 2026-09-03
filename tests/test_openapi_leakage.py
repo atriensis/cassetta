@@ -21,7 +21,7 @@ import httpx
 import pytest
 
 # Internal markers that must never appear in caller-facing description text.
-# Mirrors the Brief 541 MCP guard's intent for the REST surface: internal
+# Mirrors the MCP description guard's intent for the REST surface: internal
 # Layer-1/2 protocol & policy class names and private route helpers.
 _FORBIDDEN_SUBSTRINGS = [
     "Brief ",

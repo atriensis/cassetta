@@ -1,7 +1,7 @@
 """T024 (US2) — unit tests for ``cassetta.gc.sweep_claims`` branches.
 
-Brief 517: parametrized via ``claim_storage_factory`` so cloud can
-plug in the Azurite axis. Core runs filesystem.
+Parametrized via ``claim_storage_factory`` so a downstream distribution
+can plug in its own axis. Core runs filesystem.
 
 Covers every row in ``contracts/claim-sidecar.md`` "Reaper contract":
 - active claim (age < ttl) → skipped

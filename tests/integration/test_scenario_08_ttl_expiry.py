@@ -30,7 +30,7 @@ async def test_scenario_08_ttl_expiry(
     resp = await client.get("/files/ephemeral.txt", headers=headers)
     assert resp.status_code == 404
 
-    # 5. Send an inbox message via the Brief 514 flow
+    # 5. Send an inbox message
     await h.send_inline(
         client,
         key,

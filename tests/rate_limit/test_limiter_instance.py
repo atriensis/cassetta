@@ -1,4 +1,4 @@
-"""Unit tests for ``cassetta.rate_limit.limiter`` (Brief 531 T011 / R10)."""
+"""Unit tests for ``cassetta.rate_limit.limiter``."""
 
 from __future__ import annotations
 

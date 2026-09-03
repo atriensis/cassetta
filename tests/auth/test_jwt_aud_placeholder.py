@@ -1,7 +1,7 @@
 """Reserved-future placeholder: ``jwt_aud_mismatch`` is in the Reason
-enum but no callsite emits it (Brief 529 R3).
+enum but no callsite emits it.
 
-If a future brief introduces ``aud`` claim validation, both assertions
+If a future change introduces ``aud`` claim validation, both assertions
 in this file MUST be updated alongside the new emission code.
 """
 
@@ -36,4 +36,4 @@ def test_no_core_callsite_currently_emits_jwt_aud_mismatch() -> None:
         text = path.read_text(encoding="utf-8")
         if '"jwt_aud_mismatch"' in text or "'jwt_aud_mismatch'" in text:
             matches.append(str(path.relative_to(src_root)))
-    assert matches == [], f"Brief 529 R3 reserves jwt_aud_mismatch as a future value. Unexpected callsite(s): {matches}"
+    assert matches == [], f"jwt_aud_mismatch is reserved as a future value. Unexpected callsite(s): {matches}"

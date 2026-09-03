@@ -1,4 +1,4 @@
-"""Tests for store-namespace path collision detection (Brief 512)."""
+"""Tests for store-namespace path collision detection."""
 
 import io
 import uuid

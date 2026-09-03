@@ -1,4 +1,4 @@
-"""T042 — US5: passive reaper sweeps orphan bundle directories (Brief 514).
+"""Passive reaper sweeps orphan bundle directories.
 
 Creates orphan directories on disk (bypassing the API) and runs
 ``gc.sweep`` directly, asserting age-based retention.

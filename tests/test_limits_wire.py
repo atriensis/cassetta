@@ -209,7 +209,7 @@ async def test_mcp_send_init_inbox_cap_exceeded(
     wire_client: tuple[httpx.AsyncClient, FilesystemBackend],
     wire_storage_dir: str,
 ) -> None:
-    """Brief 514 removed ``PUT /inbox/``; inbox cap enforcement now happens
+    """``PUT /inbox/`` is gone; inbox cap enforcement now happens
     in ``cassetta_send_init`` at manifest time. This test asserts the MCP
     surface rejects an oversized inbox manifest with the structured
     ``cap_exceeded:`` prefix, and no bundle is committed."""
@@ -318,8 +318,7 @@ async def test_mcp_send_init_cap_exceeded(
     wire_client: tuple[httpx.AsyncClient, FilesystemBackend],
 ) -> None:
     """``cassetta_send_init`` rejects an oversized manifest with the
-    structured ``cap_exceeded:`` prefix (Brief 514 replaces legacy
-    ``cassetta_send``)."""
+    structured ``cap_exceeded:`` prefix."""
     client, _ = wire_client
     sid = await _init_mcp(client)
 

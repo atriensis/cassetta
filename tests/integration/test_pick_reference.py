@@ -1,10 +1,10 @@
 """T009 (US1) — ``cassetta_pick`` returns reference-mode envelope.
 
 Send a 3-file over-threshold bundle to ``alice``, call ``cassetta_pick``
-via the MCP test client, assert the envelope shape (FR-003/FR-004),
-assert a claim sidecar exists after the pick (FR-011), fetch each URL
-with the returned ``download_token``, assert bytes match, and assert
-the bundle directory is gone after the last GET (FR-009 + FR-015).
+via the MCP test client, assert the envelope shape, assert a claim
+sidecar exists after the pick, fetch each URL with the returned
+``download_token``, assert bytes match, and assert the bundle
+directory is gone after the last GET.
 """
 
 from __future__ import annotations
@@ -110,7 +110,7 @@ async def test_pick_returns_reference_envelope_and_completes(
         assert fetched[name] == data, f"byte-mismatch for {name}"
 
     # Bundle is gone after last GET — a follow-up pick MUST raise
-    # "File not found" (FR-009 + FR-015).
+    # "File not found".
     follow = await h.mcp_call(
         client,
         "cassetta_pick",

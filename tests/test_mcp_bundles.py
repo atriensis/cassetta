@@ -1,4 +1,4 @@
-"""Tests for MCP tool multi-file bundle operations (Brief 509)."""
+"""Tests for MCP tool multi-file bundle operations."""
 
 import asyncio
 import json
@@ -147,7 +147,7 @@ class TestMcpPickBundle:
 
     @pytest.mark.asyncio
     async def test_pick_single_file_unified_envelope(self, mcp: tuple) -> None:
-        """Pick single-file returns unified inline envelope (Brief 515)."""
+        """Pick single-file returns unified inline envelope."""
         _app, client, backend = mcp
         await _app.state.backends.key_store.create_key("dev:agent")
         set_sender_label("dev:agent")

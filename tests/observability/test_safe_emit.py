@@ -1,14 +1,13 @@
-"""Tests for ``cassetta.structured_log.safe_emit`` (Brief 533).
+"""Tests for ``cassetta.structured_log.safe_emit``.
 
-Locks the contract pinned in
-``specs/533-observability-completeness/contracts/safe_emit.md``:
+Locks its contract:
 
-- C-SAFEEMIT-002 / FR-061: log + metric steps are independent best-effort.
-- SC-009: metric-step failure does NOT block the request; fallback ERROR
-  line is logged through ``logger.exception``.
-- SC-010: log-step failure does NOT block the metric step.
-- FR-061 catastrophic case: both ``struct_log`` AND the fallback ``logger.exception``
-  raising MUST NOT propagate.
+- the log and metric steps are independent best-effort;
+- a metric-step failure does NOT block the request, and the fallback ERROR
+  line is logged through ``logger.exception``;
+- a log-step failure does NOT block the metric step;
+- the catastrophic case — both ``struct_log`` AND the fallback
+  ``logger.exception`` raising — MUST NOT propagate.
 """
 
 from __future__ import annotations
@@ -79,7 +78,7 @@ def _attach_capture(
 def test_log_step_failure_does_not_block_metric(
     monkeypatch,
 ) -> None:
-    """SC-010 / FR-061 — struct_log raising MUST NOT prevent the increment."""
+    """struct_log raising MUST NOT prevent the increment."""
     from cassetta import structured_log as sl_mod
 
     def boom_struct_log(*_a: object, **_kw: object) -> None:
@@ -110,7 +109,7 @@ def test_log_step_failure_does_not_block_metric(
 
 
 def test_metric_step_failure_does_not_block_request() -> None:
-    """SC-009 / FR-061 — metric raising MUST NOT propagate; fallback logged."""
+    """The metric raising MUST NOT propagate; fallback logged."""
     from cassetta import structured_log as sl_mod
 
     class BoomProvider:
@@ -159,7 +158,7 @@ def test_metric_step_failure_does_not_block_request() -> None:
 
 
 def test_catastrophic_broken_logger(monkeypatch) -> None:
-    """FR-061 catastrophic case — broken struct_log AND broken logger.exception
+    """The catastrophic case — broken struct_log AND broken logger.exception
     MUST NOT propagate.
     """
     from cassetta import structured_log as sl_mod

@@ -1,4 +1,4 @@
-"""Passive garbage collection for orphan bundle directories (Brief 514).
+"""Passive garbage collection for orphan bundle directories.
 
 Single-pass :func:`sweep` over ``inbox/`` and ``store/`` namespaces issued
 on the ``CoreLimitsPolicy.ttls().passive_gc_interval`` cadence by
@@ -6,7 +6,7 @@ on the ``CoreLimitsPolicy.ttls().passive_gc_interval`` cadence by
 ``meta.json`` sidecar) older than ``passive_gc_min_age`` seconds are
 deleted; committed bundles are left alone.
 
-Brief 515 adds :func:`sweep_claims` alongside :func:`sweep` — expired
+:func:`sweep_claims` runs alongside :func:`sweep` — expired
 claim sidecars complete their bundle deletion (inbox) or simply vanish
 (incomplete claims release the bundle back to the listing).
 """

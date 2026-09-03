@@ -1,4 +1,4 @@
-"""Shared test helpers for ``tests/observability/`` (Brief 533).
+"""Shared test helpers for ``tests/observability/``.
 
 Lives next to ``conftest.py`` (no ``__init__.py`` in the directory, per
 project convention) and is exposed via a ``sys.path`` injection in the

@@ -1,4 +1,4 @@
-"""REST endpoint — ``GET /capabilities`` (Brief 516).
+"""REST endpoint — ``GET /capabilities``.
 
 Returns the same ``CapabilitiesDocument`` shape the MCP tool
 ``cassetta_capabilities`` returns. Read-only, side-effect-free.
@@ -34,8 +34,8 @@ async def get_capabilities(
         PolicyContext(identity=identity),
         via="rest",
     )
-    # Brief 533 FR-008: capability query counter (via=rest). Dev-mode
-    # (no-auth) MUST still increment per Edge Cases #93.
+    # Capability query counter (via=rest). Dev-mode (no-auth) MUST
+    # still increment.
     safe_emit(
         metric_name="cassetta.capabilities.queries",
         metric_tags={"via": "rest"},

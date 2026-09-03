@@ -1,4 +1,4 @@
-"""Integration tests for the REST upload-init route ``POST /uploads`` (Brief 543).
+"""Integration tests for the REST upload-init route ``POST /uploads``.
 
 Covers the US1 acceptance scenarios: a pure-HTTP (no-MCP) client completes a full
 directed send; the route requires a ``cst_`` key (401 without); a recipient-

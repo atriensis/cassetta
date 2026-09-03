@@ -18,15 +18,13 @@ carries the three-layer rules the rest of the vocabulary assumes.
 - **BackendConfig** — the frozen dataclass composing the nine backend
   implementations passed to `create_app`. See
   [ADR 002](adr/002-backendconfig-public-api.md).
-- **Brief** — a numbered, immutable unit of work authored by the analyst stating
-  intent and constraints. Lives in `inbox/`, then `processed/`.
 - **Bundle** — a set of files transferred atomically as one unit, stored per-file
   with a `meta.json` manifest.
 - **Claim** — download-claim state: a recorded, JWT-backed reservation of a bundle
   for reference-mode download, persisted via the `ClaimStorage` Protocol.
 - **Core / Cloud** — the open-core split. Core (this repository) = open-source
-  single-user self-host; `cloud/` = commercial multi-tenant extensions. Core never
-  imports `cloud/`.
+  single-user self-host; Cloud = commercial multi-tenant extensions, a separate
+  distribution that depends on this one. The dependency only ever points that way.
 - **Dev mode** — relaxed local-development posture, enabled by setting
   `CASSETTA_SETUP_TOKEN` to an empty string (and using a dev-only JWT key). Not for
   production.

@@ -1,4 +1,4 @@
-"""Tests for structured key creation with host:project format (Brief 508)."""
+"""Tests for structured key creation with host:project format."""
 
 import pytest
 from pydantic import ValidationError

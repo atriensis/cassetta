@@ -1,4 +1,4 @@
-"""JWT primary-key hot-reload tests (Brief 531 US3, T027-T033)."""
+"""JWT primary-key hot-reload tests."""
 
 from __future__ import annotations
 
@@ -276,7 +276,7 @@ class TestRotationFailures:
 
 
 class TestDisplacement:
-    """FR-035 — overlapping rotations displace the secondary."""
+    """Overlapping rotations displace the secondary."""
 
     @pytest.mark.asyncio
     async def test_second_rotation_displaces_first_secondary(
@@ -411,8 +411,8 @@ class TestMultiWorkerDisabled:
 
 
 class TestVerifyPathIntegration:
-    """SC-004 — token issued under the demoted primary still verifies
-    while inside the overlap window, and is rejected after the window."""
+    """A token issued under the demoted primary still verifies while inside
+    the overlap window, and is rejected after the window."""
 
     def _issue(self, *, key: bytes, ttl: int = 60) -> str:
         now = int(time.time())

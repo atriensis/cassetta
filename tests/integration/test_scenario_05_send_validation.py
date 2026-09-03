@@ -1,4 +1,4 @@
-"""Integration test: send validation under the Brief 514 flow.
+"""Integration test: send validation.
 
 The legacy ``PUT /inbox/{agent}/{path}`` endpoint is removed — the test
 now validates that it returns 410 with the structured body.

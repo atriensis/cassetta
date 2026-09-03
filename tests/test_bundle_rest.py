@@ -1,4 +1,4 @@
-"""Tests for REST endpoint multi-file bundle operations (Brief 509)."""
+"""Tests for REST endpoint multi-file bundle operations."""
 
 import tempfile
 from collections.abc import AsyncIterator
@@ -19,7 +19,7 @@ def rest_storage_dir() -> str:
 
 @pytest.fixture
 def rest_env(rest_storage_dir: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    # Brief 539: monkeypatch auto-restores; cap vars are cleared so a value
+    # monkeypatch auto-restores; cap vars are cleared so a value
     # leaked by another test can't alter this test's bundle-size behavior
     # (Principle IX).
     monkeypatch.setenv("CASSETTA_SETUP_TOKEN", "")
@@ -70,7 +70,7 @@ async def rest_client(rest_app: tuple) -> AsyncIterator[httpx.AsyncClient]:
 
 
 # ============================================================
-# T016: REST pick bundle (seeded directly — Brief 514 removed PUT send)
+# REST pick bundle (seeded directly — the PUT send endpoint is gone)
 # ============================================================
 
 
@@ -99,7 +99,7 @@ class TestRestPickBundle:
 
     @pytest.mark.asyncio
     async def test_pick_single_file_unified_envelope(self, rest_app: tuple) -> None:
-        """Pick single-file returns unified inline envelope (Brief 515)."""
+        """Pick single-file returns unified inline envelope."""
         app, client = rest_app
         await app.state.backends.key_store.create_key("dev:agent")
         await seed_inbox_bundle(

@@ -62,7 +62,7 @@ def _get_claim_store(request: Request) -> ClaimStorage:
 
 
 def _policy_kind_fields(policy: AccessPolicy) -> tuple[str, str]:
-    """Brief 533 FR-022 — derive (event_field, counter_tag) from policy.kind.
+    """Derive (event_field, counter_tag) from policy.kind.
 
     Cloud team-policy denials use ``policy_kind=cloud`` on the
     ``policy.denied`` log field AND ``policy_kind=team`` on the
@@ -83,8 +83,8 @@ async def _enforce(
 ) -> None:
     policy = _get_policy(request)
     if not await policy.check(identity, resource, action):
-        # Brief 533 FR-007a / FR-022 / FR-063: paired event + counter via
-        # safe_emit; policy_kind derived from policy.kind so cloud
+        # Paired event + counter via safe_emit;
+        # policy_kind derived from policy.kind so cloud
         # team-policy denials get policy_kind=cloud (field) / =team (tag).
         field_kind, tag_kind = _policy_kind_fields(policy)
         safe_emit(
@@ -185,7 +185,7 @@ async def list_inbox(
 ) -> InboxListResponse:
     config = _get_config(request)
     await _enforce(request, identity, f"inbox:{agent}", "list", metrics)
-    # Brief 533 FR-001: hot-path coverage — emit at START of post-enforce body.
+    # Hot-path coverage — emit at START of post-enforce body.
     safe_emit(
         metric_name="cassetta.inbox.operations",
         metric_tags={"action": "list"},
@@ -195,7 +195,7 @@ async def list_inbox(
     if prefix:
         scan_prefix = f"{INBOX_NAMESPACE}/{agent}/{prefix}"
 
-    # Brief 515: hide bundles with an active reference-mode claim (FR-013).
+    # Hide bundles with an active reference-mode claim.
     policy = _get_limits_policy(request)
     claim_store = _get_claim_store(request)
     ttls = policy.ttls(PolicyContext(identity=identity))
@@ -316,7 +316,7 @@ async def get_inbox_file(
 ) -> Response:
     config = _get_config(request)
     await _enforce(request, identity, f"inbox:{agent}", "read", metrics)
-    # Brief 533 FR-001 / SC-014: emit at START so 404 still increments.
+    # Emit at START so 404 still increments.
     safe_emit(
         metric_name="cassetta.inbox.operations",
         metric_tags={"action": "read"},
@@ -407,7 +407,7 @@ async def pick_inbox_file(
 ) -> Response:
     config = _get_config(request)
     await _enforce(request, identity, f"inbox:{agent}", "pick", metrics)
-    # Brief 533 FR-001: emit at START of post-enforce body.
+    # Emit at START of post-enforce body.
     safe_emit(
         metric_name="cassetta.inbox.operations",
         metric_tags={"action": "pick"},
@@ -502,7 +502,7 @@ async def pick_inbox_file(
                 write_claim=True,
             )
         except BundleClaimedError as exc:
-            # Same "not found" surface as any late-comer (FR-011a step 6).
+            # Same "not found" surface as any late-comer.
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"File not found: {path}",
@@ -544,7 +544,7 @@ async def delete_inbox_file(
     metrics: Annotated[MetricsProvider, Depends(get_metrics)],
 ) -> Response:
     await _enforce(request, identity, f"inbox:{agent}", "delete", metrics)
-    # Brief 533 FR-001: emit at START of post-enforce body.
+    # Emit at START of post-enforce body.
     safe_emit(
         metric_name="cassetta.inbox.operations",
         metric_tags={"action": "delete"},

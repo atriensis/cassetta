@@ -7,7 +7,7 @@ Provides:
 - ``configure_logging()``: sets up this project's own logger trees — and any
   additional trees the caller names — with the chosen format
 - ``struct_log()``: helper to emit structured log events with consistent fields
-- ``safe_emit()``: Brief 533 helper — funnel ``struct_log`` + counter/gauge
+- ``safe_emit()``: funnel ``struct_log`` + counter/gauge
   through two INDEPENDENT best-effort exception handlers so an observability
   failure never masks the request path.
 """
@@ -108,7 +108,7 @@ def _attach_managed_handler(name: str, handler: logging.Handler) -> logging.Logg
 
     Clears only the handlers this module installed previously — the
     ``_cassetta_managed`` marker — so handlers attached by tests or operators
-    survive re-invocation (Brief 533 FR-042).
+    survive re-invocation.
 
     Propagation is deliberately not touched here. It is policy, and policy
     belongs to whoever owns the tree; the caller of this helper decides whether
@@ -127,16 +127,16 @@ def configure_logging(log_format: str = "text", extra_log_trees: Sequence[str] =
     """Configure this project's logger trees, plus any the caller supplies.
 
     Builds one ``StreamHandler`` with the chosen formatter and attaches it to
-    the ``cassetta`` top-level logger, the ``cassetta.auth`` sub-tree (Brief 533
-    FR-040), and every tree named in ``extra_log_trees``, so records emitted on
-    any of them render through the same handler.
+    the ``cassetta`` top-level logger, the ``cassetta.auth`` sub-tree, and every
+    tree named in ``extra_log_trees``, so records emitted on any of them render
+    through the same handler.
 
     The division of responsibility is the contract:
 
     * **This project's own trees are configured and governed.** ``cassetta`` and
       ``cassetta.auth`` get the handler, ``DEBUG``, and ``propagate=False``. The
       auth sub-tree carries its own handler so a later change to the propagation
-      chain cannot silently disconnect it (Brief 533 FR-041).
+      chain cannot silently disconnect it.
     * **A supplied tree is configured, not governed.** It gets the same handler
       and the same level; its ``propagate`` attribute is left untouched — not
       set true, not set false, not read. A caller wanting different propagation
@@ -149,7 +149,7 @@ def configure_logging(log_format: str = "text", extra_log_trees: Sequence[str] =
     Idempotent — re-invocation clears only the handlers this function installed
     before re-attaching, on supplied trees exactly as on the project's own, so
     repeated calls neither stack handlers nor discard a handler someone else
-    attached (Brief 533 FR-042).
+    attached.
 
     Args:
         log_format: ``"text"`` for human-readable (default),
@@ -165,9 +165,8 @@ def configure_logging(log_format: str = "text", extra_log_trees: Sequence[str] =
         handler.setFormatter(JsonFormatter())
     else:
         handler.setFormatter(TextFormatter())
-    # Marker so re-invocations clear ONLY handlers we installed (FR-042
-    # idempotency) and leave test-attached handlers — e.g., the
-    # ``auth_log_capture`` fixture — intact.
+    # Marker so re-invocations clear ONLY handlers we installed, and leave
+    # test-attached handlers — e.g., the ``auth_log_capture`` fixture — intact.
     handler._cassetta_managed = True  # type: ignore[attr-defined]
 
     for name in _OWN_LOG_TREES:
@@ -240,11 +239,11 @@ def safe_emit(
 ) -> None:
     """Emit a structured-log event, a metric counter/gauge, or both.
 
-    Brief 533 — the single funnel for paired observability emissions.
-    Wraps ``struct_log`` and ``metrics.<increment|gauge>`` in TWO
-    INDEPENDENT best-effort exception handlers — a failure in one step
-    MUST NOT prevent the other from being attempted, and no exception
-    from either step propagates to the caller (FR-061).
+    The single funnel for paired observability emissions. Wraps
+    ``struct_log`` and ``metrics.<increment|gauge>`` in TWO INDEPENDENT
+    best-effort exception handlers — a failure in one step MUST NOT
+    prevent the other from being attempted, and no exception from either
+    step propagates to the caller.
 
     The log step runs only when both ``event`` and ``logger`` are
     provided. The metric step runs only when both ``metric_name`` and

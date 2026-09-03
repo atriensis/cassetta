@@ -1,4 +1,4 @@
-"""T041 — US5: atomic visibility + rollback on interruption (Brief 514).
+"""Atomic visibility + rollback on interruption.
 
 Covers:
 - Mid-stream manifest violation → active rollback (bundle dir removed in

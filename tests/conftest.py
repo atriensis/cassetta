@@ -116,7 +116,7 @@ def storage_dir() -> str:
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter() -> Iterator[None]:
-    """Brief 531 — clear in-memory limiter state between tests.
+    """Clear in-memory limiter state between tests.
 
     The limiter is module-global (shared across the process) so without
     a reset, hits from earlier tests can trip rate-limit rejections in
@@ -160,9 +160,9 @@ _TEST_JWT_KEY_B64 = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"  # 36
 
 @pytest.fixture(scope="session", autouse=True)
 def _core_env_defaults() -> None:
-    """Brief 539 — session-wide baseline for the boot-required signing key.
+    """Session-wide baseline for the boot-required signing key.
 
-    Since Brief 527 ``load_config()`` requires ``CASSETTA_JWT_KEY`` and
+    ``load_config()`` requires ``CASSETTA_JWT_KEY`` and
     ``CASSETTA_PUBLIC_BASE_URL``. Before this fixture, core tests that boot the
     app without going through an env-setting fixture free-rode on a key *leaked*
     by another test — so they failed when run in isolation (Constitution
@@ -183,7 +183,7 @@ def _core_env_defaults() -> None:
 
 @pytest.fixture(autouse=True)
 def _restore_environ() -> Iterator[None]:
-    """Brief 539 — restore ``os.environ`` after every test (Principle IX backstop).
+    """Restore ``os.environ`` after every test (Principle IX backstop).
 
     The flagged leakers are migrated to ``monkeypatch`` at the call site, but a
     long tail of ~40 core test files still set ``CASSETTA_*`` via raw
@@ -213,7 +213,7 @@ def _restore_environ() -> Iterator[None]:
 
 @pytest.fixture(autouse=True)
 def _restore_logging_state() -> Iterator[None]:
-    """Brief 539 — restore logger state after every test (Principle IX, research §3).
+    """Restore logger state after every test (Principle IX).
 
     ``configure_logging()`` mutates process-global logger state (handlers,
     level, ``propagate``), and ``logging.getLogger`` interns every name for the
@@ -243,7 +243,7 @@ def _restore_logging_state() -> Iterator[None]:
 def env_setup(storage_dir: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """Set environment variables for dev mode test runs.
 
-    Brief 539: uses ``monkeypatch`` so every var is auto-restored at function
+    Uses ``monkeypatch`` so every var is auto-restored at function
     teardown — no ``CASSETTA_*`` value leaks into a later test (Principle IX).
     """
     monkeypatch.setenv("CASSETTA_SETUP_TOKEN", "")
@@ -290,7 +290,7 @@ async def client(
 def auth_log_capture() -> Iterator[list[logging.LogRecord]]:
     """Capture log records emitted on the ``cassetta.auth`` logger.
 
-    Workaround for Brief 529 tests: pytest's ``caplog`` attaches to the
+    Workaround for the auth-observability tests: pytest's ``caplog`` attaches to the
     root logger, so once ``configure_logging`` sets ``cassetta.propagate
     = False`` no records reach the LogCaptureHandler. This fixture binds
     a tiny in-memory handler directly to ``cassetta.auth``.
@@ -321,7 +321,7 @@ async def auth_client(
 ) -> AsyncIterator[tuple[httpx.AsyncClient, str]]:
     """Async test client with auth enabled. Returns (client, setup_token).
 
-    Brief 539: ``monkeypatch`` auto-restores every var at teardown (Principle IX).
+    ``monkeypatch`` auto-restores every var at teardown (Principle IX).
     """
     setup_token = "test-setup-token-123"
     monkeypatch.setenv("CASSETTA_SETUP_TOKEN", setup_token)

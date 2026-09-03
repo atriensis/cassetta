@@ -1,14 +1,14 @@
-"""REST endpoint ``GET /download/{bundle_path:path}/{name}`` (Brief 515).
+"""REST endpoint ``GET /download/{bundle_path:path}/{name}``.
 
 Streams one file from a claimed bundle, authorized by a download JWT
-plus a matching identity header. Two-factor contract per FR-006a:
+plus a matching identity header. The two-factor contract:
 Authorization: Bearer <download_jwt> — signature + exp + bundle_path +
 name-in-claim; AND X-Sender: <label> — identity self-declaration
 compared to the JWT's ``recipient`` claim.
 
 The bundle's claim sidecar (inbox only) is updated after the last byte
 ships to the client; when ``files_fetched`` covers the whole manifest,
-the bundle is deleted and the claim is dropped (FR-009 + FR-015).
+the bundle is deleted and the claim is dropped.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ router = APIRouter()
 
 _INBOX_PREFIX = "inbox/"
 
-# WWW-Authenticate header emitted on every 401 per RFC 6750 + FR-006.
+# WWW-Authenticate header emitted on every 401 per RFC 6750.
 _WWW_AUTHENTICATE = 'Bearer error="invalid_token"'
 
 
@@ -115,7 +115,7 @@ def _map_jwt_error(exc: jwt_tokens.TokenError) -> DownloadError:
 
 
 def _jwt_error_to_reason(exc: jwt_tokens.TokenError) -> Reason:
-    """Map a TokenError subclass to the auth.failure reason (Brief 529 R4)."""
+    """Map a TokenError subclass to the auth.failure reason."""
     if isinstance(exc, jwt_tokens.TokenExpired):
         return "jwt_expired"
     return "jwt_invalid"
@@ -145,7 +145,7 @@ def _resolve_identity_label(request: Request) -> str | None:
 
     Dev mode: skip the check entirely by returning "*" (sentinel matched
     against any recipient). Auth mode: read ``X-Sender``; if absent,
-    return ``None`` and let the handler raise 401 per the FR-006a
+    return ``None`` and let the handler raise 401 per the
     two-factor contract.
     """
     if getattr(request.app.state, "dev_mode", False):
@@ -201,7 +201,7 @@ async def download_file(
     token = _extract_bearer(request)
 
     # Step 2: JWT verify (signature, exp, nbf, required claims).
-    # Brief 531: read the runtime slots so a SIGHUP-driven rotation
+    # Read the runtime slots so a SIGHUP-driven rotation
     # takes effect on the next request without a restart.
     slots = request.app.state.jwt_keys
     try:
@@ -237,7 +237,7 @@ async def download_file(
     if decoded_name not in claim_file_names:
         raise _unauth("name_not_in_claim")
 
-    # Step 5: identity check (FR-006a defense-in-depth).
+    # Step 5: identity check (defense-in-depth).
     identity_label = _resolve_identity_label(request)
     if identity_label is None:
         # Missing identity header — treat as unauthenticated.
@@ -254,7 +254,7 @@ async def download_file(
                 "bundle_path": claim_bundle_path,
             },
         )
-        # Brief 533 FR-005 / SC-025: distinct from authentication.
+        # Distinct from authentication.
         safe_emit(
             metric_name="cassetta.download.operations",
             metric_tags={"result": "identity_mismatch"},
@@ -266,7 +266,7 @@ async def download_file(
     try:
         meta = await backend.read_bundle_meta(claim_bundle_path)
     except FileNotFoundError as exc:
-        # Brief 533 FR-005 / SC-024: bundle_gone collapses to not_found.
+        # bundle_gone collapses to not_found.
         safe_emit(
             metric_name="cassetta.download.operations",
             metric_tags={"result": "not_found"},
@@ -280,7 +280,7 @@ async def download_file(
         None,
     )
     if manifest_entry is None:
-        # Brief 533 FR-005 / SC-024: name_not_in_manifest collapses to not_found.
+        # name_not_in_manifest collapses to not_found.
         safe_emit(
             metric_name="cassetta.download.operations",
             metric_tags={"result": "not_found"},
@@ -364,8 +364,8 @@ async def _body_generator(
             "bytes_transferred": total,
         },
     )
-    # Brief 533 FR-005 / FR-006: success path emits ok + download.bytes
-    # AFTER the streamed body completes (SC-023).
+    # Success path emits ok + download.bytes
+    # AFTER the streamed body completes.
     safe_emit(
         metric_name="cassetta.download.operations",
         metric_tags={"result": "ok"},

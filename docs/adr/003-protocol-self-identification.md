@@ -1,6 +1,6 @@
 # ADR 003 — Protocol Self-Identification via `kind: ClassVar[str]`
 
-**Status**: Accepted — Brief 519, shipped **v0.11.0**
+**Status**: Accepted — shipped **v0.11.0**
 
 ## Problem
 
@@ -12,7 +12,7 @@ three-layer architecture ([ADR 001](001-three-layer-architecture.md)):
 2. `type(x).__name__.removesuffix("ClaimStorage").lower()` — Layer 2 reverse-
    engineering a backend's identity from Layer 3 class-naming conventions.
 
-Brief 518 had removed the `isinstance` but kept the string-mangling as a
+An earlier change had removed the `isinstance` but kept the string-mangling as a
 scope-preserving compromise, leaving a `TODO` pointing at this decision. Layer 2
 should not have to know how Layer 3 names or types itself.
 
@@ -31,17 +31,17 @@ eight that don't would be worse than a uniform convention.
   `backends.claim_store.kind` (see `src/cassetta/app.py`).
 - **Observable change**: Azure now logs `claim_storage_backend=azure` (previously
   `=blob`). Operators grepping that field must update expectations.
-- `@runtime_checkable` + `ClassVar[str]` forced three `cloud/extensions/*` classes
-  (`CloudAliasResolver`, `CloudIdentityProvider`, `TeamAccessPolicy`) to carry
-  `kind = "cloud"` so they satisfy `isinstance` at runtime — three classes outside
-  the original twelve-impl inventory.
+- `@runtime_checkable` + `ClassVar[str]` forced three extension classes in the
+  downstream distribution (`CloudAliasResolver`, `CloudIdentityProvider`,
+  `TeamAccessPolicy`) to carry `kind = "cloud"` so they satisfy `isinstance` at
+  runtime — three classes outside the original twelve-impl inventory.
 - Two implementation gotchas: the impl side needs an explicit
   `kind: ClassVar[str] = "..."` (a bare assignment reads as an instance variable to
   mypy); and the three cloud classes above were easy to miss.
 
 Verified in the tree today: `kind: ClassVar[str]` is declared on the nine Layer 1
-Protocols under `src/cassetta/protocols/`, and `BlobClaimStorage.kind ==
-"azure"` (`cloud/src/cassetta_cloud/backends/azure/claim_storage.py`).
+Protocols under `src/cassetta/protocols/`, and the downstream distribution's blob
+claim-storage class carries `kind == "azure"`.
 
 ## Links
 

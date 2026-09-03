@@ -1,4 +1,4 @@
-"""Rate-limiting primitives (Brief 531). See ``limiter.py`` for the contract."""
+"""Rate-limiting primitives. See ``limiter.py`` for the contract."""
 
 from cassetta.rate_limit.limiter import (
     FanoutCapExceeded,

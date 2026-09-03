@@ -306,9 +306,9 @@ header, so the flag is a pure client-side optimisation.
 | 2 | Server returned 4xx (body echoed to stderr — token expired, manifest violation, bundle path conflict, ...). |
 | 3 | Server returned 5xx (body echoed to stderr). |
 
-## Using `cassetta download` (brief 515)
+## Using `cassetta download`
 
-Brief 515 made the read side symmetric with 514's two-phase write flow:
+The read side is symmetric with the two-phase write flow:
 small bundles still come back inline, but bundles over
 `CASSETTA_MAX_INLINE_SIZE` now return a **reference envelope** instead
 of inlining the bytes. The envelope names per-file URLs and a single
@@ -444,7 +444,7 @@ This is a server-side fix.
   wrong (storage permissions, expired key, etc.).
 
 
-## Broadcast a bundle to your team (Brief 525)
+## Broadcast a bundle to your team
 
 `POST /broadcast/<path>` delivers a bundle to every recipient your access
 policy considers visible. The `<path>` segment is the **logical destination
@@ -475,7 +475,7 @@ The response distinguishes per-target outcomes:
 
 Cross-team recipients (under `TeamAccessPolicy`) are silently filtered out
 of the visibility set — they do not appear in `delivered_to`, `denied`, or
-`failed`. This is the SC-001 invariant: broadcasts cannot enumerate labels
+`failed`. This is the anti-leak invariant: broadcasts cannot enumerate labels
 the caller is not permitted to see.
 
 ## Admin endpoints (cloud only)

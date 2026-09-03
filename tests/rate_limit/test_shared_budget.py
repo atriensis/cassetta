@@ -1,4 +1,4 @@
-"""REST + MCP share one ``route=broadcast`` rate-limit budget (T014, SC-010)."""
+"""REST + MCP share one ``route=broadcast`` rate-limit budget."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ async def _booted_app(
     *,
     rate: str = "10/minute",
 ) -> AsyncIterator[tuple[httpx.AsyncClient, str]]:
-    # Brief 539: monkeypatch auto-restores; previously this helper leaked
+    # monkeypatch auto-restores; previously this helper leaked
     # CASSETTA_PER_FILE_MAX/RATE_LIMIT_BROADCAST and broke capabilities/config
     # tests under randomized ordering (Principle IX).
     monkeypatch.setenv("CASSETTA_SETUP_TOKEN", "")
@@ -176,7 +176,7 @@ class TestSharedBudget:
             mcp_body = json.loads(payload)
             assert mcp_body["error"] == "rate_limit"
 
-            # SC-010: every increment carries the same surface-agnostic tag.
+            # Every increment carries the same surface-agnostic tag.
             calls = recording_metrics.find("cassetta.rate_limit.hits")
             assert len(calls) == 2
             for call in calls:

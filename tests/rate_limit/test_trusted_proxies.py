@@ -1,4 +1,4 @@
-"""Trusted-proxy XFF resolution → per-IP bucketing (T015, SC-011).
+"""Trusted-proxy XFF resolution → per-IP bucketing.
 
 These tests focus on the cassetta-side contract: ``check_rate_limit_imperative``
 buckets by what ``request.client.host`` carries at request time. The

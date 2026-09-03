@@ -1,4 +1,4 @@
-"""T022 — contract test for `cassetta_send_inline` MCP tool (Brief 514).
+"""Contract test for `cassetta_send_inline` MCP tool.
 
 Covers:
 - Valid inline JWT + matching payloads → success response.
@@ -237,7 +237,7 @@ async def test_send_inline_bad_base64_reports_encoding(
     core_app: tuple[httpx.AsyncClient, str],
     h,
 ) -> None:
-    """Brief 541: invalid base64 content → ``missing_or_bad_encoding``, not ``wrong_size``."""
+    """Invalid base64 content → ``missing_or_bad_encoding``, not ``wrong_size``."""
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "inline-badb64")
     await h.create_key(client, sender_key, "alice", "main")
@@ -279,7 +279,7 @@ async def test_send_inline_missing_encoding_reports_encoding(
     core_app: tuple[httpx.AsyncClient, str],
     h,
 ) -> None:
-    """Brief 541: omitting ``encoding`` is rejected naming the field, never ``wrong_size``."""
+    """Omitting ``encoding`` is rejected naming the field, never ``wrong_size``."""
     client, _ = core_app
     sender_key = await h.setup_agent(client, "bob", "inline-noenc")
     await h.create_key(client, sender_key, "alice", "main")

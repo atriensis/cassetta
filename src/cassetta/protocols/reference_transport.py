@@ -1,4 +1,4 @@
-"""Layer-1 protocol — pluggable reference-mode URL construction (Brief 515).
+"""Layer-1 protocol — pluggable reference-mode URL construction.
 
 A ``ReferenceTransport`` produces the per-file URL that reference-mode
 download responses hand to the client. Core returns its own

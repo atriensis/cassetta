@@ -1,4 +1,4 @@
-"""T036 — US3: pre-bytes rejection for manifest/cap violations (Brief 514).
+"""Pre-bytes rejection for manifest/cap violations.
 
 Each scenario drives `cassetta_send_init` with a manifest that triggers
 a specific rejection category and asserts:

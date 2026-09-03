@@ -1,7 +1,7 @@
 """Tests for cross-protocol interoperability: MCP <-> REST for inbox.
 
-Brief 514 removed the legacy ``PUT /inbox/{agent}/{path}`` REST endpoint
-and the ``cassetta_send`` MCP tool. These tests now seed the inbox
+The legacy ``PUT /inbox/{agent}/{path}`` REST endpoint and the
+``cassetta_send`` MCP tool are gone. These tests now seed the inbox
 directly via the backend (using :func:`seed_inbox_bundle`) and then
 assert that REST and MCP retrieval paths still work end-to-end.
 """

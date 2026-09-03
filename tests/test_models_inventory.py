@@ -1,7 +1,7 @@
-"""Brief 535 Fix 6 — every pydantic model in ``src/cassetta/models.py``
+"""Every pydantic model in ``src/cassetta/models.py``
 must be referenced by at least one production code path.
 
-Brief 535 deletes 8 dead models and wires 4 routes / error handlers
+Dead models are deleted; live ones are wired to routes / error handlers
 with ``response_model=`` declarations. This regression test scans
 ``models.py`` for ``ClassDef`` names and asserts each appears in at
 least one other file under ``src/cassetta/``. The check protects
@@ -66,9 +66,9 @@ def test_no_orphan_models_in_core_models_py() -> None:
 
     # A model is "live" if referenced in production directly, OR reachable from
     # a production-referenced model through nesting inside models.py (e.g.
-    # SendManifest.files: list[SendManifestFile]). Transitive reachability — added
-    # with Brief 541's first nested model pair — keeps the guard accurate without
-    # weakening it: a model reachable only from other dead models stays an orphan.
+    # SendManifest.files: list[SendManifestFile]). Transitive reachability keeps
+    # the guard accurate without weakening it: a model reachable only from other
+    # dead models stays an orphan.
     live = {n for n, refs in references.items() if refs}
     edges = _intra_model_edges(_MODELS_FILE, names)
     changed = True
@@ -82,7 +82,7 @@ def test_no_orphan_models_in_core_models_py() -> None:
 
     orphans = [n for n in names if n not in live]
     assert not orphans, (
-        "Orphan pydantic models in models.py (Brief 535 Fix 6 "
-        "deletes models with no production use, or wires them as "
-        "response_model= on a route):\n  " + "\n  ".join(orphans)
+        "Orphan pydantic models in models.py (delete models with no "
+        "production use, or wire them as response_model= on a "
+        "route):\n  " + "\n  ".join(orphans)
     )

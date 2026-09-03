@@ -1,4 +1,4 @@
-"""Brief 518 / 520 — Layer 3 factory for core default implementations.
+"""Layer 3 factory for core default implementations.
 
 Constitution §VII ("Three-Layer Architecture, NON-NEGOTIABLE") requires
 Layer 2 (``cassetta.app``) to never name a specific vendor. This module

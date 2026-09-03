@@ -37,7 +37,7 @@ class TestSetup:
             json={"host": "test", "project": "agent"},
             headers={"X-Setup-Token": "wrong-token"},
         )
-        # Under the unified auth dependency (Brief 504), a wrong setup-token
+        # Under the unified auth dependency, a wrong setup-token
         # with no bearer is 401 Unauthorized (we don't know who you are),
         # not 403 Forbidden.
         assert response.status_code == 401

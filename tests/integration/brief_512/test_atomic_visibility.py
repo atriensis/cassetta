@@ -1,4 +1,4 @@
-"""Brief 512 US2 scenario — atomic visibility gated on meta.json.
+"""Atomic visibility gated on meta.json.
 
 A bundle is visible iff its ``meta.json`` sidecar is present. Directories
 with partial writes (no ``meta.json``) are invisible to every listing path

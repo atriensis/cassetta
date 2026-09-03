@@ -1,7 +1,7 @@
 """T022 (US2) — concurrent picks serialize through the claim sidecar.
 
 Two async picks on the same unclaimed bundle fire via ``asyncio.gather``.
-Per FR-011a, exactly one MUST win (reference envelope + sidecar on
+Exactly one MUST win (reference envelope + sidecar on
 disk); the other MUST see the same "bundle not found" surface a
 late-comer would see. The loser's in-memory JWT MUST NOT leak to the
 caller.

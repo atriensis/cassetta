@@ -1,9 +1,9 @@
 """T010 (US1) — ``cassetta_get`` on a store bundle returns reference.
 
 A 2 MB file in the store is retrieved via ``cassetta_get``; the envelope
-is ``mode: "reference"`` and NO claim sidecar is written (FR-010a). The
+is ``mode: "reference"`` and NO claim sidecar is written. The
 per-file URL returns the bytes; the store entry remains readable after
-(non-destructive per FR-009).
+(non-destructive).
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ async def test_get_store_returns_reference_without_sidecar(
     assert len(envelope["files"]) == 1
     assert "content" not in envelope["files"][0]
 
-    # FR-010a: store reference gets NO claim sidecar.
+    # Store reference gets NO claim sidecar.
     claims_dir = storage_root / ".claims"
     if claims_dir.exists():
         sidecars = list(claims_dir.glob("*.json"))
@@ -75,7 +75,7 @@ async def test_get_store_returns_reference_without_sidecar(
     assert resp.status_code == 200, (resp.status_code, resp.text[:200])
     assert resp.content == payload
 
-    # Store entry remains readable (non-destructive — FR-009).
+    # Store entry remains readable (non-destructive).
     again = await h.mcp_call(
         client,
         "cassetta_get",

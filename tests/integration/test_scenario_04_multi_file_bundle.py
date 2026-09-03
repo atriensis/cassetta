@@ -23,7 +23,7 @@ async def test_scenario_04_multi_file_bundle(
         project="receiver",
     )
 
-    # 3. Send multi-file bundle inline via the Brief 514 flow
+    # 3. Send multi-file bundle inline
     plan = b"# Plan\nStep 1"
     data_bytes = b'{"key": "value"}'
     sid = await h.mcp_init(client, api_key=key_sender)

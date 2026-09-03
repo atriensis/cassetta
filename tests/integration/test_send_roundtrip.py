@@ -1,4 +1,4 @@
-"""Brief 548 (US1) — full `cassetta send` round-trip against an in-process ASGI app.
+"""Full `cassetta send` round-trip against an in-process ASGI app.
 
 Drives the real ``send`` code path (``cassetta.cli.send._send_async``) end to end:
 phase 1 (``POST /uploads`` → batch token + upload_url) then phase 2 (stream a tar to

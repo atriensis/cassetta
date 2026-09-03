@@ -231,7 +231,7 @@ class TestConfigureLogging:
 def _seed_config_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Boot-required env for ``load_config``.
 
-    Brief 539: uses ``monkeypatch`` so nothing leaks. Replaces the old
+    Uses ``monkeypatch`` so nothing leaks. Replaces the old
     ``try/finally`` ``os.environ.pop`` dance; the canonical leak was each test
     setting ``CASSETTA_SETUP_TOKEN`` but not ``CASSETTA_JWT_KEY`` and free-riding
     on a key leaked by another file (Principle IX, research §2).
@@ -315,7 +315,7 @@ class TestStructLog:
 
 
 class TestSiblingLoggerCoverage:
-    """Brief 529 US3 — configure_logging covers the ``cassetta.auth`` sub-tree
+    """configure_logging covers the ``cassetta.auth`` sub-tree
     and every logger tree the caller supplies through the same handler stack."""
 
     def test_cassetta_auth_record_renders_through_json_formatter(self, capsys):

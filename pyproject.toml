@@ -120,5 +120,5 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "--import-mode=importlib"
 markers = [
-    "slow: tests over ~10s (SC-006 1 GB disk-pressure probe)",
+    "slow: tests over ~10s (1 GB disk-pressure probe)",
 ]

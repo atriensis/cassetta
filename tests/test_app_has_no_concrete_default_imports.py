@@ -1,8 +1,7 @@
-"""FR-008 — Layer 2 MUST NOT name any of the nine concrete Layer 3
+"""Layer 2 MUST NOT name any of the nine concrete Layer 3
 default-implementation classes.
 
-Extended from Brief 518 (which only checked ``app.py``). Walks the full
-Layer 2 surface: every ``src/cassetta/**/*.py`` except Layer 3
+Walks the full Layer 2 surface: every ``src/cassetta/**/*.py`` except Layer 3
 construction homes (``defaults/factory.py``, ``defaults/default_*.py``,
 ``backends/**``, ``protocols/**``, ``**/__init__.py``).
 

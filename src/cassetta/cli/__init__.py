@@ -1,14 +1,12 @@
 """Typer-based ``cassetta`` CLI entry point.
 
 Subcommands:
-- ``cassetta upload`` — stream a tar archive to ``POST /upload/{bundle_path}``
-  (Brief 514).
+- ``cassetta upload`` — stream a tar archive to ``POST /upload/{bundle_path}``.
 - ``cassetta download`` — fetch every file in a reference envelope via
-  ``GET /download/...`` into ``--out`` (Brief 515).
-- ``cassetta capabilities`` — print server's advertised limits/features
-  (Brief 516).
+  ``GET /download/...`` into ``--out``.
+- ``cassetta capabilities`` — print server's advertised limits/features.
 - ``cassetta send`` — one-shot directed send: mint an upload session
-  (``POST /uploads``) then stream a tar to the returned URL (Brief 548).
+  (``POST /uploads``) then stream a tar to the returned URL.
 """
 
 from __future__ import annotations

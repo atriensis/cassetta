@@ -176,7 +176,7 @@ async def test_mcp_put_within_caps_succeeds(
 async def test_mcp_send_init_within_caps_succeeds(
     policy_client: tuple[httpx.AsyncClient, FilesystemBackend],
 ) -> None:
-    """Brief 514 replaces ``cassetta_send`` with ``cassetta_send_init``.
+    """``cassetta_send_init`` is the send entry point.
 
     A manifest that fits within the policy caps must yield the
     discriminated inline response (``mode == "inline"`` with an

@@ -1,8 +1,8 @@
-"""Data type + re-exports for reference-mode download claims (Brief 515).
+"""Data type + re-exports for reference-mode download claims.
 
 The ``ClaimStorage`` Protocol and its filesystem implementation moved
 to ``cassetta.protocols.claim_storage`` and
-``cassetta.backends.filesystem.claim_storage`` in Brief 517; they are
+``cassetta.backends.filesystem.claim_storage``; they are
 re-exported here for backwards-compatible imports. ``ClaimRecord``
 stays here because it is data, not protocol, and ~15 test sites
 import it from this module directly.
@@ -53,7 +53,7 @@ def __getattr__(name: str) -> Any:
     ``cassetta.backends.filesystem.claim_storage`` → ``cassetta.claims``
     circular that otherwise triggers when anything loads
     ``cassetta.defaults.factory`` before ``cassetta.claims`` — e.g. via the
-    ``cassetta/__init__.py`` public re-exports added in Brief 520. The
+    ``cassetta/__init__.py`` public re-exports. The
     backend module imports ``ClaimRecord`` / ``_iso_to_epoch`` from here,
     so if we eagerly imported it here too, neither side would be fully
     initialised when the other tried to read from it.

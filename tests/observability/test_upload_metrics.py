@@ -1,6 +1,4 @@
-"""Upload metric coverage tests — Brief 533 FR-002/FR-003/FR-004 +
-SC-013/SC-020/SC-021/SC-022.
-"""
+"""Upload metric coverage tests."""
 
 from __future__ import annotations
 
@@ -90,7 +88,7 @@ def _make_tar(files: list[tuple[str, bytes]]) -> bytes:
 
 
 async def test_success_increments_ok_and_bytes(upload_client) -> None:
-    """SC-020 — success path: result=ok + upload.bytes with bytes committed."""
+    """Success path: result=ok + upload.bytes with bytes committed."""
     client, metrics, config = upload_client
     content = b"hello world"
     manifest = [{"name": "a.txt", "size": len(content), "mime": "text/plain"}]
@@ -116,7 +114,7 @@ async def test_success_increments_ok_and_bytes(upload_client) -> None:
 async def test_manifest_rejection_increments_rejected_and_violation(
     upload_client,
 ) -> None:
-    """SC-021 — manifest violation: result=rejected + manifest_violations{reason}
+    """Manifest violation: result=rejected + manifest_violations{reason}
     AND ZERO upload.bytes.
     """
     client, metrics, config = upload_client
@@ -144,7 +142,7 @@ async def test_manifest_rejection_increments_rejected_and_violation(
 
 
 async def test_midstream_error_increments_error_only(upload_client) -> None:
-    """SC-022 — mid-stream tar parse error: result=error AND ZERO upload.bytes."""
+    """Mid-stream tar parse error: result=error AND ZERO upload.bytes."""
     client, metrics, config = upload_client
     manifest = [{"name": "a.txt", "size": 5, "mime": "text/plain"}]
     bundle_path = "inbox/alice/garbage.tar"
@@ -160,7 +158,7 @@ async def test_midstream_error_increments_error_only(upload_client) -> None:
     assert resp.status_code in (400, 422, 500), resp.text
 
     ops = metrics.find("cassetta.upload.operations", "increment")
-    # tar parse error counts as mid-stream error per FR-002 / SC-022.
+    # tar parse error counts as a mid-stream error.
     assert any(c.tags and c.tags.get("result") == "error" for c in ops), [c.tags for c in ops]
     bytes_calls = metrics.find("cassetta.upload.bytes", "increment")
     assert not bytes_calls, "mid-stream error MUST NOT increment upload.bytes"

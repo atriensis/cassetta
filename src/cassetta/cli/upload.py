@@ -1,4 +1,4 @@
-"""``cassetta upload`` subcommand (Brief 514).
+"""``cassetta upload`` subcommand.
 
 Streams a tar archive to ``POST /upload/{bundle_path}`` with the JWT from
 ``cassetta_send_init``. Tar entry names are the positional arguments

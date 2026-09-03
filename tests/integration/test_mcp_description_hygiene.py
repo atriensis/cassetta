@@ -1,4 +1,4 @@
-"""Brief 541 — guard: public MCP tool descriptions must not leak internals.
+"""Guard: public MCP tool descriptions must not leak internals.
 
 Sibling lock to the §VII layer-separation AST test. FastMCP surfaces each
 tool's docstring as the public ``description`` in ``tools/list``; this test

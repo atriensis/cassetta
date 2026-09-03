@@ -98,7 +98,7 @@ def test_policy_context_extension_seam() -> None:
 
 
 # ---------------------------------------------------------------------------
-# FR-020 / SC-007 — single source of truth
+# Single source of truth
 # ---------------------------------------------------------------------------
 
 
@@ -325,7 +325,7 @@ def test_evaluate_upload_matches_shared_helper(
     manifest: _SharedUploadManifest,
     config: LimitsConfig,
 ) -> None:
-    """FR-020 + SC-007: policy and shared helper are bit-exact equal."""
+    """Policy and shared helper are bit-exact equal."""
     policy = CoreLimitsPolicy(config)
     ctx = _ctx()
     limits = policy.advertise_limits(ctx)

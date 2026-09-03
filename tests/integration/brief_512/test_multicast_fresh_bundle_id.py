@@ -1,4 +1,4 @@
-"""Brief 512 US3 — multicast fan-out produces distinct bundle_ids per recipient."""
+"""Multicast fan-out produces distinct bundle_ids per recipient."""
 
 from collections.abc import AsyncIterator
 

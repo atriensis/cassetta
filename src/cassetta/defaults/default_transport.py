@@ -1,4 +1,4 @@
-"""Default :class:`ReferenceTransport` implementation (Brief 515).
+"""Default :class:`ReferenceTransport` implementation.
 
 ``CoreReferenceTransport`` builds authenticated REST URLs of the form
 ``{public_base}/download/{bundle_path_urlencoded}/{name_urlencoded}``.

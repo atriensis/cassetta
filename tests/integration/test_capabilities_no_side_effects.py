@@ -1,4 +1,4 @@
-"""SC-004 — capabilities calls MUST NOT mutate storage.
+"""Capabilities calls MUST NOT mutate storage.
 
 Hash the storage directory (relative paths + sizes) before and after a
 mixed batch of 100 MCP + REST capability calls; the hash must be

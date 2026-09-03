@@ -10,8 +10,8 @@ Simulates the client-side flow from ``quickstart.md`` §5:
 4. If the decision has an ``error`` key, client raises a local error
    and **never** calls ``cassetta_send_init``.
 
-Covers SC-001 (zero server round-trips for oversized payloads) and
-FR-018 (null cap = no limit). No server process is required; the
+Covers the zero-server-round-trip path for oversized payloads and the
+null-cap-means-no-limit rule. No server process is required; the
 ``send_init`` spy proves the rejection short-circuits the network.
 """
 
@@ -73,7 +73,7 @@ def _manifest(files: list[tuple[str, int]]) -> UploadManifest:
 
 
 def test_oversized_payload_fails_before_send_init() -> None:
-    """SC-001 + FR-020: client rejects locally, zero network calls."""
+    """Client rejects locally, zero network calls."""
     send_init = MagicMock(name="send_init")
     caps = _cached_caps_with(per_file_max=1000)
     manifest = _manifest([("big.bin", 2000)])
@@ -102,7 +102,7 @@ def test_acceptable_payload_reaches_send_init() -> None:
 
 
 def test_null_cap_means_no_limit_on_that_axis() -> None:
-    """FR-018: a client cannot be stricter than the server on a null axis."""
+    """A client cannot be stricter than the server on a null axis."""
     send_init = MagicMock(name="send_init", return_value={"token": "t"})
     caps: LimitsAdvertisement = {
         "per_file_max": None,  # ← no per-file limit

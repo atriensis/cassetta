@@ -1,4 +1,4 @@
-"""Capabilities counter coverage — Brief 533 FR-008."""
+"""Capabilities counter coverage."""
 
 from __future__ import annotations
 

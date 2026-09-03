@@ -1,4 +1,4 @@
-"""Tests for FilesystemBundleWriter (Brief 512)."""
+"""Tests for FilesystemBundleWriter."""
 
 import io
 import json

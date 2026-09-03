@@ -1,4 +1,4 @@
-"""Async-to-sync stream bridge for streaming tar parsing (Brief 514).
+"""Async-to-sync stream bridge for streaming tar parsing.
 
 :class:`SyncStreamReader` is a bounded-queue reader with a synchronous
 ``read(n)`` interface suitable for stdlib ``tarfile`` in pipe mode

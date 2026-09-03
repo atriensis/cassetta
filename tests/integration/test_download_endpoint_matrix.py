@@ -446,7 +446,7 @@ async def test_large_file_streams_memory_bounded(
     core_app_small_inline: tuple[httpx.AsyncClient, str],
     h,
 ) -> None:
-    """SC-007 sanity — a 1 MB file round-trips intact under streaming.
+    """Sanity check — a 1 MB file round-trips intact under streaming.
 
     A full 100 MB payload is overkill for CI; this is the lightweight
     version. The handler MUST NOT buffer the whole file in memory — we

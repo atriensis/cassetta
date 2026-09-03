@@ -35,6 +35,16 @@ guard derives the expected set from ``src/`` and refuses the omission. The ninth
 name belonging to the private half must not appear there either, for the same reason it must not
 appear in ``.env.example``.
 
+The tenth is the ``core/`` guard's twin for the other half of the split. A path beginning ``cloud/``
+names a directory that went to the private repository, so shipped prose citing one describes a tree
+the reader cannot open — and, where the path was a module path, discloses the internal layout of a
+distribution nobody outside can install.
+
+The eleventh has the widest reach of all of them and the least to say about any one file: the
+numbering the project was built under — brief and requirement ids — refers to documents in that same
+private repository. It is the only guard that scans everything git tracks rather than the shipped
+surface, because the numbering reached the tests too.
+
 These are regression **locks**, not a one-off cleanup script: each must keep failing if what it
 describes comes back.
 """
@@ -43,6 +53,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from pathlib import Path
 
 from cassetta.models import SetupRequest
@@ -58,6 +69,17 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # "core" without a slash is legitimate prose in an open-core project and must stay readable;
 # "core/" with one names a directory that does not exist here.
 _MONOREPO_PATH_RE = re.compile(r"(?<![\w-])core/")
+
+# The other half of the same split, and deliberately the same shape of rule:
+#
+#   matches        cloud/src  cloud/LICENSE  cloud/extensions/  cloud/src/…/claim_storage.py
+#   not a slug     cassetta-cloud/  github.com/ximera239/cassetta-cloud/
+#
+# "cloud" without a slash is ordinary English and stays readable; "cloud/" with one names a
+# directory that went to the private repository. Where such a path was a *module* path it did
+# more than dangle — it published the internal layout of a distribution nobody outside can
+# install.
+_PRIVATE_HALF_PATH_RE = re.compile(r"(?<![\w-])cloud/")
 
 # The shipped surface: everything a reader of the public repository can see.
 _SHIPPED_ROOTS = ("src", "docs")
@@ -142,6 +164,36 @@ def test_no_monorepo_paths_in_shipped_surfaces() -> None:
     assert not offenders, (
         "Monorepo paths survive on the shipped surface. This repository is the flattened "
         "`core/` subtree — `core/src` means `src`, `core/README.md` means `README.md`:\n" + "\n".join(offenders)
+    )
+
+
+def test_no_private_half_paths_in_shipped_prose() -> None:
+    """No ``cloud/``-prefixed path in ``src/``, ``README.md`` or ``docs/``.
+
+    The mirror of the guard above, for the subtree that went the other way. A ``cloud/`` path is
+    broken in the same way a ``core/`` path is — it points into a tree this repository does not
+    have — and, when it is a module path, it also says how the private distribution is laid out
+    inside. An architecture decision record can keep its decision, its constraint and its outcome
+    while describing the participant as what it is to a reader here: something downstream.
+
+    Same lookbehind as ``_MONOREPO_PATH_RE``, so ``cassetta-cloud`` as a repository slug keeps
+    reading normally.
+    """
+    scanned = _shipped_text_files()
+    # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
+    assert len(scanned) >= 10, f"scanned only {len(scanned)} files — the shipped roots are wrong"
+
+    offenders: list[str] = []
+    for path in scanned:
+        rel = path.relative_to(REPO_ROOT)
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if _PRIVATE_HALF_PATH_RE.search(line):
+                offenders.append(f"{rel}:{lineno}: {line.strip()}")
+
+    assert not offenders, (
+        "shipped prose points into `cloud/`, the half of the former monorepo that went to a "
+        "private repository. Nothing there can be opened from here, and a module path also "
+        "discloses that distribution's internal layout:\n" + "\n".join(offenders)
     )
 
 
@@ -368,4 +420,73 @@ def test_no_links_into_the_private_predecessor() -> None:
     ]
     assert not offenders, "shipped documentation links into the private predecessor repository:\n  " + "\n  ".join(
         offenders
+    )
+
+
+# The numbering the project was built under, in the four spellings it actually took:
+#
+#   matches       Brief 533   FR-026   SC-014   brief-529
+#   not           Brief NNN   FRAGMENT   SC   brief-taking
+#
+# Each names a document in the private repository this one was split out of. `FR-026` resolves
+# for an outside reader exactly as well as `Brief 533` does — not at all — so it tells them
+# nothing while telling everyone the shape of a backlog they cannot read.
+_INTERNAL_IDENTIFIER_RE = re.compile(r"Brief [0-9]{3}|FR-[0-9]{3}|SC-[0-9]+|brief-[0-9]{3}")
+
+# Writing the four shapes out is this file's job, and nothing else's — so it is the one path the
+# scan below skips.
+_GUARD_SELF_PATH = Path(__file__).resolve().relative_to(REPO_ROOT)
+
+
+def _tracked_text_files() -> list[Path]:
+    """Every text file git tracks, in a stable order.
+
+    Wider than ``_shipped_text_files()`` deliberately. The numbering this feeds reached the test
+    suite and ``pyproject.toml`` as well as the shipped surface, so a guard scoped to what a
+    reader of the published repository sees would have stayed green with hundreds of citations
+    still in the tree.
+
+    ``git ls-files`` rather than a tree walk: "tracked" is exactly the set wanted, it excludes
+    ``.venv/`` without naming it, and any hand-written exclusion list here would be a second copy
+    of ``.gitignore`` that drifts from the first.
+    """
+    listing = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout
+    tracked = (REPO_ROOT / name for name in listing.split("\0") if name)
+    return sorted(path for path in tracked if path.suffix in _TEXT_SUFFIXES and path.is_file())
+
+
+def test_no_internal_identifiers_in_tracked_files() -> None:
+    """No tracked text file cites the private chain's brief or requirement numbers.
+
+    They are not noise — most annotated a real decision, and the sentence around them was worth
+    keeping. But the number itself points at a document in a repository the reader has no access
+    to, so it answers nothing and publishes the contours of a private backlog by existing.
+
+    The exclusion below is by path and only by path. Weakening the pattern until it no longer
+    matched this file's own examples would buy the same green at the cost of a guard that no
+    longer says what it checks.
+    """
+    scanned = _tracked_text_files()
+    # Non-vacuity: an empty or truncated listing would otherwise make this guard green forever.
+    assert len(scanned) >= 150, f"scanned only {len(scanned)} files — the tracked-file listing is wrong"
+
+    offenders: list[str] = []
+    for path in scanned:
+        rel = path.relative_to(REPO_ROOT)
+        if rel == _GUARD_SELF_PATH:
+            continue
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if _INTERNAL_IDENTIFIER_RE.search(line):
+                offenders.append(f"{rel}:{lineno}: {line.strip()}")
+
+    assert not offenders, (
+        "tracked files cite the private chain's numbering. The briefs and requirements these "
+        "name are not in this repository and cannot be looked up from it — drop the number and "
+        "keep the sentence:\n" + "\n".join(offenders)
     )

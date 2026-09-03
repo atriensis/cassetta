@@ -1,4 +1,4 @@
-"""Dev-mode visibility tests (Brief 529 — User Story 2).
+"""Dev-mode visibility tests.
 
 Covers:
 - AS-1, AS-2: lifespan ``config_loaded.dev_mode`` field + WARNING-level

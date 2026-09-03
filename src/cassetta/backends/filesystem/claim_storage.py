@@ -3,8 +3,8 @@
 One JSON sidecar per active claim under ``<base>/{jti}.json`` plus a
 bundle-path-keyed dotfile lock (``.{sha256(bundle_path)[:16]}.lock``)
 that serializes concurrent ``issue()`` on the same bundle path
-(FR-011a). Bodies are byte-identical to the Azure sibling so future
-cross-backend migration tooling stays cheap.
+Bodies are byte-identical to the Azure sibling so future cross-backend
+migration tooling stays cheap.
 
 Method bodies call blocking POSIX syscalls inline — ``os.open`` /
 ``os.fsync`` / ``os.replace`` — and are declared ``async def`` to

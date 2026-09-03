@@ -1,4 +1,4 @@
-"""Brief 533 FR-007 / FR-007a / SC-016 — MCP ``_enforce`` denial counter."""
+"""The MCP ``_enforce`` denial counter."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Brief 541 — serverInfo advertises the cassetta package version.
+"""serverInfo advertises the cassetta package version.
 
 The MCP ``initialize`` handshake must report ``cassetta.__version__`` in
 ``serverInfo.version``, not the version of the underlying ``mcp`` SDK.

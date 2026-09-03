@@ -1,4 +1,4 @@
-"""T046 — US7: signing-key rotation without downtime (Brief 514)."""
+"""Signing-key rotation without downtime."""
 
 from __future__ import annotations
 

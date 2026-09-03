@@ -1,4 +1,4 @@
-"""FR-014 — Layer 2 code annotates ``ClaimStorage`` (Protocol), never
+"""Layer 2 code annotates ``ClaimStorage`` (Protocol), never
 concrete classes like ``FilesystemClaimStorage`` or ``BlobClaimStorage``.
 
 AST-walk-based check: each target file is parsed, and every
@@ -93,7 +93,7 @@ def test_layer2_uses_only_protocol_annotations() -> None:
     )
 
 
-# Brief 535 Fix 5 — Layer 2 must never use ``try/except TypeError`` as a
+# Layer 2 must never use ``try/except TypeError`` as a
 # backend-signature-divergence fallback. The fix unifies
 # ``KeyStoreProtocol.create_key`` to accept ``user_id`` keyword-only on
 # every backend, so the previous brittle catch becomes unnecessary; this
@@ -122,7 +122,7 @@ def test_no_typeerror_fallback_in_keys_route() -> None:
                     if isinstance(elt, ast.Name) and elt.id == "TypeError":
                         offenders.append((handler.lineno, "TypeError"))
     assert not offenders, (
-        "routes/keys.py must not catch TypeError (Brief 535 Fix 5). "
+        "routes/keys.py must not catch TypeError. "
         "Layer 2 calls the unified KeyStoreProtocol.create_key signature "
         "unconditionally — no exception-based backend dispatch.\n"
         f"Offending handlers: {offenders}"

@@ -148,7 +148,7 @@ async def test_download_unset_always_inline() -> None:
 
 @pytest.mark.asyncio
 async def test_download_emits_policy_log() -> None:
-    """Verifies FR-029 — evaluate_download emits a policy.download_decision log."""
+    """evaluate_download emits a policy.download_decision log."""
     p = CoreLimitsPolicy(LimitsConfig(max_inline_size=100))
     captured: list[logging.LogRecord] = []
 
@@ -158,7 +158,7 @@ async def test_download_emits_policy_log() -> None:
 
     cassetta_logger = logging.getLogger("cassetta")
     handler = _Capture(level=logging.DEBUG)
-    # Brief 539: pin the logger level so the DEBUG ``policy.download_decision``
+    # Pin the logger level so the DEBUG ``policy.download_decision``
     # record is emitted regardless of ordering (in isolation the level defaults
     # to WARNING and would filter it); restore at teardown to avoid leaking.
     prior_level = cassetta_logger.level

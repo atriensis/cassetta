@@ -1,4 +1,4 @@
-"""Unit tests for DefaultAccessPolicy.visible_agents (Brief 525, T003)."""
+"""Unit tests for DefaultAccessPolicy.visible_agents."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""T049 / SC-006 — Disk-pressure probe for the streaming batch upload.
+"""Disk-pressure probe for the streaming batch upload.
 
 Generates a 256 MiB temp file (CI-scaled down from 1 GiB), drives it
 through ``cassetta_send_init`` → ``POST /upload/{bundle_path}`` while a
@@ -78,7 +78,7 @@ async def _stream_file(path: Path, chunk_size: int = 1024 * 1024) -> AsyncIterat
 
 @pytest.fixture
 def _allow_large_per_file(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Brief 531: 100 MiB default would reject this 256 MiB probe."""
+    """The 100 MiB default would reject this 256 MiB probe."""
     monkeypatch.setenv("CASSETTA_PER_FILE_MAX", str(512 * 1024 * 1024))
 
 

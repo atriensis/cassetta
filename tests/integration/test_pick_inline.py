@@ -3,7 +3,7 @@
 Single-file and multi-file bundles both return:
 ``{"mode": "inline", "bundle": {...}, "files": [{"name", "content", "encoding"}, ...]}``.
 
-The Brief 514 raw-UTF-8-string return for single-file pick/get is
+The legacy raw-UTF-8-string return for single-file pick/get is
 retired — ``json.loads(response)`` MUST succeed and the result has a
 ``"mode": "inline"`` key.
 """

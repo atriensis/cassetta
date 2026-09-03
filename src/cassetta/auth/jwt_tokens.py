@@ -1,4 +1,4 @@
-"""HS256 JWT sign/verify for Cassetta upload credentials (Brief 514).
+"""HS256 JWT sign/verify for Cassetta upload credentials.
 
 Wraps pyjwt with rotation-aware verification (primary + optional secondary
 key) and a module-level revocation-check extension point keyed on ``jti``.

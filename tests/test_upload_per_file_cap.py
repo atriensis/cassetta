@@ -1,9 +1,8 @@
-"""Brief 531 US2 — per-file size cap before reading bytes (T023, T024).
+"""Per-file size cap before reading bytes.
 
-The new behaviour: when ``LimitsPolicy.per_file_max is None``, the
-upload pipeline applies a 100 MiB ceiling and rejects the offending
-entry BEFORE calling ``ExFileObject.read()`` on it. Closes the OOM
-vector flagged by SC-003.
+When ``LimitsPolicy.per_file_max is None``, the upload pipeline applies
+a 100 MiB ceiling and rejects the offending entry BEFORE calling
+``ExFileObject.read()`` on it, closing an OOM vector.
 """
 
 from __future__ import annotations

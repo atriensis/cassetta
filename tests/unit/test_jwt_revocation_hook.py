@@ -1,4 +1,4 @@
-"""T039 — US4 regression: the revocation-check extension point (Brief 514)."""
+"""Regression: the revocation-check extension point."""
 
 from __future__ import annotations
 

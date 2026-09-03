@@ -1,6 +1,6 @@
 """Tests for agent discovery — GET /agents and cassetta_agents() MCP tool.
 
-Brief 525 — visibility filter on the agents listing.
+Visibility filter on the agents listing.
 """
 
 from __future__ import annotations
@@ -189,7 +189,7 @@ class TestAgentsEndpoint:
 
 
 # ---------------------------------------------------------------------------
-# Brief 525 — visibility filter (Phase 4 / US2).
+# Visibility filter.
 # ---------------------------------------------------------------------------
 
 

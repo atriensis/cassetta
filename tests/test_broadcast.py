@@ -1,6 +1,6 @@
 """Tests for broadcast — POST /broadcast and cassetta_broadcast() MCP tool.
 
-Brief 525 — visibility-first pipeline:
+Visibility-first pipeline:
     list_keys → visible_agents → resolver → policy.check → write
 """
 
@@ -233,13 +233,8 @@ class TestBroadcastEndpoint:
         assert resp.status_code in (307, 404, 405)
 
 
-# ---------------------------------------------------------------------------
-# Brief 525 — Phase 3 tests
-# ---------------------------------------------------------------------------
-
-
 class TestBroadcastVisibilityFirst:
-    """T010 — SC-001 anti-leak invariant."""
+    """Anti-leak invariant."""
 
     @pytest.mark.asyncio
     async def test_invisible_targets_not_in_response(
@@ -266,7 +261,7 @@ class TestBroadcastVisibilityFirst:
         assert data["delivered_to"] == ["test:bob"]
         assert data["denied"] == []
         assert data["failed"] == []
-        # SC-001: invisible labels MUST NOT appear anywhere in the response.
+        # Invisible labels MUST NOT appear anywhere in the response.
         body_text = resp.text
         assert "test:carol" not in body_text
         assert "test:dan" not in body_text
@@ -620,7 +615,7 @@ class TestMCPBroadcastVisibility:
             mcp_server.set_current_identity(None)
 
         assert "test:bob" in text
-        # SC-001 invariant — invisible names are absent.
+        # Anti-leak invariant — invisible names are absent.
         assert "test:carol" not in text
         assert "test:dan" not in text
 

@@ -6,7 +6,7 @@ _TEST_JWT_KEY_B64 = "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0"
 def _seed_required_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set the bare-minimum env that ``load_config`` requires to boot.
 
-    Brief 539: also clears ``CASSETTA_DEFAULT_TTL`` and the cap vars so a value
+    Also clears ``CASSETTA_DEFAULT_TTL`` and the cap vars so a value
     leaked by another test (historically ``test_negative_ttl_raises`` leaked
     ``DEFAULT_TTL=-1``) cannot bleed into this load and trip a SystemExit or a
     wrong default. Every test below seeds via this helper, then sets only the
@@ -160,8 +160,8 @@ class TestConfigValidation:
         assert config.keys_file == "/etc/cassetta/keys.json"
 
 
-class TestBrief531EnvVars:
-    """Brief 531 — operational-resilience env-var parsing."""
+class TestOperationalResilienceEnvVars:
+    """Operational-resilience env-var parsing."""
 
     def test_defaults_applied_when_unset(
         self,

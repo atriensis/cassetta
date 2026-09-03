@@ -1,4 +1,4 @@
-"""Brief 512 US4 — end-to-end MIME inference plumbing."""
+"""End-to-end MIME inference plumbing."""
 
 import base64
 import json
@@ -112,7 +112,7 @@ class TestMimeInferenceRoundtrip:
         mime_client: httpx.AsyncClient,
         backend: FilesystemBackend,
     ) -> None:
-        """Brief 514 inline send records server-inferred MIME on each file."""
+        """Inline send records server-inferred MIME on each file."""
         sid = await _mcp_init(mime_client)
         await _send_inline(
             mime_client,
