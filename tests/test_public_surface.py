@@ -51,7 +51,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # ``core/`` used as a repository-path prefix. The lookbehind is the whole design:
 #
-#   matches        core/src  core/tests  core/MIGRATION.md  core/docs  cd core/  `core/`
+#   matches        core/src  core/tests  core/README.md  core/docs  cd core/  `core/`
 #   not the word   open-core  build_core_defaults  CoreLimitsPolicy  "the open-core split"
 #   not a slug     cassetta-core/  github.com/ximera239/cassetta-core/
 #
@@ -61,7 +61,7 @@ _MONOREPO_PATH_RE = re.compile(r"(?<![\w-])core/")
 
 # The shipped surface: everything a reader of the public repository can see.
 _SHIPPED_ROOTS = ("src", "docs")
-_SHIPPED_FILES = ("README.md", "MIGRATION.md")
+_SHIPPED_FILES = ("README.md",)
 
 # A suffix allowlist rather than a swallowed UnicodeDecodeError: an allowlist states what is
 # covered, where a bare ``except`` silently skips a file that should have been read
@@ -127,7 +127,7 @@ def _readme_setup_example() -> str:
 
 
 def test_no_monorepo_paths_in_shipped_surfaces() -> None:
-    """No ``core/``-prefixed path in ``src/``, ``README.md``, ``MIGRATION.md`` or ``docs/``."""
+    """No ``core/``-prefixed path in ``src/``, ``README.md`` or ``docs/``."""
     scanned = _shipped_text_files()
     # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
     assert len(scanned) >= 10, f"scanned only {len(scanned)} files — the shipped roots are wrong"
@@ -141,7 +141,7 @@ def test_no_monorepo_paths_in_shipped_surfaces() -> None:
 
     assert not offenders, (
         "Monorepo paths survive on the shipped surface. This repository is the flattened "
-        "`core/` subtree — `core/src` means `src`, `core/MIGRATION.md` means `MIGRATION.md`:\n" + "\n".join(offenders)
+        "`core/` subtree — `core/src` means `src`, `core/README.md` means `README.md`:\n" + "\n".join(offenders)
     )
 
 
@@ -154,9 +154,10 @@ def test_src_does_not_name_the_private_package() -> None:
     tree names from its caller, and this guard is what keeps the name from coming back the next time
     someone wants "just one more" tree wired up here.
 
-    ``src/`` only, deliberately. ``MIGRATION.md`` names the same package legitimately — it is the
-    operator-facing chronicle of changes that happened, including changes to that package — and
-    rewriting history is not what this guard is for.
+    ``src/`` only, deliberately. This guard is about what the shipped *package* imports and
+    configures, which is a stricter rule than what prose may mention: an ADR recording why three
+    classes in the private half needed a ``kind`` marker names them because that is the decision
+    it records. Narrow the scope to code and the guard says one thing precisely.
     """
     scanned = _text_files_under("src")
     # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.

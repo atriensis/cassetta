@@ -30,8 +30,7 @@ eight that don't would be worse than a uniform convention.
 - **Clean Layer-2 logging.** The lifespan emits the active backend by reading
   `backends.claim_store.kind` (see `src/cassetta/app.py`).
 - **Observable change**: Azure now logs `claim_storage_backend=azure` (previously
-  `=blob`). Operators grepping that field must update expectations — recorded in
-  `MIGRATION.md`.
+  `=blob`). Operators grepping that field must update expectations.
 - `@runtime_checkable` + `ClassVar[str]` forced three `cloud/extensions/*` classes
   (`CloudAliasResolver`, `CloudIdentityProvider`, `TeamAccessPolicy`) to carry
   `kind = "cloud"` so they satisfy `isinstance` at runtime — three classes outside

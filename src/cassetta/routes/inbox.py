@@ -161,15 +161,15 @@ async def send_to_inbox_removed(
 
     The legacy inline send (``PUT /inbox/{agent}/{path}``) has been replaced by the
     two-phase upload flow. Send via ``POST /upload/{bundle_path}`` instead; the response
-    body's ``migration_guide`` points at the migration notes.
+    body's ``replacement`` field names that route, which is the one thing a client
+    holding an old URL can act on.
     """
     return JSONResponse(
         status_code=status.HTTP_410_GONE,
         content={
             "error": "gone",
-            "reason": "replaced_by_514",
+            "reason": "replaced_by_two_phase_upload",
             "replacement": "POST /upload/{bundle_path}",
-            "migration_guide": "MIGRATION.md#brief-514",
         },
     )
 

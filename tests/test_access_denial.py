@@ -121,7 +121,7 @@ class TestRESTDenial:
         assert resp.status_code == 410
         body = resp.json()
         assert body["error"] == "gone"
-        assert body["reason"] == "replaced_by_514"
+        assert body["reason"] == "replaced_by_two_phase_upload"
 
     @pytest.mark.asyncio
     async def test_inbox_list_denied(self, deny_client: tuple[httpx.AsyncClient, str, Any]) -> None:
