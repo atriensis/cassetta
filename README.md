@@ -59,6 +59,22 @@ curl -H "Authorization: Bearer $API_KEY" \
 # Hello, Cassetta!
 ```
 
+### Check that all of the above actually works
+
+`scripts/smoke.sh` performs exactly these steps against a container built from this
+repository — it prepares the environment file, starts the stack, waits for the container to
+become healthy, mints a key, stores a file and reads it back, asserting the bytes match. Run
+it from a clean clone:
+
+```bash
+./scripts/smoke.sh
+```
+
+It refuses to run over an existing `.env`, so it will not disturb a deployment you already
+have, and it takes the stack down again when it finishes. The same script runs once a week
+against the default branch, which is what keeps this quickstart honest: if the documented
+steps stop working, that run goes red.
+
 ### Connect an MCP agent
 
 Add Cassetta to your agent's MCP server configuration. For Claude Code, the

@@ -1,0 +1,66 @@
+# Continuous integration for every pull request, and for the default branch itself.
+#
+# This workflow carries exactly the gates a contributor already runs locally, and nothing more.
+# It is meant to be cheap enough to require on every merge, so anything that builds an image or
+# starts a stack belongs in the weekly smoke workflow instead — never here.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  # So the default branch carries its own status rather than inheriting the last pull request's.
+  push:
+    branches: [main]
+
+# The run reads this repository and writes nothing back. It needs no secret, no registry and no
+# token beyond the read-only one below.
+permissions:
+  contents: read
+
+# A force-pushed branch should not leave superseded runs burning minutes on a status nobody
+# will read.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Format, lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      # `--extra dev` is load-bearing. The gate tools live in [project.optional-dependencies],
+      # which uv treats as an extra rather than as a default dependency group, so a bare
+      # `uv sync` uninstalls pytest, ruff and mypy and every step below then fails.
+      - run: uv sync --extra dev
+
+      # One step per gate, so a failure is named in the run's step list rather than buried.
+      - run: uv run ruff format --check
+      - run: uv run ruff check
+      - run: uv run mypy
+
+  test:
+    name: Test suite
+    runs-on: ubuntu-latest
+    steps:
+      # Default fetch depth is correct: the one test that shells out to git reads `git ls-files`,
+      # which is the index and needs no history.
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - run: uv sync --extra dev
+
+      - run: uv run pytest
+
+      # Every test must also pass under a randomised ordering — interdependence between tests is
+      # a defect here, not a quirk.
+      - run: uv run pytest -p randomly

@@ -1,0 +1,94 @@
+# Weekly proof that the container this repository ships still boots and serves traffic.
+#
+# Deliberately off the merge path. Building an image and starting a stack is far too expensive to
+# run on every pull request; the change flow here is low and history is linear and squash-merged,
+# so a weekly signal is enough to identify which recent merge broke it.
+#
+# The shell lives in scripts/smoke.sh rather than in this file, so a contributor can run exactly
+# what the schedule runs against their own clone.
+
+name: Smoke
+
+on:
+  schedule:
+    # Mondays, off the hour on purpose: scheduled runs at minute zero are heavily contended on
+    # the platform and get delayed, sometimes substantially.
+    - cron: "17 6 * * 1"
+  # So the first proof that any of this works does not have to wait up to a week.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    name: Anything landed since the last green run?
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # For the Actions API query below.
+      actions: read
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The commit count below needs history to count over.
+          fetch-depth: 0
+
+      - id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          decide() {
+              printf 'should_run=%s — %s\n' "$1" "$2"
+              echo "should_run=$1" >>"$GITHUB_OUTPUT"
+          }
+
+          # Key on the last *successful* run rather than on a calendar window, so a run that
+          # fails and is fixed ten days later still measures from the right place. The run
+          # executing this query cannot match it: it is in_progress, not success.
+          query="repos/${GITHUB_REPOSITORY}/actions/workflows/smoke.yml/runs?status=success&branch=main&per_page=1"
+
+          if baseline="$(gh api "$query" --jq '.workflow_runs[0].head_sha // ""')"; then
+              api_reachable=true
+          else
+              api_reachable=false
+              baseline=""
+          fi
+
+          # Every unknown below resolves to "run". A wrong "run" costs one unnecessary run; a
+          # wrong "skip" is silent and can keep skipping forever, which is the failure nobody
+          # notices.
+          if [ "$api_reachable" = false ]; then
+              decide true "the Actions API could not be queried; running rather than skipping blind"
+          elif [ -z "$baseline" ]; then
+              decide true "no successful run of this workflow exists yet"
+          elif ! git cat-file -e "${baseline}^{commit}" 2>/dev/null; then
+              decide true "baseline ${baseline} is not in the fetched history (rewritten, or older than the checkout)"
+          else
+              landed="$(git rev-list --count "${baseline}..HEAD")"
+              if [ "$landed" -gt 0 ]; then
+                  decide true "${landed} commit(s) landed since ${baseline}"
+              else
+                  decide false "nothing has landed since ${baseline}"
+              fi
+          fi
+
+  smoke:
+    name: Container smoke
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # One step, on purpose. Dumping logs on failure and tearing the stack down live in the
+      # script's own exit trap, so a contributor running it locally gets exactly this behaviour.
+      - run: ./scripts/smoke.sh
