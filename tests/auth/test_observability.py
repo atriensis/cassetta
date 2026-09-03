@@ -1,7 +1,7 @@
 """Unit tests for the centralised auth-observability emission helper.
 
-Brief 529 — covers FR-001..009 (event/counter pairing), FR-005/006
-(identity_hint contract), and FR-012 (best-effort wrap).
+Covers event/counter pairing, the identity_hint contract, and the
+best-effort wrap.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ class TestRecordingFixture:
 
 
 class TestEmitAuthFailure:
-    """One log record + one counter increment per call (FR-001..009)."""
+    """One log record + one counter increment per call."""
 
     @pytest.mark.parametrize("source", SOURCES)
     @pytest.mark.parametrize("reason", REASONS)
@@ -143,7 +143,7 @@ class TestEmitAuthFailure:
 
 
 class TestBestEffortWrap:
-    """FR-012 — emission failures must NOT propagate to the auth path."""
+    """Emission failures must NOT propagate to the auth path."""
 
     def test_metrics_increment_raising_does_not_propagate(
         self,

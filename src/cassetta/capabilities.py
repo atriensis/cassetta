@@ -1,4 +1,4 @@
-"""Capabilities document assembly — Brief 516 Layer-2 helper.
+"""Capabilities document assembly — a Layer-2 helper.
 
 Turns a :class:`LimitsPolicy` into the six-field ``CapabilitiesDocument``
 returned by the MCP tool ``cassetta_capabilities`` and the REST endpoint
@@ -43,8 +43,7 @@ async def build_capabilities_document(
     Args:
         policy: The configured :class:`LimitsPolicy`. Its
             ``advertise_limits(ctx)`` and ``ttls(ctx)`` methods are
-            called on every invocation — no server-side memoisation
-            (FR-010).
+            called on every invocation — no server-side memoisation.
         ctx: The caller's :class:`PolicyContext`. In core the returned
             document is identity-independent; cloud policies may vary
             by tier.

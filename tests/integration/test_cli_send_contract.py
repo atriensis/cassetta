@@ -1,4 +1,4 @@
-"""Brief 548 — CLI contract tests for ``cassetta send``.
+"""CLI contract tests for ``cassetta send``.
 
 Three concerns, all *without* a live server:
 

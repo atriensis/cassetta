@@ -15,7 +15,7 @@ async def test_scenario_07_key_rotation(
     old_key = await h.setup_agent(client, host="rot", project="agent")
     old_headers = h.auth(old_key)
 
-    # 2. Send a message to own inbox before rotation (Brief 514 flow)
+    # 2. Send a message to own inbox before rotation
     await h.send_inline(
         client,
         old_key,

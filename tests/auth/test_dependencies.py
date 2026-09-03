@@ -1,8 +1,8 @@
-"""REST-path integration tests for ``auth.failure`` emission (Brief 529).
+"""REST-path integration tests for ``auth.failure`` emission.
 
-Covers User Story 1 acceptance scenarios AS-1, AS-2, AS-3, AS-8 and
-SC-004 (no raw credential leakage) using a real auth-enabled FastAPI
-``TestClient`` with a recording ``MetricsProvider``.
+Covers the failure paths and the no-raw-credential-leakage rule, using a
+real auth-enabled FastAPI ``TestClient`` with a recording
+``MetricsProvider``.
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ async def test_invalid_bearer_emits_auth_failure_rest_invalid_key(
     assert detail["identity_hint"] == bearer[:12]
     assert len(detail["identity_hint"]) <= 12
 
-    # SC-004: no record contains the raw bearer.
+    # No record contains the raw bearer.
     for r in auth_log_capture:
         rendered = f"{r.getMessage()}|{getattr(r, 'detail', '')}|{getattr(r, 'identity_label', '')}"
         assert bearer not in rendered
@@ -139,7 +139,7 @@ async def test_successful_auth_emits_no_auth_failure(
     ],
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-8 / FR-009: success path emits ZERO auth.failure events."""
+    """The success path emits ZERO auth.failure events."""
     client, setup_token, metrics = auth_metrics_client
 
     response = await client.post(

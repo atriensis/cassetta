@@ -1,7 +1,7 @@
 """T003 — unit tests for ``ClaimStorage`` filesystem operations.
 
-Brief 517: parametrized via ``claim_storage_factory`` so cloud can
-plug in an Azurite-backed axis without duplicating the test bodies.
+Parametrized via ``claim_storage_factory`` so a downstream distribution
+can plug in its own axis without duplicating the test bodies.
 Core runs the filesystem axis only (the fixture's default param).
 """
 
@@ -160,10 +160,10 @@ async def test_mark_fetched_is_idempotent(claim_storage_factory) -> None:
 
 @pytest.mark.asyncio
 async def test_mark_fetched_missing_raises(claim_storage_factory) -> None:
-    """FR-014: Protocol contract allows FileNotFoundError or a
-    backend-native not-found exception. Core runs filesystem; cloud
-    overrides the fixture and the azure axis raises
-    ``ResourceNotFoundError`` — caught generically here so the
+    """The Protocol contract allows FileNotFoundError or a
+    backend-native not-found exception. Core runs filesystem; a
+    downstream distribution overrides the fixture and its axis raises
+    its own not-found error — caught generically here so the
     assertion is axis-agnostic.
     """
     store = await claim_storage_factory()

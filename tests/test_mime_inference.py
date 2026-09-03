@@ -1,4 +1,4 @@
-"""Tests for MIME inference helper (Brief 512)."""
+"""Tests for MIME inference helper."""
 
 import logging
 from collections.abc import Iterator

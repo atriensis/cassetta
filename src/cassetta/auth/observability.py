@@ -1,18 +1,18 @@
-"""Centralised emission helper for ``auth.failure`` events (Brief 529).
+"""Centralised emission helper for ``auth.failure`` events.
 
 Single function ``emit_auth_failure`` invoked from every authentication
 401/403 site (REST, MCP, download). Wraps both the structured-log call
 and the metrics-counter increment in best-effort exception handling so
 that observability faults never mask the auth path's response — the
 401/403 must reach the client even if the metrics provider or log
-handler raises (FR-012 / Brief 529).
+handler raises.
 
-Brief 533 (FR-063) extends the same independent-best-effort posture to
-all other counter call sites via :func:`cassetta.structured_log.safe_emit`.
-This helper PRE-DATES ``safe_emit`` and is the auth-specific specialisation
-of the same pattern; the public fallback string
-``"auth observability emission failed"`` is regression-locked by Brief 529's
-test suite (SC-011 / FR-067) and therefore cannot be replaced by
+:func:`cassetta.structured_log.safe_emit` extends the same
+independent-best-effort posture to all other counter call sites. This helper
+PRE-DATES ``safe_emit`` and is the auth-specific specialisation of the same
+pattern; the public fallback string
+``"auth observability emission failed"`` is regression-locked by this
+module's own test suite and therefore cannot be replaced by
 ``safe_emit``'s per-step fallback strings ``"struct_log failed for ..."`` /
 ``"metrics.increment failed for ..."``. The audit grep
 (``test_audit_no_raw_metric_calls``) explicitly EXEMPTS this file for that
@@ -56,7 +56,7 @@ def emit_auth_failure(
     fallback also raises (catastrophic broken-logging case), the helper
     swallows so the caller's 401/403 is preserved.
     """
-    assert identity_hint is None or len(identity_hint) <= 12, "identity_hint must be <= 12 chars (FR-006)"
+    assert identity_hint is None or len(identity_hint) <= 12, "identity_hint must be <= 12 chars"
     try:
         struct_log(
             _logger,

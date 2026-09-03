@@ -1,8 +1,8 @@
-"""Reference-mode download helpers (Brief 515).
+"""Reference-mode download helpers.
 
 Shared by MCP pick/get and the REST read routes so that the JWT-mint +
 claim-sidecar-issue + envelope-build sequence has one source of truth
-and the FR-011a strict ordering is encoded once.
+and its strict ordering is encoded once.
 
 - :func:`build_reference_payload_for_inbox` — used by inbox pick and
   inbox GET. Writes a claim sidecar (pick only — callers decide whether
@@ -10,13 +10,13 @@ and the FR-011a strict ordering is encoded once.
   (done upstream) → build claim body + mint JWT in memory → fsync
   sidecar (if inbox + pick) → return credential. Credential never
   returned if sidecar write fails.
-- :func:`build_reference_payload_for_store` — store get (no sidecar;
-  FR-010a). Mints the credential, returns the envelope immediately.
+- :func:`build_reference_payload_for_store` — store get (no sidecar).
+  Mints the credential, returns the envelope immediately.
 
 Callers are responsible for:
 - invoking this helper ONLY when the policy says ``mode: "reference"``
 - mapping :class:`BundleClaimedError` → the same "not found" error
-  surface as a missing bundle (FR-011a step 6)
+  surface as a missing bundle
 - emitting ``download_mode_decision`` BEFORE this helper (the policy
   decides, not us)
 """
@@ -104,7 +104,7 @@ async def build_reference_payload_for_inbox(
     """Mint download JWT, (optionally) persist claim sidecar, build envelope.
 
     When ``write_claim`` is True (pick path), the claim sidecar MUST be
-    durably on disk before the credential is returned (FR-011a). When
+    durably on disk before the credential is returned. When
     False (REST inbox GET), no sidecar is written — the credential's
     ``exp`` is the only time bound.
 
@@ -174,7 +174,7 @@ def build_reference_payload_for_store(
     meta: dict[str, Any],
     recipient: str,
 ) -> ReferenceEnvelope:
-    """Mint download JWT + build envelope. No claim sidecar (FR-010a)."""
+    """Mint download JWT + build envelope. No claim sidecar."""
     ttl_s = _download_ttl(policy, identity)
     now_epoch = int(time.time())
     claims = _build_claims(

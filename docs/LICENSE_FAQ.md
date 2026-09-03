@@ -6,8 +6,7 @@ explains it in everyday terms.
 
 **This FAQ is a convenience summary, not legal advice. The authoritative text is
 [`LICENSE`](../LICENSE).** If anything here and the licence disagree, the
-licence wins. (`cloud/` is separately, proprietarily licensed — see `cloud/LICENSE`
-— and is *not* covered by this FAQ.)
+licence wins.
 
 ## Can my company use Cassetta for free?
 

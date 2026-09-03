@@ -1,4 +1,4 @@
-"""Shared fixtures for ``tests/auth/`` (Brief 529)."""
+"""Shared fixtures for ``tests/auth/``."""
 
 from __future__ import annotations
 

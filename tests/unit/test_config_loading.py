@@ -1,6 +1,6 @@
-"""T004 — failing-first tests for Brief 514 config additions.
+"""Tests for the config knobs the upload flow introduced.
 
-Covers the new config knobs introduced by the upload flow:
+Covers:
 
 - ``CASSETTA_JWT_KEY`` / ``CASSETTA_JWT_KEY_FILE`` — primary signing key.
 - ``CASSETTA_JWT_KEY_SECONDARY`` / ``CASSETTA_JWT_KEY_SECONDARY_FILE`` — verify-only secondary key.

@@ -37,7 +37,7 @@ async def seed_store_bundle(
 ) -> str:
     """Populate a store bundle directly via the backend (bypasses policy caps).
 
-    Used by Brief 515 tests that need an over-threshold bundle in the store
+    Used by reference-mode tests that need an over-threshold bundle in the store
     namespace without going through `cassetta_put` (which would fail the
     `max_inline_size` check).
     """
@@ -82,7 +82,7 @@ async def seed_inbox_bundle(
 ) -> str:
     """Populate an inbox bundle directly via the backend.
 
-    Replaces the legacy PUT/MCP send path for test setup after Brief 514.
+    Replaces the legacy PUT/MCP send path for test setup.
     Returns the bundle_id.
     """
     if (content is None) == (files is None):
@@ -231,7 +231,7 @@ class CoreHelpers:
         name: str | None = None,
         sid: str | None = None,
     ) -> str:
-        """Brief 514 two-phase inline send helper.
+        """Two-phase inline send helper.
 
         Returns the bundle_id. Replaces the removed ``PUT /inbox/{agent}/{path}``.
         """

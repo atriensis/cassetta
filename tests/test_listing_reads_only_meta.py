@@ -1,4 +1,4 @@
-"""Brief 512 SC-005 audit — listing never reads file bytes.
+"""Audit: listing never reads file bytes.
 
 Listings must be answerable from ``meta.json`` alone. A spy wraps
 ``FilesystemBackend.open_bundle_file_read`` and asserts it is never

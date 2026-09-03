@@ -1,4 +1,4 @@
-"""SC-007 — runtime Protocol conformance for the filesystem impl."""
+"""Runtime Protocol conformance for the filesystem impl."""
 
 from __future__ import annotations
 

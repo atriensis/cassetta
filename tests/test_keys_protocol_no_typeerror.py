@@ -1,9 +1,9 @@
-"""Brief 535 Fix 5 — ``KeyStoreProtocol.create_key`` accepts ``user_id``
-unconditionally and both backends conform to the unified signature.
+"""``KeyStoreProtocol.create_key`` accepts ``user_id`` unconditionally
+and both backends conform to the unified signature.
 
 The companion AST regression lock that forbids ``try/except TypeError``
 in ``routes/keys.py`` lives in ``test_layer2_uses_protocol_annotations.py``
-where the Brief 518-520 layer-2 invariants already accumulate.
+where the layer-2 invariants already accumulate.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from cassetta.protocols.keystore import KeyStoreProtocol
 
 
 def test_keystore_protocol_signature() -> None:
-    """FR-016 — ``user_id`` is keyword-only with default ``None`` on the
+    """``user_id`` is keyword-only with default ``None`` on the
     Protocol method."""
     sig = inspect.signature(KeyStoreProtocol.create_key)
     params = sig.parameters
@@ -34,7 +34,7 @@ def test_keystore_protocol_signature() -> None:
 
 @pytest.mark.asyncio
 async def test_file_key_store_accepts_user_id_kwarg() -> None:
-    """FR-016 — ``FileKeyStore.create_key`` accepts ``user_id`` without
+    """``FileKeyStore.create_key`` accepts ``user_id`` without
     raising ``TypeError``; binding is silently ignored (single-user
     backend)."""
     with tempfile.TemporaryDirectory() as tmpdir:

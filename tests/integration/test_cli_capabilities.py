@@ -1,6 +1,6 @@
 """Integration tests for the ``cassetta capabilities`` CLI subcommand (US4).
 
-Covers FR-016, contracts/capabilities-cli.md (output format + exit codes).
+Covers contracts/capabilities-cli.md (output format + exit codes).
 """
 
 from __future__ import annotations

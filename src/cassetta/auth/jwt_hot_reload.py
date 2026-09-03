@@ -1,4 +1,4 @@
-"""JWT primary-key hot-reload (Brief 531 US3).
+"""JWT primary-key hot-reload.
 
 Lives at ``app.state.jwt_keys`` as a mutable :class:`JWTKeySlots`
 holder. Initialised from boot-time ``config.jwt_primary_key`` /
@@ -55,8 +55,8 @@ def _kid_prefix(key_bytes: bytes) -> str:
 def _resolve_secondary(slots: JWTKeySlots) -> bytes | None:
     """Return the active secondary, lazily dropping it past the overlap TTL.
 
-    FR-037b — "lazy drop". FR-037c — read both fields once at entry so a
-    concurrent SIGHUP cannot make the decision torn-read inconsistent.
+    A lazy drop: read both fields once at entry so a concurrent SIGHUP
+    cannot make the decision torn-read inconsistent.
     """
     last = slots.last_rotation_ts
     ttl = slots.overlap_ttl_seconds
@@ -178,7 +178,7 @@ async def _handle_rotation(app: FastAPI) -> None:
     lock: asyncio.Lock = app.state.jwt_keys_lock
     async with lock:
         if new_key == slots.primary:
-            return  # FR-034: byte-identical rotation is a no-op.
+            return  # Byte-identical rotation is a no-op.
         previous_primary = slots.primary
         slots.primary = new_key
         slots.secondary = previous_primary

@@ -67,7 +67,7 @@ _metrics: MetricsProvider | None = None
 _limits_policy: LimitsPolicy | None = None
 _reference_transport: ReferenceTransport | None = None
 _claim_store: ClaimStorage | None = None
-# Brief 531: shared reference to the runtime-mutable JWT key slots.
+# Shared reference to the runtime-mutable JWT key slots.
 # Mutated in place by the SIGHUP handler — reads here pick up the new
 # primary/secondary on the very next tool call without a re-configure.
 _jwt_keys: JWTKeySlots | None = None
@@ -158,8 +158,8 @@ async def _enforce(resource: str, action: str) -> None:
         identity = Identity(label="dev", extra={"dev": True})
     decision = await policy.check(identity, resource, action)
     if not decision:
-        # Brief 533 FR-007 / FR-007a / FR-022: paired policy.denied event +
-        # counter; policy_kind derived from policy.kind so cloud team-policy
+        # Paired policy.denied event + counter;
+        # policy_kind derived from policy.kind so cloud team-policy
         # denials get policy_kind=cloud (field) / =team (counter tag).
         _kind = getattr(policy, "kind", "core")
         _field_kind = _kind if _kind in ("core", "cloud") else "core"
@@ -392,7 +392,7 @@ async def _write_bundle(
 # === Tool implementations ===
 
 
-# ---- Brief 514: send_init + send_inline ------------------------------------
+# ---- send_init + send_inline -----------------------------------------------
 
 
 async def _cassetta_send_init(
@@ -758,7 +758,7 @@ async def _cassetta_get(path: str) -> str:
         )
         return json.dumps(ref_envelope)
 
-    # Inline path — unified envelope across single + multi (FR-002a).
+    # Inline path — unified envelope across single + multi.
     payloads = await _collect_bundle_files(backend, bundle_path, records)
     _get_metrics().increment("cassetta.files.bytes", value=total_size, tags={"action": "get"})
     inline_envelope = build_inline_envelope(meta, payloads)
@@ -852,7 +852,7 @@ async def _cassetta_inbox(agent: str = "", prefix: str = "") -> str:
     if prefix:
         scan_prefix = f"{INBOX_NAMESPACE}/{target}/{prefix}"
 
-    # Brief 515: hide bundles with an active reference-mode claim (FR-013).
+    # Hide bundles with an active reference-mode claim.
     hidden: set[str] = set()
     if _claim_store is not None:
         policy = _get_limits_policy()
@@ -979,7 +979,7 @@ async def _cassetta_pick(path: str) -> str:
     )
 
     if mode == "reference":
-        # FR-011a ordering invariant — credential returned ONLY after
+        # Ordering invariant — credential returned ONLY after
         # claim sidecar is fsync'd on disk. BundleClaimedError →
         # "File not found" (same surface as a missing bundle).
         assert _reference_transport is not None, "MCP reference_transport not configured"
@@ -1018,7 +1018,7 @@ async def _cassetta_pick(path: str) -> str:
         _get_metrics().increment("cassetta.inbox.operations", tags={"action": "pick"})
         return json.dumps(ref_envelope)
 
-    # Inline path — consume + delete, unified envelope (FR-002a).
+    # Inline path — consume + delete, unified envelope.
     payloads = await _collect_bundle_files(backend, bundle_path, records)
 
     try:
@@ -1062,7 +1062,7 @@ async def _cassetta_capabilities() -> str:
         PolicyContext(identity=identity),
         via="mcp",
     )
-    # Brief 533 FR-008: capability query counter (via=mcp).
+    # Capability query counter (via=mcp).
     safe_emit(
         metric_name="cassetta.capabilities.queries",
         metric_tags={"via": "mcp"},
@@ -1169,7 +1169,7 @@ async def _cassetta_broadcast(
     *,
     ctx: Context[Any, Any, Any] | None = None,
 ) -> str:
-    """Send content to all visible recipients (Brief 525 visibility-first)."""
+    """Send content to all visible recipients."""
     backend = _get_backend()
     config = _get_config()
 
@@ -1180,7 +1180,7 @@ async def _cassetta_broadcast(
     if _alias_resolver is None:
         raise ValueError("Alias resolver not configured")
 
-    # Brief 531: per-tool-call rate limiting (FR-013a). The MCP transport
+    # Per-tool-call rate limiting. The MCP transport
     # multiplexes many tool calls inside one HTTP request, so the
     # decorator/middleware level cannot enforce per-call. Imperative
     # check shares the same `route=broadcast` bucket as REST.
@@ -1233,7 +1233,7 @@ async def _cassetta_broadcast(
     keys = await _key_store.list_keys()
     candidate_labels = [k.label for k in keys if k.is_active and k.label != sender]
 
-    # Brief 531 FR-007: fan-out cap rejection BEFORE any storage write.
+    # Fan-out cap rejection BEFORE any storage write.
     try:
         _check_fanout_cap(
             target_count=len(candidate_labels),
@@ -1296,9 +1296,9 @@ async def _cassetta_broadcast(
             continue
         if not allowed:
             denied_count += 1
-            # Brief 533 FR-007a / FR-022: policy_kind derived from
-            # access_policy.kind so cloud team-policy denials are tagged
-            # policy_kind=cloud (field) / =team (counter tag).
+            # policy_kind derived from access_policy.kind so cloud
+            # team-policy denials are tagged policy_kind=cloud (field)
+            # / =team (counter tag).
             _kind = getattr(_access_policy, "kind", "core")
             _field_kind = _kind if _kind in ("core", "cloud") else "core"
             _tag_kind = "team" if _field_kind == "cloud" else "core"

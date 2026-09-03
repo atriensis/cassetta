@@ -160,7 +160,7 @@ async def broadcast(
     per-IP broadcast rate limit and the fan-out cap on the number of recipients.
     """
     config = _get_config(request)
-    # Brief 531: per-IP rate limit (FR-013, shared budget with MCP).
+    # Per-IP rate limit, sharing one budget with MCP.
     # The unified RateLimitExceeded handler at app.py emits the 429
     # envelope and increments cassetta.rate_limit.hits{route=broadcast}.
     check_rate_limit_imperative(request, config.rate_limit_broadcast)
@@ -226,7 +226,7 @@ async def broadcast(
     keys = await key_store.list_keys()
     candidate_labels = [k.label for k in keys if k.is_active and k.label != sender]
 
-    # 2a) Fan-out cap — Brief 531 FR-007. Reject before any storage
+    # 2a) Fan-out cap. Reject before any storage
     # write. The handler at app.py emits the structured 429 envelope
     # and increments the rate-limit counter with reason=fanout_cap.
     _check_fanout_cap(
@@ -287,9 +287,9 @@ async def broadcast(
             continue
         if not allowed:
             denied.append({"target": label, "reason": "access_denied"})
-            # Brief 533 FR-007a / FR-022: policy_kind derived from
-            # access_policy.kind so cloud team-policy denials are tagged
-            # policy_kind=cloud (field) / =team (counter tag).
+            # policy_kind derived from access_policy.kind so cloud
+            # team-policy denials are tagged policy_kind=cloud (field)
+            # / =team (counter tag).
             _kind = getattr(access_policy, "kind", "core")
             _field_kind = _kind if _kind in ("core", "cloud") else "core"
             _tag_kind = "team" if _field_kind == "cloud" else "core"

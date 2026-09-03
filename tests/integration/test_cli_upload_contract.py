@@ -1,4 +1,4 @@
-"""T028 — CLI contract tests for ``cassetta upload`` (Brief 514).
+"""CLI contract tests for ``cassetta upload``.
 
 We spawn the installed console entry point (`cassetta upload`) in a
 subprocess and assert that:

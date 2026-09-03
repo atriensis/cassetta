@@ -1,6 +1,6 @@
-"""T009 — failing-first tests for manifest validation (Brief 514 FR-001a).
+"""Tests for manifest validation.
 
-Covers the rejection catalogue from ``data-model.md §8``:
+Covers the rejection catalogue:
 - ``empty``, ``absolute``, ``traversal``, ``invalid_char`` — per-entry path checks
 - ``reserved_name`` — ``meta.json`` is the sidecar
 - ``duplicate`` — two entries share a ``name``

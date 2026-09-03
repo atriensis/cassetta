@@ -1,4 +1,4 @@
-"""T021 — contract test for `cassetta_send_init` MCP tool (Brief 514).
+"""Contract test for `cassetta_send_init` MCP tool.
 
 Asserts the response shape matches ``contracts/mcp-send-init.md`` for
 both the inline and batch branches: field names, discriminant, ISO-8601

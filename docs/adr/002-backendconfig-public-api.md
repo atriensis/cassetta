@@ -1,6 +1,6 @@
 # ADR 002 — `BackendConfig` as the Public Composition API
 
-**Status**: Accepted — Brief 520, shipped **v0.12.0**
+**Status**: Accepted — shipped **v0.12.0**
 
 ## Problem
 

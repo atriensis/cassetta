@@ -113,7 +113,7 @@ class TestListFiles:
 
     async def test_list_skips_foreign_objects(self, client: httpx.AsyncClient, storage_dir: str) -> None:
         """Foreign (non-bundle) objects in the store namespace are silently
-        skipped from listings per brief 512 FR-020."""
+        skipped from listings."""
         import os
 
         # Plant a stray file directly in the store/ namespace root

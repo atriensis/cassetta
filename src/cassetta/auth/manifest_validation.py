@@ -1,4 +1,4 @@
-"""Manifest-level validation (Brief 514 FR-001a).
+"""Manifest-level validation.
 
 Complements the per-path checks in :mod:`cassetta.path_validation` with
 collection-level checks required by the upload flow:

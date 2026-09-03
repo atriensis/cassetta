@@ -159,9 +159,9 @@ async def test_mcp_dev_mode_bypasses_auth() -> None:
             assert response.status_code != 401
 
 
-# Brief 529 — `auth.failure` emission on the MCP path.
-# US1 AS-4: missing Bearer prefix → reason=missing_bearer.
-# US1 AS-5: invalid bearer → reason=invalid_key, identity_hint=first 12 chars.
+# `auth.failure` emission on the MCP path:
+# missing Bearer prefix → reason=missing_bearer.
+# invalid bearer → reason=invalid_key, identity_hint=first 12 chars.
 
 
 def _failure_records(

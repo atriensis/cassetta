@@ -195,7 +195,7 @@ class TestToolDiscovery:
         assert "content" in tools["cassetta_put"]["inputSchema"]["properties"]
         assert "path" in tools["cassetta_get"]["inputSchema"]["properties"]
         assert "prefix" in tools["cassetta_list"]["inputSchema"]["properties"]
-        # Inbox tool schemas (Brief 514: two-phase send replaces cassetta_send)
+        # Inbox tool schemas (two-phase send)
         assert "to" in tools["cassetta_send_init"]["inputSchema"]["properties"]
         assert "manifest" in tools["cassetta_send_init"]["inputSchema"]["properties"]
         assert "token" in tools["cassetta_send_inline"]["inputSchema"]["properties"]
@@ -204,7 +204,7 @@ class TestToolDiscovery:
 
     @pytest.mark.asyncio
     async def test_send_tools_expose_typed_schemas(self, mcp_app: tuple) -> None:
-        """Brief 541: send_init/send_inline advertise typed payloads, not open objects."""
+        """send_init/send_inline advertise typed payloads, not open objects."""
         _app, client, _backend = mcp_app
         sid = await _init(client)
 
@@ -226,7 +226,7 @@ class TestToolDiscovery:
         assert "name" in mfile["properties"]
         assert "size" in mfile["properties"]
         assert set(mfile["required"]) >= {"name", "size"}
-        # FR-002: the size field documents the decoded-byte semantics.
+        # The size field documents the decoded-byte semantics.
         assert "decod" in (mfile["properties"]["size"].get("description") or "").lower()
         # Not an open/untyped object.
         assert mfile.get("additionalProperties") is not True
@@ -369,7 +369,7 @@ class TestCassettaGet:
         mcp_storage_dir: str,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # Brief 539: set env via monkeypatch (auto-restored) and provide
+        # Set env via monkeypatch (auto-restored) and provide
         # CASSETTA_MCP_ALLOWED_HOSTS ourselves — this test used to free-ride on
         # a value leaked by an earlier test, so it 421'd under isolation /
         # natural order once the env-guard stopped the leak (Principle IX).
@@ -454,7 +454,7 @@ class TestCassettaList:
         mcp_storage_dir: str,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # Brief 539: self-sufficient env (see test_get_expired_file_returns_error).
+        # Self-sufficient env (see test_get_expired_file_returns_error).
         monkeypatch.setenv("CASSETTA_SETUP_TOKEN", "")
         monkeypatch.setenv("CASSETTA_STORAGE_PATH", mcp_storage_dir)
         monkeypatch.setenv("CASSETTA_DEFAULT_TTL", "1")

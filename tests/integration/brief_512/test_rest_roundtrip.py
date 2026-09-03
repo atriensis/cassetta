@@ -1,4 +1,4 @@
-"""Brief 512 US3 — REST round-trip send/pick/get/delete on the new layout."""
+"""REST round-trip send/pick/get/delete on the new layout."""
 
 import io
 import uuid
@@ -72,7 +72,7 @@ class TestInboxRoundtrip:
         backend: FilesystemBackend,
     ) -> None:
         client = rest_client
-        # Seed directly — legacy PUT is gone in Brief 514.
+        # Seed directly — the legacy PUT endpoint is gone.
         transport = client._transport  # type: ignore[attr-defined]
         live_backend = transport.app.state.backends.backend  # type: ignore[attr-defined]
         bundle_id = await seed_inbox_bundle(

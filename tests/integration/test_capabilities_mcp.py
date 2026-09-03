@@ -1,8 +1,6 @@
-"""Integration tests for the ``cassetta_capabilities`` MCP tool (Brief 516 US1).
+"""Integration tests for the ``cassetta_capabilities`` MCP tool.
 
-Covers FR-001, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009,
-FR-010, FR-011, FR-019, SC-003, SC-004, SC-006. Uses the same harness
-pattern as ``test_peek_mcp.py``.
+Uses the same harness pattern as ``test_peek_mcp.py``.
 """
 
 from __future__ import annotations
@@ -191,7 +189,7 @@ async def test_mcp_capabilities_matches_schema_and_config(
     assert result.get("isError") is not True
     doc = json.loads(result["content"][0]["text"])
 
-    # FR-001 / FR-019: six top-level keys, schema_version == 1.
+    # Six top-level keys, schema_version == 1.
     assert set(doc.keys()) == {
         "schema_version",
         "server_version",
@@ -202,21 +200,21 @@ async def test_mcp_capabilities_matches_schema_and_config(
     }
     assert doc["schema_version"] == 1
 
-    # FR-006: server_version matches package version.
+    # server_version matches package version.
     assert doc["server_version"] == _cassetta.__version__
 
-    # FR-007 / FR-008: exact lists.
+    # Exact lists.
     assert doc["supported_modes"] == ["inline", "batch", "reference"]
     assert doc["features"] == ["peek", "batch_upload", "reference_download", "rest_send_init"]
 
-    # FR-003: CASSETTA_PER_FILE_MAX=1024 propagated; others null or default.
+    # CASSETTA_PER_FILE_MAX=1024 propagated; others null or default.
     assert doc["limits"]["per_file_max"] == 1024
     assert doc["limits"]["per_bundle_total_max"] is None
     # per_bundle_file_count_max and max_inline_size have LimitsConfig defaults.
     assert doc["limits"]["per_bundle_file_count_max"] == 25
     assert doc["limits"]["max_inline_size"] == 102400
 
-    # FR-004: ttls block has four integer fields.
+    # The ttls block has four integer fields.
     for key in (
         "upload_token_ttl",
         "download_claim_ttl",
@@ -232,7 +230,7 @@ async def test_mcp_capabilities_100_calls_identical_no_info_logs_no_side_effects
     log_capture: _EventHandler,
     cap_storage_dir: str,
 ) -> None:
-    """FR-009, FR-011, SC-003, SC-004, SC-006 — all rolled into one run."""
+    """Byte-identity, silence, no storage touch, and latency — one run."""
     _app, client, _backend = mcp_cap
     sid = await _init(client)
 
@@ -247,14 +245,14 @@ async def test_mcp_capabilities_100_calls_identical_no_info_logs_no_side_effects
         text = result["content"][0]["text"]
         if first_text is None:
             first_text = text
-        # FR-009: byte-identical across 100 calls.
+        # Byte-identical across 100 calls.
         assert text == first_text
 
-    # SC-004: no storage touch.
+    # No storage touch.
     after_hash = _snapshot_dir(cap_storage_dir)
     assert after_hash == before_hash
 
-    # SC-006 + FR-011: zero INFO+ logs for capabilities.queried calls.
+    # Zero INFO+ logs for capabilities.queried calls.
     info_plus = [r for r in log_capture.records if r.level >= logging.INFO]
     # Filter to events originating from our 100 calls — any capabilities.queried
     # must be DEBUG; other unrelated INFO events (e.g. startup) don't count.
@@ -268,7 +266,7 @@ async def test_mcp_capabilities_100_calls_identical_no_info_logs_no_side_effects
         assert r.detail == {"via": "mcp"}
         assert r.level == logging.DEBUG
 
-    # SC-003: p99 < 50 ms.
+    # p99 < 50 ms.
     durations_ns.sort()
     p99 = durations_ns[int(len(durations_ns) * 0.99) - 1]
     p99_ms = p99 / 1_000_000
@@ -281,7 +279,7 @@ async def test_mcp_capabilities_all_unlimited(
     cap_storage_dir: str,
     log_capture: _EventHandler,
 ) -> None:
-    """FR-003 — explicit null caps surface as null."""
+    """Explicit null caps surface as null."""
     # Override the per-file cap the fixture set; also null the defaults.
     os.environ["CASSETTA_PER_FILE_MAX"] = ""
     os.environ["CASSETTA_PER_BUNDLE_TOTAL_MAX"] = ""

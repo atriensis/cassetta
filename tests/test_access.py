@@ -54,7 +54,7 @@ class TestDefaultAccessPolicy:
 
 
 class TestVisibleAgentsProtocolConformance:
-    """Brief 525 — AccessPolicy gains visible_agents method (T002)."""
+    """AccessPolicy gains a visible_agents method."""
 
     def test_default_access_policy_satisfies_extended_protocol(self) -> None:
         # After T006 lands, DefaultAccessPolicy must still satisfy the

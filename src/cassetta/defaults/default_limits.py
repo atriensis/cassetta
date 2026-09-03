@@ -27,9 +27,9 @@ from cassetta.structured_log import struct_log
 
 logger = logging.getLogger("cassetta")
 
-# Brief 531 FR-020 / FR-025: when ``LimitsPolicy.per_file_max is None``
-# the upload pipeline still applies a 100 MiB ceiling. Closes the OOM
-# vector flagged by SC-003 — undeclared (None) used to mean "no limit".
+# When ``LimitsPolicy.per_file_max is None`` the upload pipeline still
+# applies a 100 MiB ceiling. Closes the OOM vector left by undeclared
+# (None) having meant "no limit".
 DEFAULT_PER_FILE_MAX = 100 * 1024 * 1024
 
 
@@ -100,7 +100,7 @@ class CoreLimitsPolicy:
         ctx: PolicyContext,
         manifest: UploadManifest,
     ) -> UploadDecision:
-        # Delegates to the shared pure helper (FR-020) so server and
+        # Delegates to the shared pure helper so server and
         # client pre-check paths share a single source of truth.
         return check_manifest_against_limits(manifest, self.advertise_limits(ctx))
 
@@ -147,9 +147,9 @@ class CoreLimitsPolicy:
     async def advertise_features(self, ctx: PolicyContext) -> list[str]:
         """Return the full canonical feature tuple unmodified.
 
-        Brief 535 Fix 3 — core deployments have no per-identity feature
-        gating. Cloud wraps this method to subtract features denied by
-        the active ``AccessPolicy``.
+        Core deployments have no per-identity feature gating. A
+        downstream policy wraps this method to subtract features denied
+        by the active ``AccessPolicy``.
         """
         from cassetta.capabilities import FEATURES
 

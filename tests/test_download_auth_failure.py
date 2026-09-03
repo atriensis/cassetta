@@ -1,4 +1,4 @@
-"""Download-path integration tests for ``auth.failure`` emission (Brief 529).
+"""Download-path integration tests for ``auth.failure`` emission.
 
 Covers User Story 1 acceptance scenarios AS-6 (expired JWT) and AS-7
 (invalid signature). Also pins the rename of

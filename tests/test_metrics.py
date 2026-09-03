@@ -208,7 +208,7 @@ class TestInboxMetrics:
 
     @pytest.mark.asyncio
     async def test_inbox_send_metrics(self, metrics_client):
-        """Brief 514: inbox send metric is emitted by ``cassetta_send_init``."""
+        """The inbox send metric is emitted by ``cassetta_send_init``."""
         import json
 
         client, metrics = metrics_client

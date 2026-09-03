@@ -168,7 +168,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "jwt_key_overlap_ttl": config.jwt_key_overlap_ttl,
         },
     )
-    # Brief 531: JWT primary-key hot-reload + boot-time validation. Order
+    # JWT primary-key hot-reload + boot-time validation. Order
     # matters — the validation warning must surface immediately after
     # ``config_loaded`` so dashboards see them in operator-natural order.
     init_jwt_hot_reload(app)
@@ -183,10 +183,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if hasattr(key_store, "initialize"):
         await key_store.initialize()
 
-    # Brief 533 FR-026: claim_storage_backend emission via safe_emit so the
-    # record parses as JSON under CASSETTA_LOG_FORMAT=json. The cloud-side
-    # duplicate was deleted per FR-025 — this is now the single canonical
-    # emission.
+    # claim_storage_backend emission via safe_emit so the record parses as
+    # JSON under CASSETTA_LOG_FORMAT=json. This is the single canonical
+    # emission — a duplicate on the downstream side was removed.
     safe_emit(
         logger,
         logging.INFO,
@@ -263,10 +262,10 @@ def create_app(
     app.state.backends = backends
     app.state.dev_mode = config.dev_mode
     app.state.setup_token = config.setup_token
-    # Brief 531: shared limiter instance + decorator-friendly state hook.
+    # Shared limiter instance + decorator-friendly state hook.
     # slowapi looks for ``app.state.limiter`` when the decorator runs.
     app.state.limiter = limiter
-    # Brief 531: populate the runtime JWT key holder so verify-call
+    # Populate the runtime JWT key holder so verify-call
     # sites work even when the test client bypasses lifespan.
     init_jwt_key_slots(app)
 

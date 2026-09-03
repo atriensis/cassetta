@@ -66,7 +66,7 @@ def _get_transport(request: Request) -> ReferenceTransport:
 
 
 def _policy_kind_fields(policy: AccessPolicy) -> tuple[str, str]:
-    """Brief 533 FR-022 — see ``routes/inbox.py:_policy_kind_fields``."""
+    """See ``routes/inbox.py:_policy_kind_fields``."""
     kind = getattr(policy, "kind", "core")
     field = kind if kind in ("core", "cloud") else "core"
     tag = "team" if field == "cloud" else "core"
@@ -82,8 +82,8 @@ async def _enforce(
 ) -> None:
     policy = _get_policy(request)
     if not await policy.check(identity, resource, action):
-        # Brief 533 FR-007a / FR-022 / FR-063: paired event + counter via
-        # safe_emit; policy_kind derived from policy.kind.
+        # Paired event + counter via safe_emit;
+        # policy_kind derived from policy.kind.
         field_kind, tag_kind = _policy_kind_fields(policy)
         safe_emit(
             logger,

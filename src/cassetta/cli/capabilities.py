@@ -1,4 +1,4 @@
-"""``cassetta capabilities`` subcommand (Brief 516).
+"""``cassetta capabilities`` subcommand.
 
 One-shot ``GET {url}/capabilities`` that pretty-prints the server's
 advertised capabilities document: version, supported modes, limits,

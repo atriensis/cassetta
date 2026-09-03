@@ -12,6 +12,9 @@ venv/
 .vscode/
 *.swp
 
+# Atomic writes: tooling that writes <path>.tmp then renames it into place
+*.tmp
+
 # Testing & Linting
 .mypy_cache/
 .ruff_cache/

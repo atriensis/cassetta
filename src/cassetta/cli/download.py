@@ -1,4 +1,4 @@
-"""``cassetta download`` subcommand (Brief 515).
+"""``cassetta download`` subcommand.
 
 Takes a reference-envelope JSON manifest (from ``cassetta_pick``/
 ``cassetta_get``) and streams every file's bytes into ``--out/<name>``

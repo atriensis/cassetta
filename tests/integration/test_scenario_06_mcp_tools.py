@@ -32,7 +32,7 @@ async def test_scenario_06_mcp_tools(
     assert envelope["mode"] == "inline"
     assert envelope["files"][0]["content"] == "mcp data"
 
-    # 5. Send via the Brief 514 two-phase flow to own inbox
+    # 5. Send via the two-phase flow to own inbox
     await h.send_inline(
         client,
         api_key,

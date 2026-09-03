@@ -1,4 +1,4 @@
-"""Brief 535 Fix 3 — ``LimitsPolicy.advertise_features`` produces the
+"""``LimitsPolicy.advertise_features`` produces the
 ``features`` list in the capabilities document.
 
 ``CoreLimitsPolicy`` returns the full canonical tuple unmodified. The

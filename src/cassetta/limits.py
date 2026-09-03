@@ -1,4 +1,4 @@
-"""Public limits utilities — Brief 516.
+"""Public limits utilities.
 
 Single source of truth for manifest-vs-limits arithmetic, shared
 between ``CoreLimitsPolicy.evaluate_upload`` on the server side and

@@ -38,8 +38,8 @@ Layer 2 code.
 
 - Adding AWS S3 (or any vendor) is an isolated, low-risk change: write a Layer 3
   module, register it. Product logic and its tests never move.
-- The open-source core stays vendor-neutral and self-contained — it never
-  imports `cloud/`, so it can ship independently (Principle V).
+- The open-source core stays vendor-neutral and self-contained — it depends on
+  nothing in the commercial layer, so it can ship independently (Principle V).
 - Product logic is testable against in-memory/filesystem fakes with no SDK.
 - Cost: more indirection up front (Protocols + a factory) than a direct
   vendor call, and a discipline that must be actively enforced — an AST regression

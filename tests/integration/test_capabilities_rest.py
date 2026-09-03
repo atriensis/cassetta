@@ -1,7 +1,4 @@
-"""Integration tests for ``GET /capabilities`` (Brief 516 US3).
-
-Covers FR-002, FR-013, FR-015, FR-009.
-"""
+"""Integration tests for ``GET /capabilities``."""
 
 from __future__ import annotations
 
@@ -65,7 +62,7 @@ async def test_get_capabilities_dev_mode_no_auth_required(
 async def test_get_capabilities_response_is_flat_json_object(
     client: httpx.AsyncClient,
 ) -> None:
-    """FR-015: no ``detail``/``data``/``capabilities`` wrapping."""
+    """No ``detail``/``data``/``capabilities`` wrapping."""
     resp = await client.get("/capabilities")
     doc = resp.json()
     assert "detail" not in doc

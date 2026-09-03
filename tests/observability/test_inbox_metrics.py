@@ -1,4 +1,4 @@
-"""Inbox metric coverage tests — Brief 533 FR-001 + SC-013/SC-014/SC-015."""
+"""Inbox metric coverage tests."""
 
 from __future__ import annotations
 
@@ -119,7 +119,7 @@ async def test_delete_increments_action_delete(inbox_client) -> None:
 
 
 async def test_404_not_found_still_increments(inbox_client) -> None:
-    """SC-014 — authorised inbox read returning 404 STILL increments read."""
+    """An authorised inbox read returning 404 STILL increments read."""
     client, metrics = inbox_client
     resp = await client.get("/inbox/alice/no-such-file")
     assert resp.status_code == 404
@@ -128,7 +128,7 @@ async def test_404_not_found_still_increments(inbox_client) -> None:
 
 
 async def test_peek_emission_unchanged(inbox_client) -> None:
-    """SC-015 — existing peek emission preserved after FR-063 backfill."""
+    """The existing peek emission is preserved."""
     client, metrics = inbox_client
     resp = await client.get("/inbox/alice/hi.txt/peek")
     assert resp.status_code == 200
@@ -142,7 +142,7 @@ async def test_denied_403_does_not_increment(
     recording_metrics: RecordingMetricsProvider,
     policy_log_capture,
 ) -> None:
-    """SC-013 — denied inbox read does NOT increment inbox.operations;
+    """A denied inbox read does NOT increment inbox.operations;
     DOES increment cassetta.policy.decisions{result=denied, policy_kind=core}.
     """
     from cassetta.app import create_app

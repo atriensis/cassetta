@@ -29,7 +29,7 @@ def _get_policy(request: Request) -> AccessPolicy:
 
 
 def _policy_kind_fields(policy: AccessPolicy) -> tuple[str, str]:
-    """Brief 533 FR-022 — see ``routes/inbox.py:_policy_kind_fields``."""
+    """See ``routes/inbox.py:_policy_kind_fields``."""
     kind = getattr(policy, "kind", "core")
     field = kind if kind in ("core", "cloud") else "core"
     tag = "team" if field == "cloud" else "core"
@@ -45,8 +45,8 @@ async def _enforce(
 ) -> None:
     policy = _get_policy(request)
     if not await policy.check(identity, resource, action):
-        # Brief 533 FR-007a / FR-022 / FR-063: paired event + counter via
-        # safe_emit; policy_kind derived from policy.kind.
+        # Paired event + counter via safe_emit;
+        # policy_kind derived from policy.kind.
         field_kind, tag_kind = _policy_kind_fields(policy)
         safe_emit(
             logger,
@@ -197,8 +197,8 @@ async def rotate_key(
         metric_tags={"action": "rotate"},
         metrics=metrics,
     )
-    # Brief 533 FR-009: re-assert ``cassetta.active_keys`` gauge after rotate
-    # — unconditional, even when count is unchanged (SC-003 freshness invariant).
+    # Re-assert the ``cassetta.active_keys`` gauge after rotate — unconditional,
+    # even when the count is unchanged, so the gauge stays fresh.
     keys = await key_store.list_keys()
     safe_emit(
         metric_name="cassetta.active_keys",

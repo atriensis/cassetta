@@ -1,7 +1,7 @@
-"""Tests for recipient validation on send (Brief 508).
+"""Tests for recipient validation on send.
 
-Brief 514 removed the legacy ``PUT /inbox/{agent}/{path}``; these tests
-now drive validation through ``cassetta_send_init``.
+The legacy ``PUT /inbox/{agent}/{path}`` is gone; these tests now drive
+validation through ``cassetta_send_init``.
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ class TestSendInitValidation:
 
         sid = await _mcp_init(client, sender_key)
         result = await _send_init(client, sid, sender_key, to="test:nonexistent")
-        # Brief 521 FR-002: a label-style ``to`` that the resolver could
+        # A label-style ``to`` that the resolver could
         # not match raises ``unknown_recipient`` instead of falling through
         # to a silent direct-recipient passthrough. The bundle is rejected
         # at send_init time, before any orphan inbox gets created.

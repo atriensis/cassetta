@@ -2,7 +2,7 @@
 
 Verify that simultaneous operations don't race or corrupt data.
 
-Brief 514 removed the legacy ``PUT /inbox/{agent}/{path}`` endpoint, so the
+The legacy ``PUT /inbox/{agent}/{path}`` endpoint is gone, so the
 former REST-level concurrent PUT tests (dual upload, simultaneous sender
 labels) no longer apply — they are covered end-to-end by the new upload
 flow tests. What remains here is the backend-level concurrency test.

@@ -93,7 +93,7 @@ async def test_reaper_emits_structured_log() -> None:
 
     handler = _Capture(level=logging.INFO)
     cassetta_logger = logging.getLogger("cassetta")
-    # Brief 539: pin the logger level so the INFO ``gc_reaped`` record is
+    # Pin the logger level so the INFO ``gc_reaped`` record is
     # emitted regardless of ordering (in isolation the level defaults to
     # WARNING and would filter it); restore at teardown to avoid leaking.
     prior_level = cassetta_logger.level

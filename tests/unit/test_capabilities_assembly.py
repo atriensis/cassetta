@@ -1,8 +1,4 @@
-"""Unit tests for ``cassetta.capabilities.build_capabilities_document``.
-
-Covers the invariants from spec.md (FR-001, FR-005, FR-007, FR-008,
-FR-011, FR-019), data-model.md §1 and §4.
-"""
+"""Unit tests for ``cassetta.capabilities.build_capabilities_document``."""
 
 from __future__ import annotations
 

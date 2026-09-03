@@ -1,4 +1,4 @@
-"""Brief 533 FR-007a + SC-016/SC-018/SC-019 — additive ``policy_kind`` tag/field."""
+"""The additive ``policy_kind`` tag/field."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ async def test_core_denial_has_policy_kind_core_field(
     recording_metrics: RecordingMetricsProvider,
     cassetta_log_capture: CassettaLogCapture,
 ) -> None:
-    """SC-016 — core REST `_enforce` denial emits `policy.denied`
+    """A core REST `_enforce` denial emits `policy.denied`
     with `policy_kind=core` field AND `cassetta.policy.decisions{policy_kind=core}`
     counter tag.
     """
@@ -91,9 +91,9 @@ async def test_additive_tag_preserves_sum(
     storage_dir,
     recording_metrics: RecordingMetricsProvider,
 ) -> None:
-    """SC-019 — aggregations summing cassetta.policy.decisions{result=denied}
-    while ignoring policy_kind report the SAME total pre vs. post-brief in a
-    core-only deployment.
+    """Aggregations summing cassetta.policy.decisions{result=denied} while
+    ignoring policy_kind report the SAME total before and after the tag was
+    added, in a core-only deployment.
     """
     from cassetta.app import create_app
     from cassetta.config import load_config

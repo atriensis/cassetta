@@ -1,4 +1,4 @@
-"""T027 — REST contract test for ``POST /upload/{bundle_path:path}`` (Brief 514).
+"""REST contract test for ``POST /upload/{bundle_path:path}``.
 
 Asserts the endpoint exists in the FastAPI app's OpenAPI schema with the
 expected route + security + response codes.
@@ -94,7 +94,7 @@ async def test_rest_size_mismatch_keeps_wrong_size_reason(
     core_app_small_inline: tuple[httpx.AsyncClient, str],
     h,
 ) -> None:
-    """Brief 541 boundary pin: the REST tar upload path carries no per-file
+    """Boundary pin: the REST tar upload path carries no per-file
     ``encoding``, so a genuine size mismatch must still report
     ``reason=wrong_size``. The inline ``missing_or_bad_encoding`` relabel is
     MCP-inline-only and must not leak onto this path.

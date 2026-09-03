@@ -1,9 +1,8 @@
-"""Brief 525 — REST broadcast URL contract regression.
+"""REST broadcast URL contract regression.
 
-Pre-Brief-525 the broadcast endpoint accepted ``POST /broadcast?path=...``.
-Brief 525 migrates the URL to path-style ``POST /broadcast/{path:path}`` —
-SC-009 / FR-019. The query-string form returns 404; the path-style form
-delivers the bundle.
+The broadcast endpoint once accepted ``POST /broadcast?path=...``; the URL
+has since migrated to path-style ``POST /broadcast/{path:path}``. The
+query-string form returns 404; the path-style form delivers the bundle.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ import pytest
 class TestBroadcastUrl:
     @pytest.mark.asyncio
     async def test_path_style_url_works(self, auth_client: tuple[httpx.AsyncClient, str]) -> None:
-        """POST /broadcast/<path> is the canonical Brief 525 form."""
+        """POST /broadcast/<path> is the canonical form."""
         client, token = auth_client
         setup_resp = await client.post(
             "/setup",

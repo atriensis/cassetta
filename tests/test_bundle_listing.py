@@ -1,4 +1,4 @@
-"""Tests for list_bundles / read_bundle_meta / file reads (Brief 512)."""
+"""Tests for list_bundles / read_bundle_meta / file reads."""
 
 import io
 import json

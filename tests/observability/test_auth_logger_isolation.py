@@ -1,4 +1,4 @@
-"""Brief 533 FR-040/FR-041/FR-042 / SC-007 — auth logger isolation.
+"""Auth logger isolation.
 
 Also covers the other half of the same function's contract: the logger trees a
 caller supplies, which are configured by this project but governed by whoever
@@ -35,8 +35,8 @@ def _restore_logging() -> Iterator[None]:
 
 
 def test_auth_record_renders_through_configured_handler() -> None:
-    """FR-040 / SC-007 — record on ``cassetta.auth.observability``
-    renders through the configured ``JsonFormatter``.
+    """A record on ``cassetta.auth.observability`` renders through the
+    configured ``JsonFormatter``.
     """
     # Re-route the StreamHandler to a StringIO so we can read what was
     # written.
@@ -65,8 +65,8 @@ def test_auth_record_renders_through_configured_handler() -> None:
 
 
 def test_auth_record_does_not_propagate_to_root() -> None:
-    """FR-041 / SC-007 — a recording handler on root MUST NOT receive
-    any ``cassetta.auth.*`` record after ``configure_logging``.
+    """A recording handler on root MUST NOT receive any ``cassetta.auth.*``
+    record after ``configure_logging``.
     """
     configure_logging("text")
 
@@ -89,8 +89,8 @@ def test_auth_record_does_not_propagate_to_root() -> None:
 
 
 def test_configure_logging_idempotent_on_auth_subtree() -> None:
-    """FR-042 / SC-007 — re-invoking configure_logging does not duplicate
-    handlers or duplicate emissions on the ``cassetta.auth`` sub-tree.
+    """Re-invoking configure_logging does not duplicate handlers or
+    duplicate emissions on the ``cassetta.auth`` sub-tree.
     """
     configure_logging("text")
     configure_logging("text")

@@ -1,4 +1,4 @@
-"""Brief 535 Fix 1 — ``AppConfig`` drops three never-read fields and
+"""``AppConfig`` drops three never-read fields and
 their env-var parsers are removed.
 
 ``CASSETTA_IDENTITY_PROVIDER``, ``CASSETTA_ACCESS_POLICY``, and
@@ -31,7 +31,7 @@ def test_app_config_lacks_dead_fields() -> None:
     present = field_names & set(_DEAD_FIELDS)
     assert not present, (
         f"AppConfig still exposes dead fields: {present}. "
-        "Brief 535 Fix 1 removes identity_provider, access_policy, alias_resolver."
+        "identity_provider, access_policy and alias_resolver were removed."
     )
 
 

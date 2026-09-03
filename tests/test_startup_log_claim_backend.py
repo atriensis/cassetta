@@ -1,4 +1,4 @@
-"""FR-020 — core's ``create_app`` emits ``claim_storage_backend=filesystem``
+"""Core's ``create_app`` emits ``claim_storage_backend=filesystem``
 at INFO during lifespan startup on the default path."""
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ async def test_startup_log_filesystem(
     finally:
         cassetta_logger.removeHandler(caplog.handler)
 
-    # Brief 533 FR-026: emission converted to struct_log. The record now
+    # The emission goes through struct_log, so the record
     # carries ``event="claim_storage_backend"`` with ``detail.kind`` set
     # to the active backend (``filesystem`` on the default path).
     matching = [

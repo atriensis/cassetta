@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 _MIN_HS256_KEY_BYTES = 32
 
-# Brief 531 — slowapi-compatible rate string ("<int>/<unit>"). Accepts
+# slowapi-compatible rate string ("<int>/<unit>"). Accepts
 # the short forms ("sec", "min", "hour") and normalises them to the
 # canonical long forms ("second", "minute", "hour"). slowapi's
 # ``limits`` parser accepts both, but normalising up-front keeps the
@@ -144,7 +144,7 @@ class AppConfig:
     log_format: str = "text"
     key_label_chars: str = r"a-zA-Z0-9_\-"
     limits: LimitsConfig = field(default_factory=LimitsConfig)
-    # Brief 531 — operational-resilience env vars.
+    # Operational-resilience env vars.
     rate_limit_onboard: str = "5/minute"
     rate_limit_broadcast: str = "10/minute"
     broadcast_max_targets: int = 1000
@@ -358,7 +358,7 @@ def load_config() -> AppConfig:
     assert primary_key is not None  # required=True guarantees non-None
     assert primary_source is not None
 
-    # Brief 531 — operational-resilience env vars.
+    # Operational-resilience env vars.
     rate_limit_onboard = _parse_rate_limit(
         "CASSETTA_RATE_LIMIT_ONBOARD",
         os.environ.get("CASSETTA_RATE_LIMIT_ONBOARD", "5/minute"),

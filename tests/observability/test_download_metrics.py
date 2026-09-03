@@ -1,6 +1,4 @@
-"""Download metric coverage tests — Brief 533 FR-005/FR-006 +
-SC-023/SC-024/SC-025/SC-026.
-"""
+"""Download metric coverage tests."""
 
 from __future__ import annotations
 
@@ -108,7 +106,7 @@ async def test_success_increments_ok_and_bytes(
     download_app,
     recording_metrics: RecordingMetricsProvider,
 ) -> None:
-    """SC-023 — success: result=ok + download.bytes."""
+    """Success: result=ok + download.bytes."""
     app, config, backends = download_app
     content = b"download me"
     await _seed_inbox(backends.backend, "alice", "doc.txt", content)
@@ -141,7 +139,7 @@ async def test_bundle_gone_and_name_not_in_manifest_collapse_to_not_found(
     download_app,
     recording_metrics: RecordingMetricsProvider,
 ) -> None:
-    """SC-024 — both bundle_gone and name_not_in_manifest map to result=not_found."""
+    """Both bundle_gone and name_not_in_manifest map to result=not_found."""
     app, config, backends = download_app
 
     # Case A: bundle_gone — bundle never created.
@@ -168,7 +166,7 @@ async def test_identity_mismatch_increments_identity_mismatch_only(
     storage_dir,
     recording_metrics: RecordingMetricsProvider,
 ) -> None:
-    """SC-025 — JWT recipient != identity label → result=identity_mismatch;
+    """JWT recipient != identity label → result=identity_mismatch;
     ZERO cassetta.auth.failures{source=download}.
     """
     # Auth mode (CASSETTA_SETUP_TOKEN non-empty) — dev_mode disabled so
@@ -218,7 +216,7 @@ async def test_jwt_expired_increments_auth_failures_only(
     download_app,
     recording_metrics: RecordingMetricsProvider,
 ) -> None:
-    """SC-026 — expired JWT → brief-529 auth.failures emission;
+    """Expired JWT → auth.failures emission;
     ZERO cassetta.download.operations.
     """
     app, config, backends = download_app

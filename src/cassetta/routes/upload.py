@@ -1,4 +1,4 @@
-"""REST endpoint ``POST /upload/{bundle_path:path}`` (Brief 514).
+"""REST endpoint ``POST /upload/{bundle_path:path}``.
 
 Streaming tar/gzip batch upload. The body is a tar archive (optionally
 gzipped) authenticated by a Bearer JWT whose ``bundle_path`` claim MUST
@@ -114,7 +114,7 @@ def _stream_tar_into_writer(
     by_name = {f["name"]: f for f in manifest_files}
     seen: set[str] = set()
     bytes_total = 0
-    # Brief 531 FR-020 / FR-025: when the operator hasn't pinned a
+    # When the operator hasn't pinned a
     # value, fall back to the 100 MiB ceiling. Read once outside the
     # loop so the comparison stays predictable.
     effective_per_file_max: int = (
@@ -135,7 +135,7 @@ def _stream_tar_into_writer(
             declared_size = int(by_name[name].get("size", 0))
             if info.size != declared_size:
                 raise _ManifestViolation("wrong_size", name)
-            # Brief 531 FR-021: refuse oversize entries BEFORE reading
+            # Refuse oversize entries BEFORE reading
             # the body. Insertion is one tarfile call earlier than the
             # spec's "before src.read()" requirement — read avoidance
             # is one extractfile call earlier than that.
@@ -192,7 +192,7 @@ async def upload_bundle(
     metrics = _get_metrics(request)
 
     token = _extract_bearer(request)
-    # Brief 531: read the runtime slots so a SIGHUP-driven rotation
+    # Read the runtime slots so a SIGHUP-driven rotation
     # takes effect on the next request without a restart.
     slots = request.app.state.jwt_keys
     try:
@@ -293,7 +293,7 @@ async def upload_bundle(
             "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": exc.reason},
         )
-        # Brief 533 FR-002 + FR-004: rejected + manifest_violations{reason}.
+        # rejected + manifest_violations{reason}.
         safe_emit(
             metric_name="cassetta.upload.operations",
             metric_tags={"result": "rejected"},
@@ -325,7 +325,7 @@ async def upload_bundle(
             "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "tar_parse_error"},
         )
-        # Brief 533 FR-002 / SC-022: mid-stream archive failure → result=error.
+        # Mid-stream archive failure → result=error.
         safe_emit(
             metric_name="cassetta.upload.operations",
             metric_tags={"result": "error"},
@@ -348,7 +348,7 @@ async def upload_bundle(
             "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "limits_rejection"},
         )
-        # Brief 533 SC-022: per-file-max from brief 531 firing mid-stream
+        # Per-file-max firing mid-stream
         # AFTER manifest validation → result=error, no upload.bytes.
         safe_emit(
             metric_name="cassetta.upload.operations",
@@ -369,7 +369,7 @@ async def upload_bundle(
             "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "exception"},
         )
-        # Brief 533: any other mid-stream failure → result=error.
+        # Any other mid-stream failure → result=error.
         safe_emit(
             metric_name="cassetta.upload.operations",
             metric_tags={"result": "error"},
@@ -396,7 +396,7 @@ async def upload_bundle(
             "upload_rollback",
             detail={"bundle_id": bundle_id, "reason": "commit_failed"},
         )
-        # Brief 533: commit failure → result=error.
+        # Commit failure → result=error.
         safe_emit(
             metric_name="cassetta.upload.operations",
             metric_tags={"result": "error"},
@@ -410,7 +410,7 @@ async def upload_bundle(
         "upload_stream_complete",
         detail={"bundle_id": bundle_id, "bytes_transferred": bytes_total},
     )
-    # Brief 533 FR-002 + FR-003: success → ok + upload.bytes (untagged).
+    # Success → ok + upload.bytes (untagged).
     safe_emit(
         metric_name="cassetta.upload.operations",
         metric_tags={"result": "ok"},

@@ -1,4 +1,4 @@
-"""T013 (US1) — FR-006a two-factor contract on GET /download.
+"""Two-factor contract on GET /download.
 
 Exercises the three-way failure matrix from Q3:
 (a) valid JWT + mismatched identity (X-Sender) → 403 identity_mismatch.

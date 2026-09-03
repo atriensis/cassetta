@@ -144,16 +144,16 @@ After restart, these tools should be available:
 
 - cassetta_capabilities — discover server limits, TTLs, supported modes (CALL FIRST AT SESSION START)
 - cassetta_put — store a file
-- cassetta_get — retrieve a file (returns inline or reference envelope per Brief 515)
+- cassetta_get — retrieve a file (returns an inline or reference envelope)
 - cassetta_delete — delete a file
 - cassetta_list — list files (with optional prefix)
 - cassetta_send_init — two-phase send, step 1 (declare manifest, receive credential + mode)
 - cassetta_send_inline — two-phase send, step 2 for inline mode (deliver bytes in-band)
 - cassetta_inbox — list own inbox
-- cassetta_pick — atomically consume from own inbox (envelope per Brief 515)
-- cassetta_peek — read bundle metadata without consuming (Brief 513)
-- cassetta_agents — enumerate visible agents per access policy (Brief 525)
-- cassetta_broadcast — deliver a bundle to every visible recipient (Brief 525)
+- cassetta_pick — atomically consume from own inbox (same envelope shapes as get)
+- cassetta_peek — read bundle metadata without consuming
+- cassetta_agents — enumerate visible agents per access policy
+- cassetta_broadcast — deliver a bundle to every visible recipient
 
 **Before any other tool call, run `cassetta_capabilities`.** It returns
 the server's advertised limits, TTLs, supported transport modes, and

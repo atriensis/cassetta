@@ -1,14 +1,13 @@
-"""Unified response envelope shapes for Brief 515 read surfaces.
+"""Unified response envelope shapes for the read surfaces.
 
 Two TypedDicts describe the two mode-branches returned by
 ``cassetta_pick`` / ``cassetta_get`` (MCP) and the REST read routes
-(``GET /files/{path}``, ``GET /inbox/{agent}/{path}``, REST pick)
-after Brief 515:
+(``GET /files/{path}``, ``GET /inbox/{agent}/{path}``, REST pick):
 
 - :class:`InlineEnvelope` — bundle metadata + per-file ``content``
   for bundles under ``max_inline_size``. Single-file and multi-file
-  share one shape (the Brief 514 raw-UTF-8-string single-file return
-  is retired in this brief).
+  share one shape; the raw-UTF-8-string single-file return they
+  replaced is retired.
 - :class:`ReferenceEnvelope` — bundle metadata + per-file URLs + a
   single download credential for bundles over ``max_inline_size``.
   Bytes are fetched out of band via ``GET /download/...``.
@@ -31,7 +30,7 @@ class InlineFile(TypedDict, total=False):
     ``encoding`` is the transport encoding over the MCP string
     channel: ``utf8`` for text that round-trips as a JSON string,
     ``base64`` for bytes that are not valid UTF-8 (symmetric with
-    Brief 514 inline-upload).
+    inline upload).
     """
 
     name: str
@@ -68,8 +67,8 @@ def build_inline_envelope(
 
     Each file's bytes are UTF-8-decoded when possible
     (``encoding: "utf8"``); on decode failure they are ``base64``-
-    encoded (``encoding: "base64"``). Symmetric with Brief 514's
-    inline-upload encoding hint.
+    encoded (``encoding: "base64"``). Symmetric with the inline-upload
+    encoding hint.
     """
     files: list[InlineFile] = []
     for name, data in file_payloads:

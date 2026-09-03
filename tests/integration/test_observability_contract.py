@@ -1,4 +1,4 @@
-"""T050 — Observability audit: FR-027 event contract for uploads.
+"""Observability audit: event contract for uploads.
 
 Drives one inline round-trip and one batch round-trip, captures
 structured log events through a handler attached directly to the
@@ -12,7 +12,7 @@ propagation to root would miss these events), and asserts:
 - The ``bundle_id`` in the ``detail`` payload of all three events
   matches the ``bundle_id`` returned by ``send_init``.
 
-T044 (Brief 515) extends the contract to the download surface (FR-026):
+The contract also extends to the download surface:
 
 - ``download_mode_decision`` fires on every read surface after policy eval.
 - ``download_claim_issued`` fires on inbox reference-mode pick.
@@ -83,9 +83,9 @@ def log_capture() -> Any:
 
     ``configure_logging`` sets ``propagate=False`` on both, so neither
     caplog nor any handler attached to the root logger sees these events
-    — and Brief 533 FR-041 makes ``cassetta.auth`` propagation independent
-    of ``cassetta``, so attaching to ``cassetta`` alone is no longer
-    enough to see ``cassetta.auth.*`` records.
+    — and ``cassetta.auth`` propagation is independent of ``cassetta``,
+    so attaching to ``cassetta`` alone is not enough to see
+    ``cassetta.auth.*`` records.
     """
     handler = _EventHandler()
     attached: list[tuple[logging.Logger, int]] = []
@@ -124,7 +124,7 @@ def _assert_lifecycle_once(
 
 
 @pytest.mark.asyncio
-async def test_inline_upload_emits_fr027_events(
+async def test_inline_upload_emits_upload_events(
     core_app: tuple[httpx.AsyncClient, str],
     h,
     log_capture: _EventHandler,
@@ -176,7 +176,7 @@ async def test_inline_upload_emits_fr027_events(
 
 
 @pytest.mark.asyncio
-async def test_batch_upload_emits_fr027_events(
+async def test_batch_upload_emits_upload_events(
     core_app_small_inline: tuple[httpx.AsyncClient, str],
     h,
     log_capture: _EventHandler,
@@ -307,16 +307,16 @@ async def test_both_modes_same_session_keep_bundle_ids_distinct(
     _assert_lifecycle_once(log_capture, batch_bundle_id, label="batch")
 
 
-# --- Brief 515: download-surface FR-026 events -----------------------------
+# --- Download-surface events -----------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_download_reference_pick_emits_fr026_events(
+async def test_download_reference_pick_emits_download_events(
     core_app_small_inline: tuple[httpx.AsyncClient, str],
     h,
     log_capture: _EventHandler,
 ) -> None:
-    """Reference-mode pick + full fetch: every FR-026 event fires
+    """Reference-mode pick + full fetch: every download event fires
     with its expected `detail` keys.
 
     Covers the happy-path quartet:
@@ -423,13 +423,13 @@ async def test_download_reference_pick_emits_fr026_events(
 
 
 @pytest.mark.asyncio
-async def test_download_error_paths_emit_fr026_events(
+async def test_download_error_paths_emit_download_events(
     core_app_small_inline: tuple[httpx.AsyncClient, str],
     h,
     log_capture: _EventHandler,
 ) -> None:
     """401 path (bad JWT) and 403 path (identity mismatch) each emit
-    the appropriate FR-026 event exactly once.
+    the appropriate download event exactly once.
     """
     import os
 
@@ -479,7 +479,7 @@ async def test_download_error_paths_emit_fr026_events(
         },
     )
     assert resp_401.status_code == 401, resp_401.text
-    # Brief 529 R4: download_jwt_validation_failed → auth.failure source=download.
+    # download_jwt_validation_failed → auth.failure source=download.
     jwt_events = [
         e
         for e in log_capture.events_for("auth.failure")

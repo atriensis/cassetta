@@ -1,6 +1,6 @@
 """In-process rate limiter, fan-out cap helper, and counter-emission glue.
 
-Brief 531 — Operational resilience. The module owns:
+The module owns:
 
 - A single ``slowapi.Limiter`` instance keyed off ``get_remote_address``
   (which honours uvicorn's ``--forwarded-allow-ips`` substitution per R3).
@@ -9,14 +9,14 @@ Brief 531 — Operational resilience. The module owns:
   configured ``MetricsProvider`` (one increment per rejection, paired
   one-to-one with the 429 / MCP error payload).
 - ``_check_fanout_cap`` + ``FanoutCapExceeded`` — content-based fan-out
-  rejection raised before any storage write (FR-007).
+  rejection raised before any storage write.
 - ``check_rate_limit_imperative`` — the imperative entry point used by
   the MCP ``cassetta_broadcast`` tool body (the per-tool-call boundary
   that the HTTP-level decorator cannot reach).
 
-The module is owned by the open core; ``cloud/`` reaches it via
-``request.app.state.limiter`` only — no ``cloud → core`` import of any
-internal symbol is needed beyond this module's public re-exports
+The module is owned by the open core, and a downstream distribution reaches
+it through ``request.app.state.limiter`` only — nothing downstream needs to
+import an internal symbol from here beyond this module's public re-exports
 (Constitution V).
 """
 
@@ -64,8 +64,8 @@ def _record_rate_limit_hit(
 ) -> None:
     """Emit ``cassetta.rate_limit.hits`` against the configured provider.
 
-    Brief 533 FR-063: routed through ``safe_emit`` so the broken-
-    ``MetricsProvider`` posture matches every other counter call site.
+    Routed through ``safe_emit`` so the broken-``MetricsProvider``
+    posture matches every other counter call site.
     """
     from cassetta.structured_log import safe_emit
 

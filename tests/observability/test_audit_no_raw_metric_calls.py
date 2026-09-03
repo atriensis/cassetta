@@ -1,6 +1,6 @@
-"""Audit regression test — Brief 533 SC-012 / FR-064.
+"""Audit regression test.
 
-After FR-063 backfill lands, grepping ``metrics\\.(increment|gauge)\\(`` over
+Grepping ``metrics\\.(increment|gauge)\\(`` over
 ``src/cassetta/`` MUST find only the single call inside ``safe_emit``
 itself in ``structured_log.py`` plus explicitly-fenced exceptions. Any
 future code review that adds a raw ``metrics.*`` call fails this test
@@ -16,11 +16,10 @@ from pathlib import Path
 # justified exception per contract C-SAFEEMIT-006:
 #
 # - ``structured_log.py`` hosts the ``safe_emit`` body itself.
-# - ``auth/observability.py::emit_auth_failure`` is the brief-529
+# - ``auth/observability.py::emit_auth_failure`` is the auth-specific
 #   specialisation of the same independent-best-effort pattern. Its
 #   PUBLIC fallback string ``"auth observability emission failed"`` is
-#   regression-locked by SC-011 / FR-067 (the complete brief-529 test
-#   suite MUST pass UNCHANGED after the brief-533 refactor), so the helper
+#   regression-locked by that module's own test suite, so the helper
 #   cannot delegate to ``safe_emit`` whose fallback strings differ.
 _ALLOWED_PATHS = {
     "structured_log.py",
@@ -53,5 +52,5 @@ def test_no_raw_metric_calls_outside_safe_emit() -> None:
     assert not offenders, (
         "Raw metrics.<increment|gauge>(...) call sites found outside "
         "safe_emit. Route them through cassetta.structured_log.safe_emit "
-        "per FR-063:\n" + "\n".join(offenders)
+        "instead:\n" + "\n".join(offenders)
     )

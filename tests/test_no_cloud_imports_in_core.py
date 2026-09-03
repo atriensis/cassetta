@@ -1,4 +1,4 @@
-"""FR-015 / SC-002 — zero vendor-specific imports in ``src/``.
+"""Zero vendor-specific imports in ``src/``.
 
 Grep-style assertion: walks every .py under ``src/`` and fails
 if any of ``azure``, ``boto3``, ``google.cloud`` tokens appear. Test

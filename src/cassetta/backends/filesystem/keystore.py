@@ -77,7 +77,7 @@ class FileKeyStore:
         """Create a new API key with the given label.
 
         ``user_id`` is accepted to conform to the unified
-        ``KeyStoreProtocol`` signature (Brief 535 Fix 5) and silently
+        ``KeyStoreProtocol`` signature and silently
         ignored — the filesystem backend is single-user and has no
         per-key owner concept.
         """
