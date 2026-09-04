@@ -25,9 +25,15 @@ services:
       # API key store — deliberately outside the storage tree so key files never appear
       # in a `/files/` listing or get served as user data. Back this up too.
       - ./data.keys:/data.keys
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:16001/health', timeout=2)"]
-      interval: 30s
-      timeout: 3s
-      start_period: 10s
-      retries: 3
+    # No health probe is declared here, on purpose. The image declares one — the HEALTHCHECK
+    # instruction in the Dockerfile — with the same command and the same intervals, and that is the
+    # probe this deployment gets.
+    #
+    # It is deliberately not repeated here, because a probe declared on a container *replaces* the
+    # image's rather than merging with it. A copy in this file would therefore win silently, and it
+    # would not carry the privilege drop the image's probe has: the probe runs outside the
+    # entrypoint, so its own command is the only place that drop can live. Adding one here would
+    # quietly put a root process back into every thirty-second interval for the life of the
+    # container, without changing a line of the Dockerfile.
+    #
+    # To change the probe or its timings, edit the Dockerfile.
