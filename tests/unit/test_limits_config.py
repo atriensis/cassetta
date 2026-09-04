@@ -1,4 +1,4 @@
-"""Tests for LimitsConfig + load_limits_config() (brief 513)."""
+"""Tests for LimitsConfig + load_limits_config()."""
 
 from __future__ import annotations
 

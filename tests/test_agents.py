@@ -123,7 +123,7 @@ def _swap_policy(app, policy) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Pre-Brief-525 baseline tests (still relevant, sanity-check unchanged surface).
+# The agents endpoint itself, with no visibility policy in play.
 # ---------------------------------------------------------------------------
 
 

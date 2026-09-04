@@ -52,9 +52,11 @@ def emit_auth_failure(
 
     Best-effort: any exception from ``struct_log`` or
     ``metrics.increment`` is caught; a fallback ``logger.exception``
-    records the failure with the legacy Brief-529 message. If that
-    fallback also raises (catastrophic broken-logging case), the helper
-    swallows so the caller's 401/403 is preserved.
+    records the failure with this module's own fallback message rather
+    than ``safe_emit``'s per-step ones (see the module docstring — that
+    string is regression-locked here). If that fallback also raises
+    (catastrophic broken-logging case), the helper swallows so the
+    caller's 401/403 is preserved.
     """
     assert identity_hint is None or len(identity_hint) <= 12, "identity_hint must be <= 12 chars"
     try:

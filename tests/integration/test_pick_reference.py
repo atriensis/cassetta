@@ -49,7 +49,7 @@ async def test_pick_returns_reference_envelope_and_completes(
     )
     files = [
         ("README.md", b"# Hello\n" + b"a" * 100),
-        ("src/main.py", b"print('brief 515 integration')\n" * 10),
+        ("src/main.py", b"print('reference-mode pick fixture')\n" * 10),
         ("docs/arch.md", b"## Architecture\n" + b"b" * 150),
     ]
     await seed_inbox_bundle(

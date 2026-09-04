@@ -164,11 +164,11 @@ what the cached capabilities predicted. The same document is reachable
 via REST `GET /capabilities` if you need a curl-style fallback.
 
 The legacy `cassetta_send` tool and the `PUT /inbox/{agent}/{path}`
-REST endpoint were **retired in brief 514**. Hitting the REST path
-now returns HTTP 410 with a migration pointer. Use the two-phase
-flow below instead.
+REST endpoint are **retired**. Hitting the REST path now returns
+HTTP 410 with a migration pointer. Use the two-phase flow below
+instead.
 
-## Sending to another agent (brief 514)
+## Sending to another agent
 
 Every send is two phases: `cassetta_send_init` first, then either
 `cassetta_send_inline` (small payloads) or the `cassetta upload` CLI
@@ -268,7 +268,7 @@ See `docs/CLIENT_SETUP.md` for the full CLI reference
 (exit codes, rotation-safe credentials, etc.) and
 `docs/REST_API.md` § "Workflow B" for a hands-on walkthrough.
 
-### Things you MUST NOT do (brief 514)
+### Things you MUST NOT do
 
 - **Don't** start the upload before `cassetta_send_init` completes.
   Every upload is under a freshly-issued credential.
@@ -280,7 +280,7 @@ See `docs/CLIENT_SETUP.md` for the full CLI reference
   mode is pinned in the signed claims and the server rejects
   crosstalk with `unauthenticated: wrong_mode`.
 
-## Receiving from another agent (brief 515)
+## Receiving from another agent
 
 `cassetta_pick` (inbox) and `cassetta_get` (store) return one of two
 unified envelope shapes depending on the bundle's total size and the
@@ -301,8 +301,8 @@ shape.
 ```
 
 Single-file bundles come through as a 1-entry `files` array — there is
-no raw-string fork any more (brief 514's retirement, symmetric on read
-side).
+no raw-string fork any more (the retirement described above, symmetric
+on the read side).
 
 To consume:
 
@@ -355,7 +355,7 @@ command line). Exit 0 = all files on disk.
 
 See `docs/CLIENT_SETUP.md` for the full CLI reference.
 
-### Claim semantics (inbox only — brief 515)
+### Claim semantics (inbox only)
 
 A reference-mode `cassetta_pick` **claims** the bundle: as soon as the
 envelope is returned, the bundle disappears from `cassetta_inbox`
@@ -371,7 +371,7 @@ listings. The claim resolves one of two ways:
 persistent and parallel `cassetta_get` calls on the same path issue
 independent credentials.
 
-### Download-endpoint errors (brief 515)
+### Download-endpoint errors
 
 If the CLI exits non-zero, the server body is on stderr as flat JSON
 `{"error": ..., "reason": ...}`:
@@ -384,7 +384,7 @@ If the CLI exits non-zero, the server body is on stderr as flat JSON
 - **404 `not_found`** — bundle or file was deleted (already consumed,
   reaped after TTL, or never existed).
 
-## Upload rejection wire format (brief 513)
+## Upload rejection wire format
 
 Oversized payloads surface as structured errors rather than free-form
 messages:

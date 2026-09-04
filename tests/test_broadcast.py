@@ -168,7 +168,7 @@ def _swap_policy(app, *, policy=None, resolver=None) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Pre-Brief-525 baseline tests (still useful)
+# The broadcast endpoint itself, before visibility and access policy.
 # ---------------------------------------------------------------------------
 
 

@@ -1,4 +1,4 @@
-"""Wiring tests for LimitsPolicy DI through create_app / lifespan / MCP (brief 513)."""
+"""Wiring tests for LimitsPolicy DI through create_app / lifespan / MCP."""
 
 from __future__ import annotations
 

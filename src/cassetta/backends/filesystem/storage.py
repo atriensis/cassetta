@@ -144,7 +144,7 @@ class FilesystemBackend:
         struct_log(logger, logging.INFO, "lease.released", detail={"key": key, "lease_id": lease_id})
         return True
 
-    # ---- Bundle operations (brief 512) ------------------------------------
+    # ---- Bundle operations ------------------------------------------------
 
     async def open_bundle_write(self, path: str) -> "FilesystemBundleWriter":
         bundle_dir = self._resolve(path)
@@ -276,7 +276,7 @@ class FilesystemBackend:
 
 
 class FilesystemBundleWriter:
-    """Per-bundle write handle on the local filesystem (brief 512)."""
+    """Per-bundle write handle on the local filesystem."""
 
     def __init__(self, bundle_dir: Path) -> None:
         self._bundle_dir = bundle_dir

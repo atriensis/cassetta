@@ -131,7 +131,7 @@ class RevokedResponse(BaseModel):
 
 
 class LimitsRejectionBody(BaseModel):
-    """Wire format for HTTP 413 / 422 limits-policy rejections (brief 513)."""
+    """Wire format for HTTP 413 / 422 limits-policy rejections."""
 
     error: Literal["cap_exceeded", "batch_required"]
     constraint: Literal[

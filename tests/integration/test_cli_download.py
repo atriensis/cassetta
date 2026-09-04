@@ -84,7 +84,7 @@ async def test_cli_download_happy_path() -> None:
         backend = FilesystemBackend(root_path=storage_dir)
         files = [
             ("notes.md", b"# Hello\nthis is a test\n" * 20),
-            ("src/lib.py", b"print('brief 515 CLI')\n" * 30),
+            ("src/lib.py", b"print('cli download fixture')\n" * 30),
         ]
         await seed_inbox_bundle(
             backend,
