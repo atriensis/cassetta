@@ -1,4 +1,4 @@
-"""T043 — US5: the reaper task is spawned + cancelled under app lifespan."""
+"""The reaper task is spawned + cancelled under app lifespan."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""T025 (US2) — claim sidecar survives a server restart.
+"""The claim sidecar survives a server restart.
 
 Pick a reference-mode bundle → assert sidecar on disk → tear down
 and rebuild the app (new FastAPI, SAME ``data/``) → the bundle is

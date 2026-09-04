@@ -1,4 +1,4 @@
-"""T009 (US1) — ``cassetta_pick`` returns reference-mode envelope.
+"""``cassetta_pick`` returns reference-mode envelope.
 
 Send a 3-file over-threshold bundle to ``alice``, call ``cassetta_pick``
 via the MCP test client, assert the envelope shape, assert a claim

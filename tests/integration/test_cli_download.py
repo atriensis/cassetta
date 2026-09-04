@@ -1,4 +1,4 @@
-"""T037 (US4) — ``cassetta download`` subcommand round-trip + error paths.
+"""``cassetta download`` subcommand round-trip + error paths.
 
 The CLI reads a reference envelope from stdin (or a file path), iterates
 ``files[].url`` with the ``download_token`` in ``Authorization``, and

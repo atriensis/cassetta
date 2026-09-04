@@ -52,7 +52,7 @@ def _cassetta_bin() -> str:
     return "cassetta"
 
 
-# --- US3: help surface -------------------------------------------------------
+# --- Help surface ------------------------------------------------------------
 
 
 def test_send_help_lists_flags() -> None:
@@ -117,7 +117,7 @@ def _invoke_expecting_no_core(
     return result
 
 
-# --- US2: config resolution --------------------------------------------------
+# --- Config resolution --------------------------------------------------------
 
 
 def test_send_resolves_config_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -150,7 +150,7 @@ def test_send_resolves_config_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert capture2["base_url"].rstrip("/") == "http://flag-host:16001"
 
 
-# --- US3: fail fast before any network ---------------------------------------
+# --- Fail fast before any network ---------------------------------------------
 
 
 def test_send_errors_without_config(monkeypatch: pytest.MonkeyPatch) -> None:

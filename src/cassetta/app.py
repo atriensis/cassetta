@@ -164,7 +164,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "rate_limit_onboard": config.rate_limit_onboard,
             "rate_limit_broadcast": config.rate_limit_broadcast,
             "broadcast_max_targets": config.broadcast_max_targets,
-            "trusted_proxies": config.trusted_proxies,
             "jwt_key_overlap_ttl": config.jwt_key_overlap_ttl,
         },
     )

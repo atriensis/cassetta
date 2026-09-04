@@ -1,4 +1,4 @@
-"""T023 (US2) — expired claims release the bundle back to listings.
+"""Expired claims release the bundle back to listings.
 
 A reference-mode pick with a short ``download_claim_ttl``; wait past
 TTL; invoke ``sweep_claims`` directly; the bundle reappears in the

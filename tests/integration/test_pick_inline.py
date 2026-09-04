@@ -1,4 +1,4 @@
-"""T029 (US3) — inline-mode ``cassetta_pick`` returns the unified envelope.
+"""Inline-mode ``cassetta_pick`` returns the unified envelope.
 
 Single-file and multi-file bundles both return:
 ``{"mode": "inline", "bundle": {...}, "files": [{"name", "content", "encoding"}, ...]}``.

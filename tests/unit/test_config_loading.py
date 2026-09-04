@@ -154,11 +154,11 @@ def test_public_base_url_trailing_slash_stripped(
 ) -> None:
     _base_env(monkeypatch, tmp_path)
     monkeypatch.setenv("CASSETTA_JWT_KEY", _valid_primary_key_b64())
-    monkeypatch.setenv("CASSETTA_PUBLIC_BASE_URL", "https://dev1.cassetta.ai/")
+    monkeypatch.setenv("CASSETTA_PUBLIC_BASE_URL", "https://cassetta.example.com/")
 
     config = load_config()
 
-    assert config.public_base_url == "https://dev1.cassetta.ai"
+    assert config.public_base_url == "https://cassetta.example.com"
 
 
 def test_primary_key_too_short_exits(

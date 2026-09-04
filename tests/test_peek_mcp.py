@@ -1,4 +1,4 @@
-"""Integration tests for cassetta_peek MCP tool (brief 513 US1)."""
+"""Integration tests for the cassetta_peek MCP tool."""
 
 from __future__ import annotations
 

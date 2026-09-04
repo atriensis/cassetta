@@ -85,9 +85,9 @@ def check_rate_limit_imperative(request: Request, rate_string: str) -> None:
     so the tool calls into this helper at its entry point.
 
     Raises :class:`RateLimitExceeded` (slowapi's exception) when the
-    bucket would overflow. The MCP tool body MUST translate it to a
-    structured ``ValueError`` payload per
-    ``contracts/rate-limit-rejection.md``.
+    bucket would overflow. The MCP tool body MUST translate it into a
+    ``ValueError`` whose message is the JSON object
+    ``{"error": "rate_limit", "retry_after": <seconds>}``.
     """
     parsed: RateLimitItem = parse(rate_string)
     key = get_remote_address(request)

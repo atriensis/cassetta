@@ -1,4 +1,4 @@
-"""T013 — failing-first tests for ``cassetta.gc`` passive reaper.
+"""Failing-first tests for ``cassetta.gc`` passive reaper.
 
 A fake ``StorageBackend`` narrowly implements ``list_bundles`` and
 ``delete_bundle`` so the tests stay Layer-2 pure.

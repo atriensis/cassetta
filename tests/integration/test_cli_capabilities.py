@@ -1,4 +1,4 @@
-"""Integration tests for the ``cassetta capabilities`` CLI subcommand (US4).
+"""Integration tests for the ``cassetta capabilities`` CLI subcommand.
 
 Covers contracts/capabilities-cli.md (output format + exit codes).
 """

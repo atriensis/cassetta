@@ -1,6 +1,6 @@
 """Integration tests for the REST upload-init route ``POST /uploads``.
 
-Covers the US1 acceptance scenarios: a pure-HTTP (no-MCP) client completes a full
+Covers: a pure-HTTP (no-MCP) client completes a full
 directed send; the route requires a ``cst_`` key (401 without); a recipient-
 visibility denial mirrors the MCP send-init (403); ``/capabilities`` advertises the
 REST send-init; and the generated OpenAPI request schema is typed (carries the
@@ -38,7 +38,7 @@ def _build_tar(files: dict[str, bytes]) -> bytes:
     return buf.getvalue()
 
 
-# --- US1 scenario 1: full directed send over plain HTTP ---------------------
+# --- Full directed send over plain HTTP -------------------------------------
 
 
 @pytest.mark.asyncio
@@ -100,7 +100,7 @@ async def test_rest_uploads_happy_path_end_to_end(
     assert "drop.tgz" in {entry["path"] for entry in listing}
 
 
-# --- US1 scenario 2: authentication required --------------------------------
+# --- Authentication required ------------------------------------------------
 
 
 @pytest.mark.asyncio
@@ -119,7 +119,7 @@ async def test_rest_uploads_requires_auth(
     assert resp.status_code == 401, (resp.status_code, resp.text)
 
 
-# --- US1 scenario 3: recipient-visibility denial mirrors send-init ----------
+# --- Recipient-visibility denial mirrors send-init --------------------------
 
 
 class _AlwaysDenyPolicy:
@@ -212,7 +212,7 @@ async def test_rest_uploads_denied_mirrors_send_init(
     assert "Forbidden" in text
 
 
-# --- US3 (covered here per Done-when): advertise + self-documenting schema ---
+# --- Advertise + self-documenting schema ------------------------------------
 
 
 @pytest.mark.asyncio

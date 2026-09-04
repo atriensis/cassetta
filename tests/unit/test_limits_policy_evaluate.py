@@ -1,4 +1,4 @@
-"""Branch tests for CoreLimitsPolicy.evaluate_upload / evaluate_download (brief 513 US2)."""
+"""Branch tests for CoreLimitsPolicy.evaluate_upload / evaluate_download."""
 
 from __future__ import annotations
 

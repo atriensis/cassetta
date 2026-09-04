@@ -268,7 +268,7 @@ class TestBroadcastVisibilityFirst:
 
 
 class TestBroadcastDeniedBucket:
-    """T011 — denied bucket + denial metric."""
+    """The denied bucket + denial metric."""
 
     @pytest.mark.asyncio
     async def test_denied_target_in_denied_bucket_with_metric(
@@ -306,7 +306,7 @@ class TestBroadcastDeniedBucket:
 
 
 class TestBroadcastFailedBucket:
-    """T012 — failed bucket (resolver_unknown + write_error)."""
+    """The failed bucket (resolver_unknown + write_error)."""
 
     @pytest.mark.asyncio
     async def test_resolver_returns_none_target_in_failed(
@@ -367,7 +367,7 @@ class TestBroadcastFailedBucket:
 
 
 class TestBroadcastOperationsResultTag:
-    """T013 — cassetta.broadcast.operations result tag matrix."""
+    """The cassetta.broadcast.operations result-tag matrix."""
 
     @pytest.mark.asyncio
     async def test_all_delivered_success(
@@ -467,7 +467,7 @@ class TestBroadcastOperationsResultTag:
 
 
 class TestBroadcastWholePolicyFailure:
-    """T014 — fail-closed when visible_agents raises."""
+    """Fail closed when visible_agents raises."""
 
     @pytest.mark.asyncio
     async def test_visible_agents_exception_returns_empty_response(
@@ -516,7 +516,7 @@ class TestBroadcastWholePolicyFailure:
 
 
 class TestBroadcastPerTargetCheckException:
-    """T015 — policy.check raising for one target → that target denied,
+    """policy.check raising for one target → that target denied,
     others proceed."""
 
     @pytest.mark.asyncio
@@ -548,7 +548,7 @@ class TestBroadcastPerTargetCheckException:
 
 
 class TestBroadcastOversize:
-    """T009 — oversize payload returns 413, no bundles written."""
+    """An oversize payload returns 413, and no bundles are written."""
 
     @pytest.mark.asyncio
     async def test_oversize_returns_413(
@@ -583,12 +583,12 @@ class TestBroadcastOversize:
 
 
 # ---------------------------------------------------------------------------
-# MCP tests (T016 + T017)
+# MCP tests
 # ---------------------------------------------------------------------------
 
 
 class TestMCPBroadcastVisibility:
-    """T016 — MCP visibility-first filtering."""
+    """MCP visibility-first filtering."""
 
     @pytest.mark.asyncio
     async def test_invisible_labels_not_in_textual_return(
@@ -621,7 +621,7 @@ class TestMCPBroadcastVisibility:
 
 
 class TestMCPBroadcastDeniedBucket:
-    """T017 — MCP denied bucket + denial metric."""
+    """The MCP denied bucket + denial metric."""
 
     @pytest.mark.asyncio
     async def test_denied_targets_dont_appear_and_metric_fires(

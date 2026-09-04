@@ -1,4 +1,4 @@
-"""T038 — US4: effective single-use via TTL + bundle-path atomicity.
+"""Effective single-use via TTL + bundle-path atomicity.
 
 No server-side jti ledger; the "single-use" property is enforced
 passively by the combination of TTL expiry, bundle-path commit atomicity

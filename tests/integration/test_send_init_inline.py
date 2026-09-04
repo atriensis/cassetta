@@ -1,4 +1,4 @@
-"""T023 — US1 integration: `send_init` (inline) + `send_inline` round-trip.
+"""Integration: `send_init` (inline) + `send_inline` round-trip.
 
 End-to-end over MCP: setup identity → `cassetta_send_init` (inline
 branch) → `cassetta_send_inline` with both `utf8` and `base64` payloads →

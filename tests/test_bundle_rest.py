@@ -123,7 +123,7 @@ class TestRestPickBundle:
 
 
 # ============================================================
-# T026: REST inbox listing with file_count (US3)
+# REST inbox listing with file_count
 # ============================================================
 
 
@@ -155,14 +155,14 @@ class TestRestInboxListing:
 
 
 # ============================================================
-# T032-T034: REST files namespace bundles (US4)
+# REST files-namespace bundles
 # ============================================================
 
 
 class TestRestFilesBundles:
     @pytest.mark.asyncio
     async def test_put_bundle_multipart(self, rest_client: httpx.AsyncClient) -> None:
-        """T032: PUT /files/{path} with multipart creates bundle."""
+        """PUT /files/{path} with multipart creates a bundle."""
         files = [
             ("files", ("src/main.py", b"print('hi')", "application/octet-stream")),
             ("files", ("README.md", b"# Readme", "application/octet-stream")),
@@ -172,7 +172,7 @@ class TestRestFilesBundles:
 
     @pytest.mark.asyncio
     async def test_get_bundle_returns_json(self, rest_client: httpx.AsyncClient) -> None:
-        """T033: GET /files/{path} for bundle returns JSON."""
+        """GET /files/{path} for a bundle returns JSON."""
         files = [
             ("files", ("plan.md", b"# Plan", "application/octet-stream")),
             ("files", ("code.py", b"x = 1", "application/octet-stream")),
@@ -190,7 +190,7 @@ class TestRestFilesBundles:
 
     @pytest.mark.asyncio
     async def test_list_files_includes_file_count(self, rest_client: httpx.AsyncClient) -> None:
-        """T034: GET /files/ includes file_count."""
+        """GET /files/ includes file_count."""
         # Single file
         await rest_client.put("/files/single.txt", content=b"solo")
 
@@ -210,14 +210,14 @@ class TestRestFilesBundles:
 
 
 # ============================================================
-# T042: REST broadcast bundle (US5)
+# REST broadcast bundle
 # ============================================================
 
 
 class TestRestBroadcastBundle:
     @pytest.mark.asyncio
     async def test_broadcast_bundle_multipart(self, rest_client: httpx.AsyncClient) -> None:
-        """T042: POST /broadcast with multipart sends bundle to all agents."""
+        """POST /broadcast with multipart sends a bundle to all agents."""
         # Register agents
         await rest_client.post("/keys", json={"host": "alice", "project": "proj"})
         await rest_client.post("/keys", json={"host": "bob", "project": "proj"})

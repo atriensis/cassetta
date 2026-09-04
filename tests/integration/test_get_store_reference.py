@@ -1,4 +1,4 @@
-"""T010 (US1) — ``cassetta_get`` on a store bundle returns reference.
+"""``cassetta_get`` on a store bundle returns reference.
 
 A 2 MB file in the store is retrieved via ``cassetta_get``; the envelope
 is ``mode: "reference"`` and NO claim sidecar is written. The

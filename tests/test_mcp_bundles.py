@@ -112,7 +112,7 @@ async def _call(
 
 
 # ============================================================
-# T012: MCP pick bundle (bundles seeded directly — legacy send removed)
+# MCP pick bundle (bundles seeded directly — legacy send removed)
 # ============================================================
 
 
@@ -175,7 +175,7 @@ class TestMcpPickBundle:
 
 
 # ============================================================
-# T024-T025: MCP inbox listing with file_count (US3)
+# MCP inbox listing with file_count
 # ============================================================
 
 
@@ -217,14 +217,14 @@ class TestMcpInboxListing:
 
 
 # ============================================================
-# T029-T031: MCP put/get/list bundles in files namespace (US4)
+# MCP put/get/list bundles in the files namespace
 # ============================================================
 
 
 class TestMcpFilesBundles:
     @pytest.mark.asyncio
     async def test_put_bundle(self, mcp: tuple) -> None:
-        """T029: cassetta_put with files parameter stores a bundle."""
+        """cassetta_put with a files parameter stores a bundle."""
         _app, client, backend = mcp
         sid = await _init(client)
 
@@ -250,7 +250,7 @@ class TestMcpFilesBundles:
 
     @pytest.mark.asyncio
     async def test_get_bundle(self, mcp: tuple) -> None:
-        """T030: cassetta_get for multi-file bundle returns JSON."""
+        """cassetta_get for a multi-file bundle returns JSON."""
         _app, client, backend = mcp
         sid = await _init(client)
 
@@ -282,7 +282,7 @@ class TestMcpFilesBundles:
 
     @pytest.mark.asyncio
     async def test_list_shows_file_count(self, mcp: tuple) -> None:
-        """T031: cassetta_list includes file_count for bundles."""
+        """cassetta_list includes file_count for bundles."""
         _app, client, backend = mcp
         sid = await _init(client)
 
@@ -322,14 +322,14 @@ class TestMcpFilesBundles:
 
 
 # ============================================================
-# T041: MCP broadcast bundle (US5)
+# MCP broadcast bundle
 # ============================================================
 
 
 class TestMcpBroadcastBundle:
     @pytest.mark.asyncio
     async def test_broadcast_bundle(self, mcp: tuple) -> None:
-        """T041: cassetta_broadcast with files parameter sends to all agents."""
+        """cassetta_broadcast with a files parameter sends to all agents."""
         _app, client, backend = mcp
         sid = await _init(client)
 

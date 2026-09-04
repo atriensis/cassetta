@@ -4,7 +4,7 @@ One-shot ``GET {url}/capabilities`` that pretty-prints the server's
 advertised capabilities document: version, supported modes, limits,
 TTLs, and features. Null caps render as ``unlimited``.
 
-Exit codes (see ``specs/516-advertise-limits-handshake/contracts/capabilities-cli.md``):
+Exit codes:
 - 0: happy path (2xx response, valid JSON)
 - 1: network failure (connect refused, DNS, TLS, timeout)
 - 2: HTTP error (non-2xx) or malformed JSON

@@ -1,4 +1,4 @@
-"""T021 (US2) — claimed bundles are excluded from inbox listings.
+"""Claimed bundles are excluded from inbox listings.
 
 After a reference-mode pick writes a claim sidecar, both the MCP
 ``cassetta_inbox`` tool and the REST ``GET /inbox/{agent}/`` listing

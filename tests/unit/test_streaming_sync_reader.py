@@ -1,4 +1,4 @@
-"""T011 — failing-first tests for ``cassetta.streaming.SyncStreamReader``.
+"""Failing-first tests for ``cassetta.streaming.SyncStreamReader``.
 
 Covers:
 - ``read(n)`` accumulates across multiple ``feed`` calls.

@@ -1,4 +1,4 @@
-"""US2 acceptance — the documented client pre-check pattern.
+"""Acceptance — the documented client pre-check pattern.
 
 Simulates the client-side flow from ``quickstart.md`` §5:
 

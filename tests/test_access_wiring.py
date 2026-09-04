@@ -1,5 +1,5 @@
-"""Wiring tests for US1: every storage/inbox/keys/MCP call site must
-call `policy.check(...)` with the expected resource and action."""
+"""Wiring tests: every storage/inbox/keys/MCP call site must call
+`policy.check(...)` with the expected resource and action."""
 
 from __future__ import annotations
 

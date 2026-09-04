@@ -81,14 +81,7 @@ class LimitsRejection(Exception):
 
 
 class CoreLimitsPolicy:
-    """Reference :class:`LimitsPolicy` implementation.
-
-    Four methods are stubbed in Phase 2 and implemented in later
-    phases:
-
-    - ``evaluate_upload`` / ``evaluate_download`` — Phase 4 (US2).
-    - ``advertise_limits`` / ``ttls`` — Phase 5 (US3).
-    """
+    """Reference :class:`LimitsPolicy` implementation."""
 
     kind: ClassVar[str] = "core"
 

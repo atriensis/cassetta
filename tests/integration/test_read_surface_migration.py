@@ -1,4 +1,4 @@
-"""T030 (US3) — legacy raw-body REST read is retired.
+"""The legacy raw-body REST read is retired.
 
 Every REST read route (``GET /files/{path}``, ``GET /inbox/{agent}/{path}``,
 and REST pick) returns ``Content-Type: application/json`` with the

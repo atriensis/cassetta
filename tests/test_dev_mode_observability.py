@@ -74,7 +74,7 @@ async def _run_lifespan(app: object) -> AsyncIterator[None]:
 
 @pytest.mark.asyncio
 async def test_config_loaded_carries_dev_mode_false_in_auth_mode() -> None:
-    """US2 AS-1: auth-enabled boot → config_loaded.dev_mode=false, no
+    """Auth-enabled boot → config_loaded.dev_mode=false, no
     dev_mode_enabled event."""
     _set_common_env()
     os.environ["CASSETTA_SETUP_TOKEN"] = "test-tok-529-us2"
@@ -100,7 +100,7 @@ async def test_config_loaded_carries_dev_mode_false_in_auth_mode() -> None:
 
 @pytest.mark.asyncio
 async def test_config_loaded_carries_dev_mode_true_in_dev_mode() -> None:
-    """US2 AS-2: empty setup token → config_loaded.dev_mode=true and one
+    """Empty setup token → config_loaded.dev_mode=true and one
     WARNING-level dev_mode_enabled event."""
     _set_common_env()
     os.environ["CASSETTA_SETUP_TOKEN"] = ""
@@ -127,7 +127,7 @@ async def test_config_loaded_carries_dev_mode_true_in_dev_mode() -> None:
 
 @pytest.mark.asyncio
 async def test_health_includes_dev_mode_false_in_auth_mode() -> None:
-    """US2 AS-3: /health 200 body contains dev_mode=false."""
+    """/health 200 body contains dev_mode=false."""
     _set_common_env()
     os.environ["CASSETTA_SETUP_TOKEN"] = "test-tok-529-health"
 
@@ -147,7 +147,7 @@ async def test_health_includes_dev_mode_false_in_auth_mode() -> None:
 
 @pytest.mark.asyncio
 async def test_health_includes_dev_mode_true_in_dev_mode() -> None:
-    """US2 AS-4: /health 200 body contains dev_mode=true in dev mode."""
+    """/health 200 body contains dev_mode=true in dev mode."""
     _set_common_env()
     os.environ["CASSETTA_SETUP_TOKEN"] = ""
 
@@ -179,7 +179,7 @@ class _UnhealthyKeyStore:
 
 @pytest.mark.asyncio
 async def test_health_503_includes_dev_mode_field() -> None:
-    """US2 AS-5: 503 body still contains dev_mode alongside status + reason."""
+    """A 503 body still contains dev_mode alongside status + reason."""
     _set_common_env()
     os.environ["CASSETTA_SETUP_TOKEN"] = "test-tok-529-503"
 

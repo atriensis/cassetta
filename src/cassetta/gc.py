@@ -112,7 +112,7 @@ async def sweep_claims(
 ) -> None:
     """Drop expired claim sidecars; on completion, delete the inbox bundle.
 
-    Per the reaper contract in ``contracts/claim-sidecar.md``:
+    The reaper contract, in full:
 
     - ``age < ttl_s``: skip.
     - ``age >= ttl_s`` + all manifest names in ``files_fetched`` +

@@ -4,8 +4,6 @@ Turns a :class:`LimitsPolicy` into the six-field ``CapabilitiesDocument``
 returned by the MCP tool ``cassetta_capabilities`` and the REST endpoint
 ``GET /capabilities``. Pure glue — reads the policy, emits one DEBUG
 log event, returns a dict. No I/O.
-
-See ``specs/516-advertise-limits-handshake/data-model.md`` §1 and §4.
 """
 
 from __future__ import annotations

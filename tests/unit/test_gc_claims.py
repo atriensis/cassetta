@@ -1,4 +1,4 @@
-"""T024 (US2) — unit tests for ``cassetta.gc.sweep_claims`` branches.
+"""Unit tests for ``cassetta.gc.sweep_claims`` branches.
 
 Parametrized via ``claim_storage_factory`` so a downstream distribution
 can plug in its own axis. Core runs filesystem.

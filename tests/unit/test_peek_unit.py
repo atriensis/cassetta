@@ -1,4 +1,4 @@
-"""Unit tests for _cassetta_peek — purity, TTL, authz (brief 513 US1)."""
+"""Unit tests for _cassetta_peek — purity, TTL, authz."""
 
 from __future__ import annotations
 

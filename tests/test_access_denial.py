@@ -1,4 +1,4 @@
-"""Denial tests for US1: when policy.check returns False, REST routes
+"""Denial tests: when policy.check returns False, REST routes
 must return 403 Forbidden with no backend side effects, and MCP tools
 must raise a generic 'Forbidden' error."""
 

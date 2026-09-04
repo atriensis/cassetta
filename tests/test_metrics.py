@@ -20,7 +20,7 @@ class MetricCall:
 
 
 class RecordingMetricsProvider:
-    """T027: Test helper that records all metric calls for assertion."""
+    """Test helper that records all metric calls for assertion."""
 
     kind = "test"
 
@@ -59,7 +59,7 @@ class RecordingMetricsProvider:
 
 
 class TestDefaultMetricsProvider:
-    """T039: No-op provider has negligible overhead."""
+    """The no-op provider has negligible overhead."""
 
     def test_no_op_methods_do_nothing(self):
         provider = DefaultMetricsProvider()
@@ -144,7 +144,7 @@ async def metrics_client(storage_dir, recording_metrics, make_backends):
 
 
 class TestRequestMetrics:
-    """T034: Request-level metrics (total, duration, errors)."""
+    """Request-level metrics (total, duration, errors)."""
 
     @pytest.mark.asyncio
     async def test_requests_total_incremented(self, metrics_client):
@@ -166,7 +166,7 @@ class TestRequestMetrics:
 
 
 class TestFileMetrics:
-    """T035: File operation metrics."""
+    """File operation metrics."""
 
     @pytest.mark.asyncio
     async def test_file_put_metrics(self, metrics_client):
@@ -204,7 +204,7 @@ class TestFileMetrics:
 
 
 class TestInboxMetrics:
-    """T036: Inbox operation metrics."""
+    """Inbox operation metrics."""
 
     @pytest.mark.asyncio
     async def test_inbox_send_metrics(self, metrics_client):
@@ -267,7 +267,7 @@ class TestInboxMetrics:
 
 
 class TestKeyMetrics:
-    """T037: Key operation metrics."""
+    """Key operation metrics."""
 
     @pytest.mark.asyncio
     async def test_key_create_metrics(self, metrics_client):
@@ -279,7 +279,7 @@ class TestKeyMetrics:
 
 
 class TestPolicyMetrics:
-    """T038: Policy decision metrics."""
+    """Policy decision metrics."""
 
     @pytest.mark.asyncio
     async def test_policy_deny_emits_metric(self, storage_dir, make_backends):

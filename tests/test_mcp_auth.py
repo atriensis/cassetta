@@ -174,7 +174,7 @@ def _failure_records(
 async def test_mcp_missing_bearer_emits_auth_failure(
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-4: MCP request without Bearer prefix emits source=mcp,
+    """An MCP request without Bearer prefix emits source=mcp,
     reason=missing_bearer."""
     storage_dir = tempfile.mkdtemp()
     app, _ks, metrics = _setup_app_with_metrics("secret-tok-529", storage_dir)
@@ -211,7 +211,7 @@ async def test_mcp_missing_bearer_emits_auth_failure(
 async def test_mcp_invalid_bearer_emits_auth_failure_invalid_key(
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-5: MCP request with invalid bearer emits source=mcp,
+    """An MCP request with invalid bearer emits source=mcp,
     reason=invalid_key, identity_hint=first 12 chars."""
     storage_dir = tempfile.mkdtemp()
     app, _ks, metrics = _setup_app_with_metrics("secret-tok-529", storage_dir)

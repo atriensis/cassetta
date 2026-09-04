@@ -1,4 +1,4 @@
-"""T047 — US7: ``_FILE`` wins over value-env for JWT key loading."""
+"""``_FILE`` wins over value-env for JWT key loading."""
 
 from __future__ import annotations
 

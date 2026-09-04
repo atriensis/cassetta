@@ -1,4 +1,4 @@
-"""Integration tests for LimitsRejection wire format (brief 513 US2).
+"""Integration tests for the LimitsRejection wire format.
 
 Covers the cross-transport rejection contract:
     - REST 413 ``cap_exceeded`` with structured JSON body
@@ -99,7 +99,6 @@ def _configured_app(
         mcp_allowed_hosts=config.mcp_allowed_hosts,
         invite_ttl_seconds=config.invite_ttl_seconds,
         log_format=config.log_format,
-        key_label_chars=config.key_label_chars,
         limits=limits,
     )
     app = create_app(

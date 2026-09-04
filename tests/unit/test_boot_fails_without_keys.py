@@ -1,4 +1,4 @@
-"""T045 — US6: server boot aborts with a clear error without signing keys."""
+"""Server boot aborts with a clear error when no signing keys are configured."""
 
 from __future__ import annotations
 

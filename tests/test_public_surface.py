@@ -22,7 +22,10 @@ brief, so an ADR written with provenance taken from that index reintroduces them
 
 A fifth guard catches the same defect spelled differently: a pointer into a directory that
 stayed behind in the monorepo (``specs/…``, ``deploy/helm/…``) is just as broken as a ``core/``
-path, and reads to an outside contributor as a repository with missing parts.
+path, and reads to an outside contributor as a repository with missing parts. It reads ``src/``
+as well as prose, and extracts candidates by token rather than by quoting style — every pointer
+that outlived the split was written as an RST span or bare in a docstring, and its first version
+looked at neither.
 
 A fourth guard keeps the private half's environment variables out of ``.env.example``. Per
 Constitution V this repository has *no knowledge* of cloud features, so even a commented-out
@@ -41,9 +44,22 @@ the reader cannot open — and, where the path was a module path, discloses the 
 distribution nobody outside can install.
 
 The eleventh has the widest reach of all of them and the least to say about any one file: the
-numbering the project was built under — brief and requirement ids — refers to documents in that same
-private repository. It is the only guard that scans everything git tracks rather than the shipped
-surface, because the numbering reached the tests too.
+numbering the project was built under — brief, requirement, task and story ids — refers to documents
+in that same private repository. It is the only guard that scans everything git tracks rather than
+the shipped surface, because the numbering reached the tests too, and the only one that reads the
+tracked *paths* as well as their contents: a test package named after the chain that produced it
+carries the number where no scan of file contents can find it.
+
+The twelfth is the only one whose subject is not the split at all. No URL here may name a machine on
+a private network — and the worst instance was not in documentation but in the error the server
+printed when it refused to start, which reached operators who had nothing to do with that network.
+Everything that is not loopback, a private address, a name reserved for documentation, or a link
+this repository deliberately publishes is reported.
+
+The thirteenth is the mirror of the eighth, and the pair is what makes either honest: one fails when
+the configuration reference omits a variable the server reads, the other when it documents one no
+source file reads. An operator who sets a knob with no wire behind it and finds it in the reference
+concludes it took effect.
 
 These are regression **locks**, not a one-off cleanup script: each must keep failing if what it
 describes comes back.
@@ -51,6 +67,7 @@ describes comes back.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import re
 import subprocess
@@ -319,6 +336,44 @@ def test_config_reference_documents_every_env_var() -> None:
     )
 
 
+def test_config_reference_documents_nothing_the_source_does_not_read() -> None:
+    """``docs/CONFIG.md`` documents no ``CASSETTA_*`` variable that no source file reads.
+
+    The mirror of ``test_config_reference_documents_every_env_var``, and the pair is what makes
+    either honest: one fails when the reference omits a variable the server reads, this one fails
+    when the reference invents one it does not. Both derive the same two sets the same way, so
+    neither can be satisfied by editing a list.
+
+    A documented variable nothing reads is worse than an undocumented one. An operator sets it,
+    finds it in the reference, and concludes it took effect — where an omission at least sends
+    them to the source, which is the truth.
+    """
+    sources = _text_files_under("src")
+    # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
+    assert len(sources) >= 30, f"scanned only {len(sources)} files — the source root is wrong"
+
+    read: set[str] = set()
+    for path in sources:
+        read |= _env_var_names(path.read_text(encoding="utf-8"))
+    assert len(read) >= 25, f"found only {len(read)} variable names in src/ — the pattern is wrong"
+
+    reference = REPO_ROOT / _CONFIG_REFERENCE
+    assert reference.is_file(), f"{_CONFIG_REFERENCE} is missing — .env.example points readers at it"
+
+    documented = _env_var_names(reference.read_text(encoding="utf-8"))
+    assert len(documented) >= 20, (
+        f"{_CONFIG_REFERENCE} names only {len(documented)} variables — it is not the reference"
+    )
+
+    invented = sorted(documented - read)
+
+    assert not invented, (
+        f"{_CONFIG_REFERENCE} documents {len(invented)} variable(s) that no file under src/ reads. "
+        "Setting one of these does nothing, so the table promises a knob with no wire behind it — "
+        "delete the row, or wire the variable up:\n  " + "\n  ".join(invented)
+    )
+
+
 def test_config_reference_names_no_private_half_var() -> None:
     """``docs/CONFIG.md`` names no variable belonging to the private cloud repository.
 
@@ -352,12 +407,30 @@ _REPO_PATH_ROOTS = ("src/", "docs/", "tests/", "specs/", "deploy/", "infra/", "c
 # pointer into this repository. Named explicitly so the exception is visible rather than bought
 # by dropping ``src/`` from the roots and losing every real ``src/`` pointer with it.
 _ILLUSTRATIVE_PATHS = frozenset({"src/main.py", "./src/main.py"})
-_BACKTICKED_RE = re.compile(r"`([^`\n]+)`")
-_MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+
+# A repository-relative pointer, however it is quoted. Extraction is by token rather than by
+# quoting style because the same pointer is written four ways in this tree: as a markdown link,
+# as a single-backtick span, as an RST double-backtick span, and bare in running docstring text.
+# Matching the roots directly catches all four and anything else someone invents.
+#
+# The lookbehind is the whole design. ``str.startswith`` could only ever match at index 0 of an
+# already-extracted token, so it could not see a root buried inside a longer path; a free-text
+# scan gives that property up and has to buy it back. Without it, two pieces of perfectly correct
+# text are reported as broken pointers:
+#
+#   GET /inbox/.../peek     an elided REST path — `../peek` sits inside `.../peek`
+#   ./drop/src/lib.py       a path in the *reader's* upload bundle — `src/lib.py` sits inside it
+#
+# `(?<![\w./-])` says "the character before this is not part of a path", which is exactly what
+# ``startswith`` used to guarantee.
+_REPO_PATH_TOKEN_RE = re.compile(
+    r"(?<![\w./-])(?:" + "|".join(re.escape(root) for root in _REPO_PATH_ROOTS) + r")[\w./*-]*"
+)
 
 
-def _looks_like_repo_path(token: str) -> bool:
-    return token.startswith(_REPO_PATH_ROOTS)
+def _pointer_files() -> list[Path]:
+    """Every file that can carry a repository-relative pointer a reader will try to follow."""
+    return _prose_files() + _text_files_under("src")
 
 
 def _prose_files() -> list[Path]:
@@ -365,24 +438,30 @@ def _prose_files() -> list[Path]:
 
 
 def test_no_dangling_repo_links() -> None:
-    """Every repository-relative pointer in shipped prose resolves to something present.
+    """Every repository-relative pointer in shipped prose and source resolves to something present.
 
     The ``core/`` guard above catches the residue that is spelled as a stale prefix. This one
     catches the residue spelled as a *destination*: ``specs/513-peek-and-limits-policy/`` and
     ``../deploy/helm/cassetta/README.md`` both survived the split as pointers into directories
     that did not come across, so the published documentation sent readers to a tree only the
     private repository can see.
+
+    ``src/`` is scanned as well as prose. Docstrings are documentation — a contributor reads them
+    in the editor rather than on a documentation site, which makes a pointer there *more* likely
+    to be followed, not less. This guard's own docstring named ``specs/…`` as its quarry while
+    its file set never looked at the one directory where every surviving ``specs/`` pointer
+    lived.
     """
+    scanned = _pointer_files()
+    # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
+    assert len(scanned) >= 40, f"scanned only {len(scanned)} files — the pointer roots are wrong"
+
     dangling: list[str] = []
-    for doc in _prose_files():
+    for doc in scanned:
         text = doc.read_text(encoding="utf-8")
-        candidates = {m.group(1) for m in _BACKTICKED_RE.finditer(text)}
-        candidates |= {m.group(1) for m in _MD_LINK_RE.finditer(text)}
-        for raw in candidates:
-            token = raw.split("#", 1)[0].strip().rstrip(".,;:)")
-            if not token or "://" in token or not _looks_like_repo_path(token):
-                continue
-            if token in _ILLUSTRATIVE_PATHS:
+        for match in _REPO_PATH_TOKEN_RE.finditer(text):
+            token = match.group(0).split("#", 1)[0].strip().rstrip(".,;:)")
+            if not token or "://" in token or token in _ILLUSTRATIVE_PATHS:
                 continue
             # Backticked paths are repo-root-relative by convention here; a markdown link may be
             # relative to its own file. Accept either resolution before calling it dangling.
@@ -392,7 +471,7 @@ def test_no_dangling_repo_links() -> None:
 
     assert not dangling, (
         "shipped documentation points at paths that do not exist in this repository:\n  "
-        + "\n  ".join(sorted(dangling))
+        + "\n  ".join(sorted(set(dangling)))
     )
 
 
@@ -423,19 +502,49 @@ def test_no_links_into_the_private_predecessor() -> None:
     )
 
 
-# The numbering the project was built under, in the four spellings it actually took:
+# The numbering the project was built under, in the six spellings it actually took:
 #
-#   matches       Brief 533   FR-026   SC-014   brief-529
-#   not           Brief NNN   FRAGMENT   SC   brief-taking
+#   matches       Brief 533   FR-026   SC-014   brief-529   brief_512   T018   US3
+#   not           Brief NNN   FRAGMENT   SC   brief-taking   _T018   ABCT018   USD   BUS3
 #
 # Each names a document in the private repository this one was split out of. `FR-026` resolves
 # for an outside reader exactly as well as `Brief 533` does — not at all — so it tells them
 # nothing while telling everyone the shape of a backlog they cannot read.
-_INTERNAL_IDENTIFIER_RE = re.compile(r"Brief [0-9]{3}|FR-[0-9]{3}|SC-[0-9]+|brief-[0-9]{3}")
+#
+# The word boundaries are load-bearing on the last two and on nothing else: the older four are
+# self-delimiting, but a bare `T018` would otherwise match inside an identifier or a hex digest.
+# `\b` also correctly declines `_T018`, because an underscore is a word character.
+#
+# `brief[_-]` is one character class rather than a fifth alternative because `brief_512` and
+# `brief-512` name the same document, and two alternatives would be two places to forget a
+# spelling.
+_INTERNAL_IDENTIFIER_RE = re.compile(
+    r"Brief [0-9]{3}|FR-[0-9]{3}|SC-[0-9]+|brief[_-][0-9]{3}|\bT[0-9]{3}\b|\bUS[0-9]+\b"
+)
 
 # Writing the four shapes out is this file's job, and nothing else's — so it is the one path the
 # scan below skips.
 _GUARD_SELF_PATH = Path(__file__).resolve().relative_to(REPO_ROOT)
+
+
+def _tracked_paths() -> list[str]:
+    """Every path git tracks, repository-relative, in a stable order.
+
+    ``git ls-files`` rather than a tree walk: "tracked" is exactly the set wanted, it excludes
+    ``.venv/`` without naming it, and any hand-written exclusion list here would be a second copy
+    of ``.gitignore`` that drifts from the first.
+
+    Returned as strings rather than paths because one caller reads the path *as text*: a directory
+    can carry the private numbering in its own name, where no scan of file contents can see it.
+    """
+    listing = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout
+    return sorted(name for name in listing.split("\0") if name)
 
 
 def _tracked_text_files() -> list[Path]:
@@ -445,38 +554,39 @@ def _tracked_text_files() -> list[Path]:
     suite and ``pyproject.toml`` as well as the shipped surface, so a guard scoped to what a
     reader of the published repository sees would have stayed green with hundreds of citations
     still in the tree.
-
-    ``git ls-files`` rather than a tree walk: "tracked" is exactly the set wanted, it excludes
-    ``.venv/`` without naming it, and any hand-written exclusion list here would be a second copy
-    of ``.gitignore`` that drifts from the first.
     """
-    listing = subprocess.run(
-        ["git", "ls-files", "-z"],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        check=True,
-        text=True,
-    ).stdout
-    tracked = (REPO_ROOT / name for name in listing.split("\0") if name)
+    tracked = (REPO_ROOT / name for name in _tracked_paths())
     return sorted(path for path in tracked if path.suffix in _TEXT_SUFFIXES and path.is_file())
 
 
 def test_no_internal_identifiers_in_tracked_files() -> None:
-    """No tracked text file cites the private chain's brief or requirement numbers.
+    """No tracked path or text file cites the private chain's brief, task or story numbers.
 
     They are not noise — most annotated a real decision, and the sentence around them was worth
     keeping. But the number itself points at a document in a repository the reader has no access
     to, so it answers nothing and publishes the contours of a private backlog by existing.
 
+    Paths are scanned as well as contents, because a number can hide in a directory name where no
+    content scan reaches it: a test package called after the chain that produced it says exactly
+    as much to an outside reader as a citation in a comment does.
+
     The exclusion below is by path and only by path. Weakening the pattern until it no longer
     matched this file's own examples would buy the same green at the cost of a guard that no
     longer says what it checks.
     """
-    scanned = _tracked_text_files()
+    tracked = _tracked_paths()
     # Non-vacuity: an empty or truncated listing would otherwise make this guard green forever.
+    assert len(tracked) >= 150, f"listed only {len(tracked)} paths — the tracked-file listing is wrong"
+
+    offenders = [
+        f"{name}: (in the path itself)"
+        for name in tracked
+        if name != str(_GUARD_SELF_PATH) and _INTERNAL_IDENTIFIER_RE.search(name)
+    ]
+
+    scanned = _tracked_text_files()
     assert len(scanned) >= 150, f"scanned only {len(scanned)} files — the tracked-file listing is wrong"
 
-    offenders: list[str] = []
     for path in scanned:
         rel = path.relative_to(REPO_ROOT)
         if rel == _GUARD_SELF_PATH:
@@ -486,7 +596,129 @@ def test_no_internal_identifiers_in_tracked_files() -> None:
                 offenders.append(f"{rel}:{lineno}: {line.strip()}")
 
     assert not offenders, (
-        "tracked files cite the private chain's numbering. The briefs and requirements these "
+        "tracked files cite the private chain's numbering. The briefs, tasks and stories these "
         "name are not in this repository and cannot be looked up from it — drop the number and "
         "keep the sentence:\n" + "\n".join(offenders)
+    )
+
+
+# Every ``http(s)://`` occurrence, up to the first character that cannot be part of an authority.
+# `\\` is excluded so an escape sequence in a Python string literal ends the match rather than
+# being swallowed into the host.
+_URL_AUTHORITY_RE = re.compile(r"https?://([^\s/?#\"'`<>\\)\]}]+)", re.IGNORECASE)
+
+# Names reserved by RFC 2606 and RFC 6761 for documentation, testing and local use. None of them
+# can be registered, so none of them can name a real deployment.
+_RESERVED_HOSTS = frozenset({"localhost", "example.com", "example.net", "example.org"})
+_RESERVED_SUFFIXES = (
+    ".localhost",
+    ".example",
+    ".test",
+    ".invalid",
+    ".local",
+    ".example.com",
+    ".example.net",
+    ".example.org",
+)
+
+# Third-party documentation this repository links to on purpose. Written out rather than admitted
+# by a looser rule, because any rule broad enough to let `caddyserver.com` through also lets a
+# private deployment's hostname through — which is the one thing this guard exists to stop. Four
+# visible exceptions beat a rule that cannot do its job.
+_ALLOWED_EXTERNAL_HOSTS = frozenset(
+    {
+        "docs.docker.com",
+        "caddyserver.com",
+        "doc.traefik.io",
+        "www.apache.org",
+    }
+)
+
+
+def _url_scanned_files() -> list[Path]:
+    """Every file whose URLs a reader can see.
+
+    ``_tracked_text_files()`` plus the deployment surface it cannot reach: ``Dockerfile`` has no
+    suffix at all and ``scripts/*`` are shell. Both ship, and both carry URLs.
+
+    ``_TEXT_SUFFIXES`` is deliberately not widened to cover them — three other guards derive their
+    file sets from it, and adding an extensionless-file rule there would silently change what
+    those guards police. The extra handful belongs to the guard that needs it.
+    """
+    extra = [REPO_ROOT / "Dockerfile", REPO_ROOT / "docker-compose.yml"]
+    extra.extend(sorted(p for p in (REPO_ROOT / "scripts").rglob("*") if p.is_file()))
+    seen = {path.resolve() for path in _tracked_text_files()}
+    files = _tracked_text_files()
+    files.extend(p for p in extra if p.is_file() and p.resolve() not in seen)
+    return files
+
+
+def _url_host(authority: str) -> str:
+    """The bare lower-case host of a URL authority — userinfo and port removed."""
+    host = authority.rpartition("@")[2]
+    head, sep, tail = host.rpartition(":")
+    if sep and tail.isdigit():
+        host = head
+    return host.strip("[]").lower()
+
+
+def _is_publishable_host(host: str) -> bool:
+    """Whether a URL host is safe to publish, by the five rules this guard enforces."""
+    if not any(char.isalnum() for char in host):
+        # `http://...` in prose is an elision standing in for a URL, not a hostname.
+        return True
+    if host in _RESERVED_HOSTS or host.endswith(_RESERVED_SUFFIXES):
+        return True
+    if "." not in host:
+        # A single-label host cannot be registered, so it can only ever be a placeholder.
+        return True
+    if host in _ALLOWED_EXTERNAL_HOSTS:
+        return True
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return address.is_private or address.is_loopback
+
+
+def test_no_private_hosts_in_urls() -> None:
+    """No URL in this repository names a machine on someone's private network.
+
+    The worst instance of this was not in documentation but in a *runtime* surface: the error the
+    server printed when its public base URL was unset offered, as its first example, the hostname
+    of one machine on the network this project was developed on. It reached operators who had
+    nothing to do with that network, and it named the machine's role while it was at it.
+
+    A public commit stays in the history after the file changes, which is what makes this the one
+    class of mistake that cannot be taken back — and why the rule is an allowlist. Anything that
+    is not demonstrably un-routable, reserved, or a link this repository means to publish is
+    reported.
+
+    The IP test is delegated to ``ipaddress`` rather than written as a CIDR list: the module
+    already knows every reserved range, and a hand-written list would be a second, worse copy of
+    the same table.
+    """
+    scanned = _url_scanned_files()
+    # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
+    assert len(scanned) >= 150, f"scanned only {len(scanned)} files — the file set is wrong"
+
+    offenders: list[str] = []
+    seen_urls = 0
+    for path in scanned:
+        rel = path.relative_to(REPO_ROOT)
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            for match in _URL_AUTHORITY_RE.finditer(line):
+                seen_urls += 1
+                host = _url_host(match.group(1))
+                if not _is_publishable_host(host):
+                    offenders.append(f"{rel}:{lineno}: {host}")
+
+    # Non-vacuity: an extractor that matches nothing finds no bad hosts either.
+    assert seen_urls >= 10, f"found only {seen_urls} URLs — the extractor is wrong"
+
+    assert not offenders, (
+        "URLs name hosts that are neither loopback, nor a private address, nor a name reserved "
+        "for documentation, nor an allowlisted third-party link. A hostname that resolves only on "
+        "one network tells every other reader nothing and tells everyone that network's shape:\n  "
+        + "\n  ".join(sorted(set(offenders)))
     )

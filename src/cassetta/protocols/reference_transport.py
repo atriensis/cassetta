@@ -32,10 +32,9 @@ class ReferenceTransport(Protocol):
         implementations SHOULD URL-encode as needed.
     token:
         The download credential (JWT). Core implementations MAY ignore
-        this parameter (the credential travels in the ``Authorization``
-        header per ``contracts/download-endpoint.md``). Cloud
-        implementations MAY embed it into a presigned URL as a query
-        parameter.
+        this parameter, because the credential travels in the
+        ``Authorization`` header. Cloud implementations MAY embed it
+        into a presigned URL as a query parameter.
     """
 
     kind: ClassVar[str]
