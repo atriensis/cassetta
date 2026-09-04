@@ -33,6 +33,9 @@ readonly SETUP_TOKEN_PLACEHOLDER='change-me-to-a-long-random-string'
 # Where the API key store lands on the host, given the shipped bind mounts.
 readonly KEY_STORE='data.keys/.cassetta-keys.json'
 
+# The unprivileged account the image creates, and the id the application process must end up with.
+readonly EXPECTED_APP_UID=1001
+
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly REPO_ROOT
 cd -- "$REPO_ROOT"
@@ -137,15 +140,19 @@ fi
 
 info "prerequisites present, working tree clean of previous runs"
 
-# The image runs as uid 1001 (see Dockerfile). On native Linux a bind mount passes ownership
-# through literally, so a host user whose id differs from that may be unable to write into the
-# mounted ./data; on macOS the runtime remaps ownership and the question never arises — which is
-# exactly why the number is worth printing rather than assuming. Diagnostic only: nothing here
-# gates on it, and the script deliberately does not chown or override the container's user.
+# The application runs as uid 1001 (see Dockerfile). On native Linux a bind mount passes ownership
+# through literally, so the directories this script creates below belong to whoever ran it, and the
+# container has to cope with that difference — which the entrypoint does, by correcting the two
+# mount points before it drops privileges. On macOS the runtime remaps ownership and the question
+# never arises, which is why a green run here proves less than a green run on Linux.
+#
+# Printed because it says which of those two cases this run is: an id other than 1001 means the
+# correction is being exercised. Diagnostic only — nothing here gates on it, and the script
+# deliberately does not chown anything or override the container's user.
 invoking_uid="$(id -u)"
 [ -n "$invoking_uid" ] || die "could not determine the invoking user id (id -u)"
 
-info "invoking user id: ${invoking_uid} (the container runs as uid 1001)"
+info "invoking user id: ${invoking_uid} (the application runs as uid ${EXPECTED_APP_UID})"
 
 # --- environment ------------------------------------------------------------------------------
 
@@ -194,6 +201,30 @@ until curl -fsS --max-time 5 "${BASE_URL}/health" >/dev/null 2>&1; do
     sleep "$HEALTH_POLL_SECONDS"
 done
 info "healthy after ${SECONDS}s"
+
+# --- the application is unprivileged ------------------------------------------------------------
+
+step "Checking the application process is unprivileged"
+
+# Asked of the container, not of the host. The pre-flight line above reports the *invoking* user's
+# id, which says nothing about the process inside; and the image no longer declares a default user,
+# so asking an exec session for its own id would answer 0 and prove nothing either. Those are
+# different questions and only this one matters.
+#
+# PID 1 is the application: the entrypoint execs it, so the owner of PID 1 is the identity the
+# service actually runs as. Checked before the round trip on purpose — if the privilege drop were
+# ever removed, the round trip would still pass, because root can write anywhere, and this is the
+# only assertion here that would catch it.
+process_uid="$(docker compose exec -T cassetta \
+    python -c 'import os; print(os.stat("/proc/1").st_uid)')" ||
+    die "could not ask the container which user its application process belongs to"
+
+[ "$process_uid" = "$EXPECTED_APP_UID" ] ||
+    die "the application process runs as uid ${process_uid}, expected ${EXPECTED_APP_UID}" \
+        "The entrypoint is meant to drop privileges before starting the application." \
+        "uid 0 here means that drop was removed, or never happened."
+
+info "the application process runs as uid ${process_uid}"
 
 # --- mint a key -------------------------------------------------------------------------------
 

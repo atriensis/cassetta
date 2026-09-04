@@ -6,6 +6,10 @@
 #
 # The shell lives in scripts/smoke.sh rather than in this file, so a contributor can run exactly
 # what the schedule runs against their own clone.
+#
+# It runs twice, against bind mounts owned two different ways. The second run is the only thing in
+# this repository that exercises the case a hosted runner's own user id conceals; see the comment on
+# that job for why one run was never enough.
 
 name: Smoke
 
@@ -91,4 +95,38 @@ jobs:
 
       # One step, on purpose. Dumping logs on failure and tearing the stack down live in the
       # script's own exit trap, so a contributor running it locally gets exactly this behaviour.
+      - run: ./scripts/smoke.sh
+
+  smoke-foreign-uid:
+    name: Container smoke, bind mounts owned by another uid
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # The case the job above is structurally unable to see, and the reason this one is permanent.
+      #
+      # A hosted runner's own user carries uid 1001 — the same id as the account inside the image —
+      # so a bind mount the runner creates is already owned by exactly the right user. The job above
+      # therefore passes for a reason that has nothing to do with the code, and would keep passing
+      # if the container lost the ability to write into a directory it did not create. Handing the
+      # two directories to a different uid first is what reproduces the case an ordinary Linux
+      # contributor meets: the quickstart's `mkdir -p` leaves them owned by whoever ran it.
+      #
+      # 1000 is the first ordinary user id on a Debian or Ubuntu desktop, so it stands in for
+      # precisely that contributor. Creating the directories here rather than letting the script do
+      # it is load-bearing — the script creates them itself when they are absent, and one it creates
+      # belongs to the runner again.
+      #
+      # Both ownership cases are kept because they fail for different reasons. Deleting either loses
+      # a signal, and deleting this one returns the weekly run to passing by coincidence.
+      - name: Hand the bind-mount sources to a uid that is not the runner's
+        run: |
+          set -euo pipefail
+          mkdir -p data data.keys
+          sudo chown 1000:1000 data data.keys
+          printf 'runner uid: %s (the container runs as uid 1001)\n' "$(id -u)"
+          ls -ld data data.keys
+
       - run: ./scripts/smoke.sh
