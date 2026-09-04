@@ -1,4 +1,4 @@
-"""Peek-purity guard — asserts peek never opens bundle file bytes (brief 513)."""
+"""Peek-purity guard — asserts peek never opens bundle file bytes."""
 
 from __future__ import annotations
 

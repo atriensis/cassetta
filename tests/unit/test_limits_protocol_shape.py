@@ -1,4 +1,4 @@
-"""Shape tests for the LimitsPolicy Protocol (brief 513)."""
+"""Shape tests for the LimitsPolicy Protocol."""
 
 from __future__ import annotations
 

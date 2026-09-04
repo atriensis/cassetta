@@ -43,7 +43,7 @@ def _format_reason(
 ) -> str:
     """Human-readable suffix for ``LimitsRejection``. Tests only assert the prefix."""
     if error == "batch_required":
-        return "bundle exceeds max inline size; batch transport is not available yet (see brief 514)"
+        return "bundle exceeds max inline size; upload it with the batch URL and token send_init returns"
     if constraint == "per_bundle_file_count_max":
         return f"bundle has {observed} files; per_bundle_file_count_max is {limit}"
     if constraint == "per_bundle_total_max":

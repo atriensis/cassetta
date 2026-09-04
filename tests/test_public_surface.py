@@ -502,27 +502,65 @@ def test_no_links_into_the_private_predecessor() -> None:
     )
 
 
-# The numbering the project was built under, in the six spellings it actually took:
+# The numbering the project was built under, in the shapes it actually took:
 #
-#   matches       Brief 533   FR-026   SC-014   brief-529   brief_512   T018   US3
+#   matches       Brief 533   brief 513   Brief-529   brief-529   brief_512
+#                 FR-026   SC-014   T018   US3
 #   not           Brief NNN   FRAGMENT   SC   brief-taking   _T018   ABCT018   USD   BUS3
 #
 # Each names a document in the private repository this one was split out of. `FR-026` resolves
 # for an outside reader exactly as well as `Brief 533` does — not at all — so it tells them
 # nothing while telling everyone the shape of a backlog they cannot read.
 #
-# The word boundaries are load-bearing on the last two and on nothing else: the older four are
+# The word boundaries are load-bearing on the last two and on nothing else: the older shapes are
 # self-delimiting, but a bare `T018` would otherwise match inside an identifier or a hex digest.
 # `\b` also correctly declines `_T018`, because an underscore is a word character.
 #
-# `brief[_-]` is one character class rather than a fifth alternative because `brief_512` and
-# `brief-512` name the same document, and two alternatives would be two places to forget a
-# spelling.
-_INTERNAL_IDENTIFIER_RE = re.compile(
-    r"Brief [0-9]{3}|FR-[0-9]{3}|SC-[0-9]+|brief[_-][0-9]{3}|\bT[0-9]{3}\b|\bUS[0-9]+\b"
-)
+# `[Bb]rief[ _-]` puts BOTH the case and the separator in a character class, rather than spending
+# one alternative per spelling, because `Brief 512`, `brief 512`, `Brief-512`, `brief-512` and
+# `brief_512` all name the same document — and every extra alternative is another place to forget
+# a spelling.
+#
+# That is not a hypothetical worry. Two sweeps have now ended with survivors sitting in a
+# combination nobody had enumerated: the first left the separator uncovered, the second left
+# lower-case-with-a-space (25 of them) and capital-with-a-hyphen (3). Both times this guard was
+# green over every single survivor, because it was listing spellings instead of describing the
+# shape. Do not "simplify" the classes back into a list of alternatives — the coverage test below
+# fails if you do, and it names the combinations that got through twice.
+_INTERNAL_IDENTIFIER_RE = re.compile(r"[Bb]rief[ _-][0-9]{3}|FR-[0-9]{3}|SC-[0-9]+|\bT[0-9]{3}\b|\bUS[0-9]+\b")
 
-# Writing the four shapes out is this file's job, and nothing else's — so it is the one path the
+
+def test_identifier_pattern_matches_every_brief_spelling() -> None:
+    """The brief numbering is recognised in every combination of case and separator.
+
+    This is what makes the merged character classes a decision rather than a formatting choice.
+    Collapsing them back into one alternative per spelling reads as a harmless simplification and
+    is the exact mistake that left 28 citations in the tree with the guard green over all of them,
+    so the six combinations are asserted here one by one.
+
+    The pattern is fed strings rather than the repository: the point is what the recogniser
+    accepts, which the tracked-file scan cannot show — a scan over a clean tree is green under a
+    correct pattern and under a broken one alike.
+    """
+    spellings = [
+        "Brief 512",
+        "Brief-512",
+        "Brief_512",
+        "brief 512",
+        "brief-512",
+        "brief_512",
+    ]
+
+    missed = [spelling for spelling in spellings if not _INTERNAL_IDENTIFIER_RE.search(spelling)]
+
+    assert not missed, (
+        "the identifier pattern no longer covers every spelling of the private brief numbering. "
+        "Each combination of case and separator names the same unreachable document, so a "
+        "spelling the pattern misses is a citation that ships:\n  " + "\n  ".join(missed)
+    )
+
+
+# Writing the shapes out is this file's job, and nothing else's — so it is the one path the
 # scan below skips.
 _GUARD_SELF_PATH = Path(__file__).resolve().relative_to(REPO_ROOT)
 

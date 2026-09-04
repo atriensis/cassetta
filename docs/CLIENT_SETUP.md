@@ -107,16 +107,15 @@ be available: `cassetta_put`, `cassetta_get`, `cassetta_delete`,
 `cassetta_inbox`, `cassetta_pick`, `cassetta_peek`,
 `cassetta_capabilities`, `cassetta_agents`, `cassetta_broadcast`.
 
-`cassetta_peek` is new as of brief 513: it returns the full metadata
-of a store or inbox bundle (sender, created\_at, per-file manifest)
-without consuming or mutating the bundle — useful for previewing
-a handoff before deciding to pick it.
+`cassetta_peek` returns the full metadata of a store or inbox bundle
+(sender, created\_at, per-file manifest) without consuming or mutating
+the bundle — useful for previewing a handoff before deciding to pick
+it.
 
-`cassetta_capabilities` is new as of brief 516 (v0.9.0): it returns
-the server's advertised limits, TTLs, supported transport modes, and
-features. Agents SHOULD call it once per session and cache the
-result; see "Handshake: discovering server capabilities" below for
-the full pattern.
+`cassetta_capabilities` returns the server's advertised limits, TTLs,
+supported transport modes, and features. Agents SHOULD call it once
+per session and cache the result; see "Handshake: discovering server
+capabilities" below for the full pattern.
 
 > **Before exposing this server beyond `localhost`**, replace the
 > development-only `CASSETTA_JWT_KEY` shipped in `.env.example` with a
@@ -141,10 +140,10 @@ prefix. See `docs/CONFIG.md` for the `CASSETTA_PER_*` /
 
 ## Handshake: discovering server capabilities
 
-As of brief 516 the server advertises its upload caps, TTLs, and
-supported modes at a single endpoint. Agents SHOULD call it once per
-session, cache the result, and use it to fail fast on oversized
-payloads before a `cassetta_send_init` round-trip.
+The server advertises its upload caps, TTLs, and supported modes at a
+single endpoint. Agents SHOULD call it once per session, cache the
+result, and use it to fail fast on oversized payloads before a
+`cassetta_send_init` round-trip.
 
 Two surfaces return the **same** document:
 
@@ -218,11 +217,11 @@ tightened caps mid-session). Refresh the cache on reconnect, or after
 a rejection whose `constraint` does not match what the cached caps
 predicted.
 
-## Using `cassetta upload` (brief 514)
+## Using `cassetta upload`
 
 The legacy `cassetta_send` MCP tool and the
-`PUT /inbox/{agent}/{path}` REST endpoint were **retired in brief 514**;
-they are replaced by a two-phase upload flow. For bundles larger than
+`PUT /inbox/{agent}/{path}` REST endpoint are **retired**; they are
+replaced by a two-phase upload flow. For bundles larger than
 `CASSETTA_MAX_INLINE_SIZE` (default 100 KiB) the agent must shell out
 to the `cassetta upload` CLI, which streams a tar archive to
 `POST /upload/{bundle_path}` using the JWT credential from

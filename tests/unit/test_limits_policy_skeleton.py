@@ -1,4 +1,4 @@
-"""Skeleton tests for CoreLimitsPolicy + LimitsRejection (brief 513)."""
+"""Skeleton tests for CoreLimitsPolicy + LimitsRejection."""
 
 from __future__ import annotations
 
