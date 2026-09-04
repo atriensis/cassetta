@@ -2,9 +2,9 @@
 
 ``CoreReferenceTransport`` builds authenticated REST URLs of the form
 ``{public_base}/download/{bundle_path_urlencoded}/{name_urlencoded}``.
-The token travels in the ``Authorization: Bearer`` header (see
-``contracts/download-endpoint.md``); it is accepted as a parameter
-for Protocol conformance but is NOT embedded in the URL.
+The token travels in the ``Authorization: Bearer`` header; it is
+accepted as a parameter for Protocol conformance but is NOT embedded
+in the URL.
 
 Layer-2 default — no vendor imports, no I/O.
 """

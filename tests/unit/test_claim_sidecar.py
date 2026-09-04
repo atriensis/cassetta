@@ -1,4 +1,4 @@
-"""T003 — unit tests for ``ClaimStorage`` filesystem operations.
+"""Unit tests for ``ClaimStorage`` filesystem operations.
 
 Parametrized via ``claim_storage_factory`` so a downstream distribution
 can plug in its own axis without duplicating the test bodies.

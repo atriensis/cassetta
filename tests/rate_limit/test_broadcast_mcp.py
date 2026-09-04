@@ -1,4 +1,4 @@
-"""MCP ``cassetta_broadcast`` rate-limit + fan-out cap tests (T013)."""
+"""MCP ``cassetta_broadcast`` rate-limit + fan-out cap tests."""
 
 from __future__ import annotations
 

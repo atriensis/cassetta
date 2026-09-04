@@ -1,4 +1,4 @@
-"""T012 (US1) — ``GET /download/{bundle_path}/{name}`` error matrix.
+"""``GET /download/{bundle_path}/{name}`` error matrix.
 
 Exercise every outcome per ``contracts/download-endpoint.md`` test
 matrix: 200 (happy, idempotent, primary-key, secondary-key rotation),

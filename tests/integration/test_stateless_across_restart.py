@@ -1,4 +1,4 @@
-"""T044 — US6: credentials verify across app restart sharing the key."""
+"""Credentials verify across an app restart that shares the key."""
 
 from __future__ import annotations
 

@@ -30,7 +30,7 @@ async def test_missing_authorization_emits_auth_failure_rest_missing_bearer(
     ],
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-1: REST 401 with no Authorization header."""
+    """REST 401 with no Authorization header."""
     client, _setup_token, metrics = auth_metrics_client
 
     response = await client.get("/files/inbox/anything/foo")
@@ -60,7 +60,7 @@ async def test_invalid_bearer_emits_auth_failure_rest_invalid_key(
     ],
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-2: REST 401 with invalid bearer; identity_hint is first 12 chars."""
+    """REST 401 with invalid bearer; identity_hint is first 12 chars."""
     client, _setup_token, metrics = auth_metrics_client
 
     bearer = "ZZZZ-NEVER-EXISTED-1234567890"
@@ -100,7 +100,7 @@ async def test_invalid_setup_token_emits_auth_failure_rest_invalid_setup_token(
     ],
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-3: REST 401/403 with bad X-Setup-Token."""
+    """REST 401/403 with bad X-Setup-Token."""
     client, _setup_token, metrics = auth_metrics_client
 
     response = await client.post(

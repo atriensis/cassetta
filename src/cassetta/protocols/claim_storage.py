@@ -6,9 +6,6 @@ Abstracts the vendor-specific concurrency primitive that makes
 this Protocol; concrete implementations live in Layer 3
 (``backends/filesystem/claim_storage.py`` and the cloud
 ``backends/azure/claim_storage.py``).
-
-See ``specs/517-claimstore-cloud-parity/contracts/claim-storage-protocol.md``
-for the full method contracts.
 """
 
 from __future__ import annotations

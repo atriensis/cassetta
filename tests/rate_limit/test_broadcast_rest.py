@@ -1,4 +1,4 @@
-"""REST ``/broadcast`` rate-limit + fan-out cap integration tests (T012)."""
+"""REST ``/broadcast`` rate-limit + fan-out cap integration tests."""
 
 from __future__ import annotations
 

@@ -2,8 +2,6 @@
 
 Returns the same ``CapabilitiesDocument`` shape the MCP tool
 ``cassetta_capabilities`` returns. Read-only, side-effect-free.
-
-See ``specs/516-advertise-limits-handshake/contracts/capabilities-rest.md``.
 """
 
 from __future__ import annotations

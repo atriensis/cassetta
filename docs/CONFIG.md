@@ -109,8 +109,7 @@ verifications surface as `jwt_validation_failed` log entries.
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `CASSETTA_KEY_LABEL_CHARS` | `a-zA-Z0-9_\-` | Intended as the character class allowed in the host and project fields of an API-key label. **Not currently applied**: the label validator builds its pattern from a built-in constant, so setting this variable changes nothing. The built-in class is the same as the default above, so no deployment behaves differently than this table describes. |
-| `CASSETTA_INVITE_TTL_SECONDS` | `604800` (7 days) | Invite-token lifetime in seconds. Parsed and range-checked at startup — a non-integer or non-positive value stops the server — but no route in this repository issues or redeems invite tokens, so the value has no further effect here. |
+| `CASSETTA_INVITE_TTL_SECONDS` | `604800` (7 days) | The lifetime this library validates and carries for invite tokens. Parsed and range-checked at startup — a non-integer or non-positive value stops the server — and then held for whatever invite implementation is attached to it. This is an extension point: no invite implementation ships here, so a value set here is validated and held rather than used. |
 
 ## Limits policy
 
@@ -164,7 +163,14 @@ which is the right answer for single-user self-hosting.
 | `CASSETTA_RATE_LIMIT_ONBOARD` | `5/minute` | Budget for the onboarding endpoint. Format is `<int>/<unit>`, where unit is one of `sec`, `second`, `min`, `minute`, `hour`, `hourly`; short forms are normalised to long ones. A malformed value exits at startup. |
 | `CASSETTA_RATE_LIMIT_BROADCAST` | `10/minute` | Budget **shared** across the REST `/broadcast` route and the `cassetta_broadcast` tool — one bucket, not one each. Same format. |
 | `CASSETTA_BROADCAST_MAX_TARGETS` | `1000` | Fan-out cap. A broadcast addressed to more recipients than this is rejected before any storage write. Must be greater than zero. |
-| `CASSETTA_TRUSTED_PROXIES` | empty | Comma-separated CIDR list identifying your reverse proxy. The server reads it and reports it in the `config_loaded` startup line but does not act on it: pass the same list to uvicorn as `--forwarded-allow-ips`. Without it uvicorn ignores `X-Forwarded-For`, and every request is attributed to the proxy's address — which turns the per-client budgets above into one global budget. The empty default is correct only when the server is exposed directly. |
+
+**Behind a reverse proxy, tell the ASGI server about it.** The budgets above are
+per-client, and the client is whichever address the ASGI server attributes the
+request to. Give uvicorn your proxy's address list as `--forwarded-allow-ips`;
+without it uvicorn ignores `X-Forwarded-For` and attributes every request to the
+proxy, which collapses the per-client budgets into a single global one. Cassetta
+itself needs no configuration for this — the setting belongs to the server you run
+it under, and matters only when something sits in front of it.
 
 ## MCP and logging
 

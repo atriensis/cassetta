@@ -12,8 +12,7 @@ storage, inbox, and administrative code path.
 
 Resource descriptors follow `"{namespace}:{object_id}"`; actions are lowercase
 single words (`read`, `write`, `list`, `delete`, `pick`, `create`, `revoke`,
-etc.). See specs/504-rbac-invites/data-model.md §"Resource → action matrix"
-for the full enumeration.
+etc.).
 """
 
 from __future__ import annotations

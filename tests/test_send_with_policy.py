@@ -1,4 +1,4 @@
-"""Happy-path integration tests for LimitsPolicy-gated uploads (brief 513 US2)."""
+"""Happy-path integration tests for LimitsPolicy-gated uploads."""
 
 from __future__ import annotations
 
@@ -86,7 +86,6 @@ async def policy_client(
         mcp_allowed_hosts=config.mcp_allowed_hosts,
         invite_ttl_seconds=config.invite_ttl_seconds,
         log_format=config.log_format,
-        key_label_chars=config.key_label_chars,
         limits=limits,
     )
     app = create_app(

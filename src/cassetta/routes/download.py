@@ -42,10 +42,10 @@ _WWW_AUTHENTICATE = 'Bearer error="invalid_token"'
 class DownloadError(Exception):
     """Custom abort signal for the download endpoint.
 
-    Carries a body matching ``contracts/download-endpoint.md`` verbatim
-    (``{"error": ..., "reason": ...}``) — NOT wrapped in FastAPI's
-    default ``{"detail": ...}`` envelope. An app-level exception handler
-    registered in :mod:`cassetta.app` converts these to ``JSONResponse``.
+    Carries a body of exactly ``{"error": ..., "reason": ...}`` — NOT
+    wrapped in FastAPI's default ``{"detail": ...}`` envelope. An
+    app-level exception handler registered in :mod:`cassetta.app`
+    converts these to ``JSONResponse``.
     """
 
     def __init__(

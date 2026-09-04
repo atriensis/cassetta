@@ -127,12 +127,16 @@ class TestConfigValidation:
         _seed_required_env(monkeypatch)
         monkeypatch.setenv(
             "CASSETTA_MCP_ALLOWED_HOSTS",
-            "pi.host, pi.host:16001 ,foo.example",
+            "agents.example.com, agents.example.com:16001 ,foo.example",
         )
         from cassetta.config import load_config
 
         config = load_config()
-        assert config.mcp_allowed_hosts == ("pi.host", "pi.host:16001", "foo.example")
+        assert config.mcp_allowed_hosts == (
+            "agents.example.com",
+            "agents.example.com:16001",
+            "foo.example",
+        )
 
     def test_keys_file_defaults_outside_storage(
         self,
@@ -172,7 +176,6 @@ class TestOperationalResilienceEnvVars:
             "CASSETTA_RATE_LIMIT_ONBOARD",
             "CASSETTA_RATE_LIMIT_BROADCAST",
             "CASSETTA_BROADCAST_MAX_TARGETS",
-            "CASSETTA_TRUSTED_PROXIES",
             "CASSETTA_JWT_KEY_OVERLAP_TTL",
         ):
             monkeypatch.delenv(var, raising=False)
@@ -182,7 +185,6 @@ class TestOperationalResilienceEnvVars:
         assert config.rate_limit_onboard == "5/minute"
         assert config.rate_limit_broadcast == "10/minute"
         assert config.broadcast_max_targets == 1000
-        assert config.trusted_proxies == ""
         assert config.jwt_key_overlap_ttl == 600
 
     def test_valid_values_plumbed_through(
@@ -193,10 +195,6 @@ class TestOperationalResilienceEnvVars:
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_ONBOARD", "20/hour")
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_BROADCAST", "100/minute")
         monkeypatch.setenv("CASSETTA_BROADCAST_MAX_TARGETS", "50")
-        monkeypatch.setenv(
-            "CASSETTA_TRUSTED_PROXIES",
-            "10.0.0.0/8,192.168.0.0/16",
-        )
         monkeypatch.setenv("CASSETTA_JWT_KEY_OVERLAP_TTL", "1200")
         from cassetta.config import load_config
 
@@ -204,7 +202,6 @@ class TestOperationalResilienceEnvVars:
         assert config.rate_limit_onboard == "20/hour"
         assert config.rate_limit_broadcast == "100/minute"
         assert config.broadcast_max_targets == 50
-        assert config.trusted_proxies == "10.0.0.0/8,192.168.0.0/16"
         assert config.jwt_key_overlap_ttl == 1200
 
     def test_rate_limit_short_units_normalised(

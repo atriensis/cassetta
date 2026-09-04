@@ -57,15 +57,14 @@ class DeletedResponse(BaseModel):
     deleted: str
 
 
-# Default pattern for host/project field validation.
-# Configurable via CASSETTA_KEY_LABEL_CHARS env var.
-_DEFAULT_KEY_LABEL_CHARS = r"a-zA-Z0-9_\-"
+# The character class a host or project field of an API-key label may use.
+_KEY_LABEL_CHARS = r"a-zA-Z0-9_\-"
 
 
 def _validate_key_field(value: str, field_name: str) -> str:
     if not value:
         raise ValueError(f"{field_name} must not be empty")
-    pattern = rf"^[{_DEFAULT_KEY_LABEL_CHARS}]+$"
+    pattern = rf"^[{_KEY_LABEL_CHARS}]+$"
     if not re.match(pattern, value):
         raise ValueError(f"{field_name} contains invalid characters. Allowed: alphanumeric, hyphens, underscores")
     return value

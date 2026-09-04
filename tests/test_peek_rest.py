@@ -1,4 +1,4 @@
-"""Integration tests for GET /inbox/.../peek + GET /files/.../peek (brief 513 US1)."""
+"""Integration tests for GET /inbox/.../peek + GET /files/.../peek."""
 
 from __future__ import annotations
 

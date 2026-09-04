@@ -1,4 +1,4 @@
-"""T029 — US2 integration: `send_init` (batch) + tar upload → REST.
+"""Integration: `send_init` (batch) + tar upload → REST.
 
 Drives the full batch round-trip against an ASGI test client:
 `cassetta_send_init` → batch JWT + URL → build a tar archive in memory
@@ -109,7 +109,7 @@ async def test_batch_wrong_bundle_path_rejected(
     core_app_small_inline: tuple[httpx.AsyncClient, str],
     h,
 ) -> None:
-    """T030 — batch JWT issued for alice but POSTed to bob's path → 401."""
+    """A batch JWT issued for alice but POSTed to bob's path → 401."""
     client, _ = core_app_small_inline
 
     sender_key = await h.setup_agent(client, "bob", "mismatch")

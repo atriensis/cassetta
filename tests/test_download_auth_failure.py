@@ -141,7 +141,7 @@ async def test_expired_jwt_emits_auth_failure_download_jwt_expired(
     download_app_client: tuple[httpx.AsyncClient, RecordingMetrics],
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-6: expired download JWT emits source=download, reason=jwt_expired."""
+    """An expired download JWT emits source=download, reason=jwt_expired."""
     client, metrics = download_app_client
 
     token = _expired_jwt()
@@ -175,7 +175,7 @@ async def test_invalid_signature_jwt_emits_auth_failure_download_jwt_invalid(
     download_app_client: tuple[httpx.AsyncClient, RecordingMetrics],
     auth_log_capture: list[logging.LogRecord],
 ) -> None:
-    """US1 AS-7: invalid-signature download JWT emits source=download, reason=jwt_invalid."""
+    """An invalid-signature download JWT emits source=download, reason=jwt_invalid."""
     client, metrics = download_app_client
 
     token = _invalid_signature_jwt()

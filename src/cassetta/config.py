@@ -142,13 +142,11 @@ class AppConfig:
     jwt_primary_key_source: str = "env"
     invite_ttl_seconds: int = 604800
     log_format: str = "text"
-    key_label_chars: str = r"a-zA-Z0-9_\-"
     limits: LimitsConfig = field(default_factory=LimitsConfig)
     # Operational-resilience env vars.
     rate_limit_onboard: str = "5/minute"
     rate_limit_broadcast: str = "10/minute"
     broadcast_max_targets: int = 1000
-    trusted_proxies: str = ""
     jwt_key_overlap_ttl: int = 600
 
 
@@ -250,7 +248,7 @@ def _load_public_base_url(var_name: str) -> str:
     if not raw:
         print(
             f"ERROR: {var_name} is required (http://... or https://...).\n"
-            f"       Example (Pi):    {var_name}=https://dev1.cassetta.ai\n"
+            f"       Example (remote): {var_name}=https://cassetta.example.com\n"
             f"       Example (local): {var_name}=http://localhost:16001",
             file=sys.stderr,
         )
@@ -341,7 +339,6 @@ def load_config() -> AppConfig:
             file=sys.stderr,
         )
         raise SystemExit(1)
-    key_label_chars = os.environ.get("CASSETTA_KEY_LABEL_CHARS", r"a-zA-Z0-9_\-")
 
     primary_key, primary_source = _load_jwt_key_pair(
         value_var="CASSETTA_JWT_KEY",
@@ -371,7 +368,6 @@ def load_config() -> AppConfig:
         "CASSETTA_BROADCAST_MAX_TARGETS",
         os.environ.get("CASSETTA_BROADCAST_MAX_TARGETS", "1000"),
     )
-    trusted_proxies = os.environ.get("CASSETTA_TRUSTED_PROXIES", "").strip()
     jwt_key_overlap_ttl = _parse_positive_int(
         "CASSETTA_JWT_KEY_OVERLAP_TTL",
         os.environ.get("CASSETTA_JWT_KEY_OVERLAP_TTL", "600"),
@@ -391,11 +387,9 @@ def load_config() -> AppConfig:
         jwt_primary_key_source=primary_source,
         public_base_url=public_base_url,
         log_format=log_format_raw,
-        key_label_chars=key_label_chars,
         limits=limits,
         rate_limit_onboard=rate_limit_onboard,
         rate_limit_broadcast=rate_limit_broadcast,
         broadcast_max_targets=broadcast_max_targets,
-        trusted_proxies=trusted_proxies,
         jwt_key_overlap_ttl=jwt_key_overlap_ttl,
     )

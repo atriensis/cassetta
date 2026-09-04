@@ -194,7 +194,7 @@ class TestAgentsEndpoint:
 
 
 class TestAgentsDefaultPolicyPassthrough:
-    """T027 — DefaultAccessPolicy returns the full list unchanged."""
+    """DefaultAccessPolicy returns the full list unchanged."""
 
     @pytest.mark.asyncio
     async def test_default_policy_returns_all_labels(
@@ -212,7 +212,7 @@ class TestAgentsDefaultPolicyPassthrough:
 
 
 class TestAgentsListMetric:
-    """T031 — cassetta.agents.list metric tag."""
+    """The cassetta.agents.list metric tag."""
 
     @pytest.mark.asyncio
     async def test_unfiltered_when_full_list_returned(
@@ -250,7 +250,7 @@ class TestAgentsListMetric:
 
 
 class TestAgentsRESTVisibilityFilter:
-    """T026 / T028-style — visibility filter applied to REST listing."""
+    """The visibility filter is applied to the REST listing."""
 
     @pytest.mark.asyncio
     async def test_visibility_filter_subsets_response(
@@ -294,7 +294,7 @@ class TestAgentsRESTVisibilityFilter:
 
 
 class TestAgentsMCPVisibilityFilter:
-    """T030-style — MCP cassetta_agents matches REST behavior."""
+    """MCP cassetta_agents matches REST behavior."""
 
     @pytest.mark.asyncio
     async def test_mcp_passthrough_returns_all(

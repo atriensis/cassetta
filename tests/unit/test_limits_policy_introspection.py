@@ -1,4 +1,4 @@
-"""Tests for CoreLimitsPolicy.advertise_limits / .ttls (brief 513 US3)."""
+"""Tests for CoreLimitsPolicy.advertise_limits / .ttls."""
 
 from __future__ import annotations
 

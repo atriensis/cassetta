@@ -1,4 +1,4 @@
-"""T022 (US2) — concurrent picks serialize through the claim sidecar.
+"""Concurrent picks serialize through the claim sidecar.
 
 Two async picks on the same unclaimed bundle fire via ``asyncio.gather``.
 Exactly one MUST win (reference envelope + sidecar on

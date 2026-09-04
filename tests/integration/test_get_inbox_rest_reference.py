@@ -1,4 +1,4 @@
-"""T011 (US1) — REST ``GET /inbox/{agent}/{path}`` returns reference.
+"""REST ``GET /inbox/{agent}/{path}`` returns reference.
 
 For an over-threshold inbox bundle the REST read route returns the
 ``mode: "reference"`` envelope. It does NOT write a claim sidecar

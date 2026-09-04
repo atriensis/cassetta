@@ -19,9 +19,6 @@ The helper is pure, synchronous, and side-effect-free (no I/O, no
 logging, no input mutation). Re-exports the TypedDicts from
 :mod:`cassetta.protocols.limits` so callers don't need to reach into
 the protocol namespace.
-
-See ``specs/516-advertise-limits-handshake/contracts/check-manifest-against-limits.md``
-for the full contract.
 """
 
 from __future__ import annotations

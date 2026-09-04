@@ -1,7 +1,6 @@
 """Layer-1 protocol — `KeyStoreProtocol`.
 
-See specs/505-architecture-refactoring/contracts/key_store.md for the full
-contract documentation. The concrete implementations live in
+The concrete implementations live in
 `cassetta.backends.filesystem.keystore.FileKeyStore` (core) and
 cloud vendor-specific key store (cloud package).
 """

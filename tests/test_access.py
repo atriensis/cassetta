@@ -57,8 +57,8 @@ class TestVisibleAgentsProtocolConformance:
     """AccessPolicy gains a visible_agents method."""
 
     def test_default_access_policy_satisfies_extended_protocol(self) -> None:
-        # After T006 lands, DefaultAccessPolicy must still satisfy the
-        # runtime_checkable AccessPolicy Protocol with the new method.
+        # DefaultAccessPolicy must still satisfy the runtime_checkable
+        # AccessPolicy Protocol now that it carries visible_agents.
         policy = DefaultAccessPolicy()
         assert isinstance(policy, AccessPolicy)
         assert hasattr(policy, "visible_agents")

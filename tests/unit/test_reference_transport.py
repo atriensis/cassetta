@@ -1,4 +1,4 @@
-"""T002 — unit tests for ``CoreReferenceTransport`` URL construction.
+"""Unit tests for ``CoreReferenceTransport`` URL construction.
 
 The transport is a Layer-2 helper that builds per-file download URLs
 from a public base URL + a bundle path + a file name. For core the

@@ -68,7 +68,7 @@ def _records(captured: list[logging.LogRecord], event: str) -> list[logging.LogR
 
 
 # ---------------------------------------------------------------------------
-# T027 — JWTKeySlots + _resolve_secondary helpers
+# JWTKeySlots + _resolve_secondary helpers
 # ---------------------------------------------------------------------------
 
 
@@ -131,7 +131,7 @@ class TestJWTKeySlots:
 
 
 # ---------------------------------------------------------------------------
-# T028, T029, T030, T031 — rotation flows
+# Rotation flows
 # ---------------------------------------------------------------------------
 
 
@@ -301,7 +301,7 @@ class TestDisplacement:
 
 
 # ---------------------------------------------------------------------------
-# T032 — boot-time validation warning
+# Boot-time validation warning
 # ---------------------------------------------------------------------------
 
 
@@ -342,7 +342,7 @@ class TestOverlapTtlValidation:
 
 
 # ---------------------------------------------------------------------------
-# T033 — multi-worker disabled path
+# Multi-worker disabled path
 # ---------------------------------------------------------------------------
 
 

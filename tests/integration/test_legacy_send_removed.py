@@ -1,4 +1,4 @@
-"""T048 — US8: the legacy send path is gone.
+"""The legacy send path is gone.
 
 Covers:
 (a) MCP tool enumeration: ``cassetta_send`` is absent; both

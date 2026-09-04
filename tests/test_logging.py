@@ -34,7 +34,7 @@ def _clean_logger():
 
 
 class TestJsonFormatter:
-    """T018: JSON formatter output validation."""
+    """JSON formatter output validation."""
 
     def test_basic_json_output(self):
         formatter = JsonFormatter()
@@ -166,7 +166,7 @@ class TestJsonFormatter:
 
 
 class TestTextFormatter:
-    """T019: Text formatter backward compatibility."""
+    """Text formatter backward compatibility."""
 
     def test_basic_text_output(self):
         formatter = TextFormatter()
@@ -201,7 +201,7 @@ class TestTextFormatter:
 
 
 class TestConfigureLogging:
-    """T020: CASSETTA_LOG_FORMAT config parsing."""
+    """CASSETTA_LOG_FORMAT config parsing."""
 
     def test_configure_json(self):
         configure_logging("json")
@@ -242,7 +242,7 @@ def _seed_config_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class TestLogFormatConfig:
-    """T020: CASSETTA_LOG_FORMAT env var parsing."""
+    """CASSETTA_LOG_FORMAT env var parsing."""
 
     def test_valid_json_value(self, monkeypatch: pytest.MonkeyPatch):
         _seed_config_env(monkeypatch)
@@ -319,7 +319,7 @@ class TestSiblingLoggerCoverage:
     and every logger tree the caller supplies through the same handler stack."""
 
     def test_cassetta_auth_record_renders_through_json_formatter(self, capsys):
-        """US3 AS-1: cassetta.auth records render through the JSON formatter."""
+        """cassetta.auth records render through the JSON formatter."""
         configure_logging("json")
         logging.getLogger("cassetta.auth").warning(
             "test_auth_log",
@@ -337,7 +337,7 @@ class TestSiblingLoggerCoverage:
         self,
         capsys,
     ):
-        """US3 AS-2: records on a supplied tree render through the same handler."""
+        """Records on a supplied tree render through the same handler."""
         configure_logging("json", (_EXTRA_TREE,))
         logging.getLogger(f"{_EXTRA_TREE}.foo").warning(
             "test_supplied_log",
@@ -353,7 +353,7 @@ class TestSiblingLoggerCoverage:
         self,
         capsys,
     ):
-        """US3 AS-3: configure_logging called twice → exactly one log line."""
+        """configure_logging called twice → exactly one log line."""
         configure_logging("text")
         configure_logging("text")
         logger = logging.getLogger("cassetta.auth")
@@ -407,7 +407,7 @@ class TestSiblingLoggerCoverage:
 
 
 class TestEventTaxonomy:
-    """T041-T042: Verify event consistency across text and JSON formats."""
+    """Verify event consistency across text and JSON formats."""
 
     def _emit_event(self, formatter, event, **kwargs):
         record = logging.LogRecord(

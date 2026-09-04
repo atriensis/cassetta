@@ -1,4 +1,4 @@
-"""T007 — failing-first tests for ``cassetta.auth.jwt_tokens``.
+"""Failing-first tests for ``cassetta.auth.jwt_tokens``.
 
 Covers:
 - HS256 sign + verify roundtrip with the primary key.

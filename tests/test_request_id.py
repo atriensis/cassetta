@@ -20,7 +20,7 @@ def _json_logging():
 
 
 class TestRequestIdGeneration:
-    """T022: Request ID generation and uniqueness."""
+    """Request ID generation and uniqueness."""
 
     @pytest.mark.asyncio
     async def test_request_has_uuid_request_id(self, client: httpx.AsyncClient):
@@ -45,7 +45,7 @@ class TestRequestIdGeneration:
 
 
 class TestRequestIdPropagation:
-    """T023: Request ID propagation in JSON logs."""
+    """Request ID propagation in JSON logs."""
 
     @pytest.mark.asyncio
     async def test_json_log_contains_request_id(
@@ -76,7 +76,7 @@ class TestRequestIdPropagation:
 
 
 class TestRequestIdConcurrency:
-    """T024: Concurrent request isolation."""
+    """Concurrent request isolation."""
 
     @pytest.mark.asyncio
     async def test_concurrent_requests_have_distinct_ids(
@@ -98,7 +98,7 @@ class TestRequestIdConcurrency:
 
 
 class TestRequestIdHealthEndpoint:
-    """T025: Health endpoint still works with request ID middleware."""
+    """The health endpoint still works with request ID middleware."""
 
     @pytest.mark.asyncio
     async def test_health_endpoint_with_middleware(self, client: httpx.AsyncClient):
