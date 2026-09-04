@@ -81,7 +81,7 @@ fi
 # Run one command as that identity.
 as_run_identity() {
     if [ "$entry_uid" -eq 0 ]; then
-        setpriv --reuid="$app_uid" --regid="$app_gid" --clear-groups -- "$@"
+        setpriv --reuid="$app_uid" --regid="$app_gid" --clear-groups --no-new-privs -- "$@"
     else
         "$@"
     fi
@@ -135,8 +135,13 @@ done
 # reaches the application still holding it. The arguments are forwarded unchanged, so a command
 # supplied on the command line replaces the default one exactly as it did before — and has
 # privileges dropped for it in the same way.
+#
+# --no-new-privs sets the kernel's no_new_privs bit, so neither the application nor anything it
+# spawns can regain privilege by executing a setuid or setgid binary. A process that has just given
+# up root deliberately has no reason to leave itself a route back. It is requested at every point
+# this script changes identity, not only here.
 if [ "$entry_uid" -eq 0 ]; then
-    exec setpriv --reuid="$app_uid" --regid="$app_gid" --clear-groups -- "$@"
+    exec setpriv --reuid="$app_uid" --regid="$app_gid" --clear-groups --no-new-privs -- "$@"
 fi
 
 exec "$@"

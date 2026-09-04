@@ -60,9 +60,11 @@ EXPOSE 16001
 #
 #   * `docker exec` without `--user` now lands as root, where it used to land as cassetta. Pass
 #     `--user cassetta` for a session with the application's own permissions.
-#   * The healthcheck below runs outside the entrypoint — a command in exec form is executed
+#   * The health probe below runs outside the entrypoint — a command in exec form is executed
 #     directly — so it carries its own drop. Without it, removing `USER` would silently move a
-#     root process into every thirty-second interval for the life of the container.
+#     root process into every thirty-second interval for the life of the container. It is declared
+#     here and nowhere else: a probe declared on the container replaces this one rather than
+#     merging with it, so a second copy in docker-compose.yml would win and would not drop.
 
 # `python:3.13-slim` ships neither curl nor wget, and adding one for a liveness probe would mean
 # an apt layer. GET /health answers 200 when healthy and 503 when not; urlopen raises on 503, so
@@ -70,8 +72,12 @@ EXPOSE 16001
 #
 # The ids are written out because there is no shell here to resolve the name in. They are the ones
 # created a few lines above, in this same file, where a drift between the two is visible at a glance.
+#
+# --no-new-privs sets the kernel's no_new_privs bit for the probe and anything it spawns, so the
+# process cannot regain through a setuid binary the privilege this line has just given up. The
+# entrypoint asks for it at both of its own identity changes, for the same reason.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD ["setpriv", "--reuid=1001", "--regid=1001", "--clear-groups", "--", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:16001/health', timeout=2)"]
+    CMD ["setpriv", "--reuid=1001", "--regid=1001", "--clear-groups", "--no-new-privs", "--", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:16001/health', timeout=2)"]
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 

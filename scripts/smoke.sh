@@ -226,6 +226,68 @@ process_uid="$(docker compose exec -T cassetta \
 
 info "the application process runs as uid ${process_uid}"
 
+# --- the health probe is unprivileged too -----------------------------------------------------
+
+step "Checking the effective health probe drops privileges"
+
+# Asked of the runtime rather than of a file, and that is the entire point. The image declares the
+# probe and docker-compose.yml deliberately declares none — but a probe declared on a container
+# replaces the image's rather than merging with it, so what runs is decided at container creation
+# and not by either file on its own. Reading either one would prove nothing. This asks for the
+# result of that merge.
+#
+# It asserts on the configuration, not on a probe process: the process exists for a few
+# milliseconds every thirty seconds, so catching it would be a race with a duty cycle under one
+# per cent.
+
+container_id="$(docker compose ps -q cassetta)" ||
+    die "could not ask docker compose which container serves the cassetta service"
+
+[ -n "$container_id" ] ||
+    die "docker compose reports no container for the cassetta service" \
+        "The stack answered ${BASE_URL}/health a moment ago, so this is unexpected." \
+        "There is nothing to inspect, which means nothing here has been verified."
+
+healthcheck_config="$(docker inspect --format '{{json .Config.Healthcheck}}' "$container_id")" ||
+    die "could not read the health probe configuration of container ${container_id}"
+
+# Three checks, in this order and with three messages, because the three remedies are edits to
+# different files. An absent probe must never read as a pass: a check that found nothing has
+# verified nothing.
+case "$healthcheck_config" in
+    '' | null | *'"NONE"'*)
+        die "the running container has no health probe configured at all" \
+            "The image declares one — see the HEALTHCHECK instruction in the Dockerfile." \
+            "A container started with --no-healthcheck, or built from an image without that" \
+            "instruction, looks like this." \
+            "docker inspect returned: ${healthcheck_config:-<empty>}"
+        ;;
+esac
+
+case "$healthcheck_config" in
+    *setpriv*"--reuid=${EXPECTED_APP_UID}"*) ;;
+    *)
+        die "the effective health probe does not drop privileges" \
+            "It should run as uid ${EXPECTED_APP_UID}; it will run as root instead, once per" \
+            "probe interval for the life of the container. The usual cause is a probe declared" \
+            "in docker-compose.yml: one declared there replaces the image's rather than merging" \
+            "with it, and the image's is the one that carries the drop." \
+            "docker inspect returned: ${healthcheck_config}"
+        ;;
+esac
+
+case "$healthcheck_config" in
+    *--no-new-privs*) ;;
+    *)
+        die "the effective health probe drops privileges but could regain them" \
+            "The drop is there and --no-new-privs is not, so the probe can reacquire privilege" \
+            "by executing a setuid binary. See the HEALTHCHECK line in the Dockerfile." \
+            "docker inspect returned: ${healthcheck_config}"
+        ;;
+esac
+
+info "the effective health probe runs as uid ${EXPECTED_APP_UID} and cannot regain privilege"
+
 # --- mint a key -------------------------------------------------------------------------------
 
 step "Minting the first API key (POST /setup)"
