@@ -51,20 +51,35 @@ API_KEY=cst_...
 curl -X PUT \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: text/plain" \
-  --data-binary "Hello, Cassetta!" \
+  --data-binary "a note from the quickstart" \
   http://localhost:16001/files/notes/hello.txt
 
 curl -H "Authorization: Bearer $API_KEY" \
   http://localhost:16001/files/notes/hello.txt
-# Hello, Cassetta!
+# {"mode":"inline","bundle":{...},"files":[{"name":"hello.txt","content":"a note from the quickstart","encoding":"utf8"}]}
 ```
+
+A read answers with a JSON envelope rather than the raw bytes, because a stored file
+is a one-file bundle and the same envelope serves a one-file read and a many-file read
+alike. Your content is in `files[0].content`, tagged `utf8` when it decodes as text and
+`base64` when it does not. To get the bytes back out:
+
+```bash
+curl -fsS -H "Authorization: Bearer $API_KEY" \
+  http://localhost:16001/files/notes/hello.txt \
+| python3 -c 'import sys,json,base64;d=json.load(sys.stdin)["files"][0];c=d["content"];sys.stdout.buffer.write(base64.b64decode(c) if d["encoding"]=="base64" else c.encode())'
+# a note from the quickstart
+```
+
+See [docs/REST_API.md](docs/REST_API.md) for the envelope field by field.
 
 ### Check that all of the above actually works
 
 `scripts/smoke.sh` performs exactly these steps against a container built from this
 repository — it prepares the environment file, starts the stack, waits for the container to
-become healthy, mints a key, stores a file and reads it back, asserting the bytes match. Run
-it from a clean clone:
+become healthy, mints a key, stores a file and reads it back, decoding the envelope with the
+recipe above and asserting the decoded content matches what it wrote. Run it from a clean
+clone:
 
 ```bash
 ./scripts/smoke.sh

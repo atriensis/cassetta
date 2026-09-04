@@ -10,9 +10,9 @@
 #
 #     ./scripts/smoke.sh
 #
-# Requires Docker with Compose v2, curl and openssl. It refuses to run over an existing `.env`,
-# so it will never overwrite the configuration of a deployment you already have, and it tears the
-# stack down again on every exit path.
+# Requires Docker with Compose v2, curl, openssl and python3. It refuses to run over an existing
+# `.env`, so it will never overwrite the configuration of a deployment you already have, and it
+# tears the stack down again on every exit path.
 #
 # Everything it needs, it generates: there is no secret to supply and nothing to configure.
 
@@ -109,6 +109,10 @@ require_command docker
 require_command curl
 require_command openssl
 require_command sed
+# The read-back assertion decodes a JSON envelope with the recipe docs/REST_API.md publishes,
+# and that recipe is a python3 one-liner. Required here so a host without it fails in seconds
+# rather than after an image build, a stack start and a round trip.
+require_command python3
 
 docker compose version >/dev/null 2>&1 ||
     die "'docker compose' is unavailable" \
@@ -132,6 +136,16 @@ if [ -e "$KEY_STORE" ]; then
 fi
 
 info "prerequisites present, working tree clean of previous runs"
+
+# The image runs as uid 1001 (see Dockerfile). On native Linux a bind mount passes ownership
+# through literally, so a host user whose id differs from that may be unable to write into the
+# mounted ./data; on macOS the runtime remaps ownership and the question never arises — which is
+# exactly why the number is worth printing rather than assuming. Diagnostic only: nothing here
+# gates on it, and the script deliberately does not chown or override the container's user.
+invoking_uid="$(id -u)"
+[ -n "$invoking_uid" ] || die "could not determine the invoking user id (id -u)"
+
+info "invoking user id: ${invoking_uid} (the container runs as uid 1001)"
 
 # --- environment ------------------------------------------------------------------------------
 
@@ -225,14 +239,30 @@ http GET "${BASE_URL}/files/${stored_path}" \
     die "GET /files/${stored_path} answered ${HTTP_STATUS}, expected 200" \
         "Response body: ${HTTP_BODY}"
 
+# A read answers with a JSON envelope, not with raw bytes: a stored file is a one-file bundle,
+# and the same envelope serves both. The bytes live in files[0].content, tagged utf8 or base64.
+# This is the recipe docs/REST_API.md and the README quickstart both publish — reproduced rather
+# than reinvented, so that a run of this script is also a test of the documented recipe.
+#
+# Its own exit status is the shape check. An envelope missing files, content or encoding — a
+# reference envelope, say — and a body that is not JSON at all all make it exit non-zero with
+# empty output, so a malformed response is reported here as a decode fault rather than sliding
+# through as an empty string that then mismatches. Those are different faults, and a reader of a
+# scheduled run cannot tell them apart from a diff of empty against non-empty.
+decoded="$(printf '%s' "$HTTP_BODY" |
+    python3 -c 'import sys,json,base64;d=json.load(sys.stdin)["files"][0];c=d["content"];sys.stdout.buffer.write(base64.b64decode(c) if d["encoding"]=="base64" else c.encode())')" ||
+    die "the response to GET /files/${stored_path} could not be decoded as an inline envelope" \
+        'Expected {"mode":"inline",…,"files":[{"content":…,"encoding":"utf8"|"base64"}]}.' \
+        "Response body: ${HTTP_BODY}"
+
 # The assertion that carries the test. Checking status codes alone would pass against a server
 # that stored nothing at all.
-[ "$HTTP_BODY" = "$payload" ] ||
+[ "$decoded" = "$payload" ] ||
     die "the file read back differs from the file written" \
         "wrote: ${payload}" \
-        "read:  ${HTTP_BODY}"
+        "read:  ${decoded}"
 
-info "round-tripped ${#payload} bytes at /files/${stored_path}"
+info "round-tripped ${#payload} bytes at /files/${stored_path}, decoded from the envelope"
 
 step "Smoke passed"
 info "the image builds, the stack starts, and it serves authenticated traffic against a"
