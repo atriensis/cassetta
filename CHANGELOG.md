@@ -1,0 +1,158 @@
+# Changelog
+
+Everything a running deployment or a dependent project would notice, release by release.
+
+The format follows the Keep a Changelog convention; the project follows Semantic Versioning. Each
+entry cites the pull request that landed the change. The two oldest releases predate this
+repository's pull-request history and cite none.
+
+## [0.26.2] - 2026-09-05
+
+### Fixed
+
+- The disk-pressure probe measures the two directory trees it owns rather than the whole volume they
+  sit on, so another process writing to the same disk can no longer turn it red — or green. Test-only:
+  the ceiling it asserts, and everything the server does, are unchanged. (#21)
+
+## [0.26.1] - 2026-09-04
+
+### Changed
+
+- The message accompanying a `batch_required` upload rejection no longer says that batch transport is
+  unavailable. The server advertises that capability, and hands back a batch URL and a token for it,
+  while the text of the refusal denied it. The error code, the HTTP 422 status, the `constraint` /
+  `limit` / `observed` fields and the stable `batch_required: ` prefix are all unchanged, so a client
+  matching on the code or on the prefix is unaffected — only the prose differs. (#19)
+- Development-era identifiers removed from comments, docstrings and documentation throughout, and
+  seven documentation headings lose a parenthetical noting when a feature arrived. Those versions
+  predate anything a reader of this repository can check out. No behaviour change. (#19)
+
+## [0.26.0] - 2026-09-04
+
+### Removed
+
+- `CASSETTA_TRUSTED_PROXIES` and `CASSETTA_KEY_LABEL_CHARS` are no longer read. Both were parsed and
+  validated at startup and then acted on by nothing, so setting either now has no effect and raises
+  no error, and one key disappears from the `config_loaded` startup line. The reverse-proxy guidance
+  the first one carried survives as prose in `docs/CONFIG.md`. (#17)
+- The matching `trusted_proxies` and `key_label_chars` fields leave the public `AppConfig` dataclass.
+  **Breaking for code that constructs or reads `AppConfig` directly.** Taken deliberately before the
+  first published release rather than softened into a deprecation shim. (#17)
+
+### Changed
+
+- The error the server prints and exits on when `CASSETTA_PUBLIC_BASE_URL` is unset now offers a
+  documentation example instead of one specific host name. (#17)
+- `CASSETTA_INVITE_TTL_SECONDS` is documented as what it is: a value this repository validates and
+  holds but does not act on. (#17)
+
+## [0.25.4] - 2026-09-04
+
+### Security
+
+- The container health probe is declared once, in the image, so a deployment using the shipped
+  `docker-compose.yml` gets the privilege drop that previously reached only direct image runs. A
+  container-level healthcheck **replaces** the image's rather than merging with it, so the duplicate
+  declaration meant the probe ran as root for the life of the container. Same command, same 30s
+  interval, 3s timeout, 10s start period and 3 retries — under a different user. (#15)
+- Every privilege drop now sets the kernel's `no_new_privs` bit. A service that has just given up
+  root has no route back through a setuid binary. (#15)
+
+## [0.25.3] - 2026-09-04
+
+### Fixed
+
+- The container corrects the ownership of its bind-mount points while it still holds root, then hands
+  over to its unprivileged account — so the documented quickstart works on Linux at any host uid.
+  Previously the first key the server was asked to mint answered `500 Internal Server Error`, because
+  a bind mount passes host ownership through unchanged and the image runs as uid 1001. (#13)
+
+### Changed
+
+- Two things an operator will notice. `docker exec` without `--user` now lands as root; pass
+  `--user cassetta` for the application account. And `./data` and `./data.keys` become owned by
+  uid 1001 after a first start — modes are unchanged, so the documented copy-based backup still
+  works, but writing into them by hand now needs elevated privileges. (#13)
+
+## [0.25.2] - 2026-09-04
+
+### Added
+
+- Continuous integration on every pull request and on pushes to the default branch, plus a weekly run
+  that builds the image, brings the stack up and walks the quickstart over HTTP. The same walk runs
+  against a local clone as `scripts/smoke.sh`. (#11)
+
+### Changed
+
+- `uv run pytest` now deselects the disk-pressure probe by default and reports it as deselected. It
+  stays reachable with `uv run pytest -m slow`. (#11)
+
+### Fixed
+
+- The README quickstart claimed that fetching a stored file returns its raw bytes. It returns a JSON
+  envelope, and the content arrives in `files[0].content`, tagged `utf8` or `base64`. The quickstart
+  now shows the actual envelope and the decode recipe; `docs/REST_API.md` had documented this
+  correctly all along. (#11)
+
+## [0.25.1] - 2026-09-03
+
+### Changed
+
+- The `cassetta_broadcast` tool description loses a trailing citation of the project's pre-release
+  numbering. No tool is added, removed, renamed or re-signatured — this is simply the only published
+  string in the change. (#9)
+- Pre-release development citations removed from the published tree, along with nine pointers into a
+  directory this repository does not contain. Comments, docstrings and prose only; no behaviour
+  change. (#9)
+
+## [0.25.0] - 2026-09-03
+
+### Added
+
+- `docs/CONFIG.md` now documents every `CASSETTA_*` variable the server reads, with its default and
+  what it does, grouped by job. Fifteen of them were previously undocumented — including several
+  without which the server cannot be started at all. Three are documented as read but inert, because
+  describing an effect the code does not produce is worse than admitting there is none. (#7)
+
+### Changed
+
+- The `410 Gone` body for the retired inline-send endpoint changed shape: `reason` no longer carries
+  its former literal value, and the `migration_guide` field is gone. `replacement: POST
+  /upload/{bundle_path}` is unchanged and is the field that helps anyone holding an old client. **A
+  client switching on the old `reason` value, or following the guide pointer, breaks.** (#7)
+
+### Removed
+
+- The upgrade guide, in full. Eleven of its sections addressed an operator upgrading from a version
+  nobody outside this project has ever run, and it documented, with tables, configuration this
+  repository's source does not read. (#7)
+
+## [0.24.0] - 2026-09-02
+
+### Added
+
+- `configure_logging` and `create_app` accept `extra_log_trees`, so an application embedding this
+  server hands in its own logger tree and gets the configured handler. A supplied tree is configured
+  but not governed: same handler, same level, and its `propagate` attribute left untouched. (#5)
+
+### Changed
+
+- `configure_logging` no longer configures a hard-coded third logger tree belonging to a distribution
+  that cannot be installed from this repository. A caller passing that same name observes identical
+  behaviour — the handler attaches, the level is `DEBUG`, and propagation stays `True`. (#5)
+
+## [0.23.1] - 2026-09-02
+
+### Changed
+
+- Re-cut so that the first tag anyone depends on is the swept tree. `0.23.0` points at the initial
+  import, before the deployment surface, the tree-wide format pass and the publication sweep landed;
+  a consumer pinning it would get none of them.
+
+## [0.23.0] - 2026-09-01
+
+### Added
+
+- First tagged version of Cassetta as a standalone project: a file exchange bus for distributed AI
+  agents, running as a small API service that agents reach over MCP or a plain REST API, with a
+  local-filesystem storage backend and per-`host:project` API keys.

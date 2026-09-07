@@ -61,6 +61,14 @@ the configuration reference omits a variable the server reads, the other when it
 source file reads. An operator who sets a knob with no wire behind it and finds it in the reference
 concludes it took effect.
 
+The fourteenth is about the other thirteen. Almost every guard here reads the shipped surface
+through ``_SHIPPED_FILES``, which is an enumeration — so a new document at the repository root
+arrives outside all of them, and they stay green because they never look at it. That is not a
+hypothetical: the changelog is assembled from commit bodies, the likeliest carrier of a private
+identifier in the whole tree, and it would have landed unchecked. The guard requires every
+root-level markdown file git tracks to be inside the tuple, which is a rule rather than a longer
+list, and so has no next document to forget.
+
 These are regression **locks**, not a one-off cleanup script: each must keep failing if what it
 describes comes back.
 """
@@ -81,7 +89,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 #
 #   matches        core/src  core/tests  core/README.md  core/docs  cd core/  `core/`
 #   not the word   open-core  build_core_defaults  CoreLimitsPolicy  "the open-core split"
-#   not a slug     cassetta-core/  github.com/ximera239/cassetta-core/
+#   not a slug     cassetta-core/  — nor the same slug inside a URL, wherever it is hosted
 #
 # "core" without a slash is legitimate prose in an open-core project and must stay readable;
 # "core/" with one names a directory that does not exist here.
@@ -90,7 +98,7 @@ _MONOREPO_PATH_RE = re.compile(r"(?<![\w-])core/")
 # The other half of the same split, and deliberately the same shape of rule:
 #
 #   matches        cloud/src  cloud/LICENSE  cloud/extensions/  cloud/src/…/claim_storage.py
-#   not a slug     cassetta-cloud/  github.com/ximera239/cassetta-cloud/
+#   not a slug     cassetta-cloud/  — nor the same slug inside a URL, wherever it is hosted
 #
 # "cloud" without a slash is ordinary English and stays readable; "cloud/" with one names a
 # directory that went to the private repository. Where such a path was a *module* path it did
@@ -99,8 +107,14 @@ _MONOREPO_PATH_RE = re.compile(r"(?<![\w-])core/")
 _PRIVATE_HALF_PATH_RE = re.compile(r"(?<![\w-])cloud/")
 
 # The shipped surface: everything a reader of the public repository can see.
+#
+# This tuple is an enumeration, and every guard below that reads shipped prose reads it through
+# here — so a root-level document missing from it is a document no guard checks, silently.
+# `test_every_root_markdown_is_guarded` is what closes it: it requires the tuple to hold every
+# root-level markdown file git tracks, so the next document added cannot escape the way these three
+# would have.
 _SHIPPED_ROOTS = ("src", "docs")
-_SHIPPED_FILES = ("README.md",)
+_SHIPPED_FILES = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md")
 
 # A suffix allowlist rather than a swallowed UnicodeDecodeError: an allowlist states what is
 # covered, where a bare ``except`` silently skips a file that should have been read
@@ -475,17 +489,31 @@ def test_no_dangling_repo_links() -> None:
     )
 
 
-# The private monorepo this repository was split out of. ``(?![\w-])`` is what separates it from
-# this repository's own ``…/cassetta-core`` URLs, which are legitimate and expected.
-_PREDECESSOR_URL_RE = re.compile(r"github\.com/ximera239/cassetta(?![\w-])")
+# The personal account this repository used to live under, and which the private monorepo it was
+# split out of still does. The whole account, not one repository under it.
+#
+# This pattern used to end `…/cassetta(?![\w-])`, and the lookahead had exactly one job: to let this
+# repository's own links through while rejecting its predecessor's. That job no longer exists —
+# this project moved, and none of its links are under this account any more. What remains under it
+# is either the private predecessor or a stale path to where this project used to be, and both are
+# defects in shipped prose, so the exemption is gone and the rule is the simpler one.
+#
+# `(?![\w-])` is kept for a different reason: it stops the pattern from matching an unrelated
+# account whose name merely begins with this one. Same idiom as the two path guards above.
+_PREDECESSOR_URL_RE = re.compile(r"github\.com/ximera239(?![\w-])")
 
 
 def test_no_links_into_the_private_predecessor() -> None:
-    """Shipped prose must not link into the private repository this one was split from.
+    """Shipped prose must not link into the personal account this repository has moved off.
 
     Two ADRs cited the pull request and issue that implemented their decision. Those live in the
-    monorepo, which is private and stays that way, so a published document was sending readers to
-    a 404 and disclosing the shape of a backlog they cannot read.
+    monorepo this repository was split out of, which is private and stays that way, so a published
+    document was sending readers to a 404 and disclosing the shape of a backlog they cannot read.
+
+    The rule is now the account rather than one repository within it, because the move made the
+    narrower version incoherent: a link under that account can no longer be one of ours. Either it
+    names the private predecessor, or it names where this project used to be — a reader following it
+    gets a 404 in the first case and someone else's tree in the second.
 
     The route back is specific rather than hypothetical: the coder's inherited archive index lists
     one such URL per historical brief, and an ADR that takes its provenance from there picks them
@@ -640,6 +668,47 @@ def test_no_internal_identifiers_in_tracked_files() -> None:
     )
 
 
+def test_every_root_markdown_is_guarded() -> None:
+    """Every root-level markdown document is inside the guarded shipped set.
+
+    This is the only guard here whose subject is the *other* guards. ``_SHIPPED_FILES`` is an
+    enumeration, and every guard above that reads shipped prose reads it through that tuple — so a
+    new document at the repository root arrives with no identifier check, no dangling-pointer check
+    and no predecessor-link check, and nothing says so. The failure is silent by construction: the
+    guards stay green because they never look.
+
+    That is not hypothetical. This repository's changelog is assembled from commit bodies, which is
+    the likeliest place in the whole tree for a private identifier to be sitting, and it would have
+    landed outside every one of these checks.
+
+    The rule is deliberately not "the tuple contains these four names" — that is the same
+    enumeration one level up, and the next document escapes it identically. It is "nothing at the
+    root is outside the tuple", which has no next document to forget.
+
+    ``_tracked_paths()`` rather than a glob of the directory: an untracked draft in someone's
+    working tree is not published, and failing the suite over one would be a false positive about a
+    file no reader can see. The same reasoning already governs the identifier guard above.
+    """
+    root_markdown = {name for name in _tracked_paths() if name.endswith(".md") and "/" not in name}
+
+    # Non-vacuity, and deliberately not a count: a floor of "at least four" would re-encode today's
+    # document list as a number, and go red the day one is legitimately retired. Naming the one file
+    # that has been at this root since the initial import catches the failure that actually matters
+    # here — a listing that returned nothing, under which the subset test below is trivially true.
+    assert "README.md" in root_markdown, (
+        f"the tracked listing found no README.md at the repository root — it returned "
+        f"{sorted(root_markdown)}, so this guard is reading the wrong thing"
+    )
+
+    unguarded = sorted(root_markdown - set(_SHIPPED_FILES))
+
+    assert not unguarded, (
+        "root-level documents are outside the guarded shipped set, so none of the guards above "
+        "reads them — not the private-identifier scan, not the dangling-pointer check, not the "
+        "predecessor-link rule. Add them to `_SHIPPED_FILES`:\n  " + "\n  ".join(unguarded)
+    )
+
+
 # Every ``http(s)://`` occurrence, up to the first character that cannot be part of an authority.
 # `\\` is excluded so an escape sequence in a Python string literal ends the match rather than
 # being swallowed into the host.
@@ -659,16 +728,24 @@ _RESERVED_SUFFIXES = (
     ".example.org",
 )
 
-# Third-party documentation this repository links to on purpose. Written out rather than admitted
-# by a looser rule, because any rule broad enough to let `caddyserver.com` through also lets a
-# private deployment's hostname through — which is the one thing this guard exists to stop. Four
-# visible exceptions beat a rule that cannot do its job.
+# Hosts this repository links to on purpose. Written out rather than admitted by a looser rule,
+# because any rule broad enough to let `caddyserver.com` through also lets a private deployment's
+# hostname through — which is the one thing this guard exists to stop. Five visible exceptions beat
+# a rule that cannot do its job.
+#
+# `github.com` is the forge this project is published on, and it is here because the packaging
+# metadata and the README now link to it. It does not weaken the guard: this guard's subject, stated
+# in its docstring below, is a machine on someone's private network, and a public forge is neither
+# private nor a deployment. The question this one does *not* answer — whether a forge link points
+# where this project actually is — belongs to `test_no_links_into_the_private_predecessor`, which
+# rejects the account this repository used to live under. Host here, account there.
 _ALLOWED_EXTERNAL_HOSTS = frozenset(
     {
         "docs.docker.com",
         "caddyserver.com",
         "doc.traefik.io",
         "www.apache.org",
+        "github.com",
     }
 )
 
