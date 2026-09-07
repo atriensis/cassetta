@@ -6,6 +6,23 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.26.3] - 2026-09-07
+
+### Added
+
+- The repository now says what shipped, how to contribute and where to report a vulnerability:
+  `CHANGELOG.md` covering every release from 0.23.0, `CONTRIBUTING.md`, and `SECURITY.md`. The
+  supported-version answer is derived from the licence's per-version two-year clock rather than a
+  table that goes stale silently. (#23)
+- `make release-check` answers in one command whether the tree is internally consistent as a release:
+  the two version sites agree and the changelog has a section for that version. It performs no
+  release. (#23)
+- Packaging metadata gains `[project.urls]`, so an installed copy carries a link back to the
+  repository, its issues and its changelog. (#23)
+
+No behaviour changes: no route, status code, configuration variable, MCP tool or structured-log field
+moved.
+
 ## [0.26.2] - 2026-09-05
 
 ### Fixed
