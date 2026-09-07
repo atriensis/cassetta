@@ -114,7 +114,7 @@ _PRIVATE_HALF_PATH_RE = re.compile(r"(?<![\w-])cloud/")
 # root-level markdown file git tracks, so the next document added cannot escape the way these three
 # would have.
 _SHIPPED_ROOTS = ("src", "docs")
-_SHIPPED_FILES = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md")
+_SHIPPED_FILES = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "CLA.md")
 
 # A suffix allowlist rather than a swallowed UnicodeDecodeError: an allowlist states what is
 # covered, where a bare ``except`` silently skips a file that should have been read

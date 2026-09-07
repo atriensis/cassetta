@@ -35,8 +35,40 @@ that if you decline, the project has already seen your implementation of a probl
 solve, and cannot honestly write its own. Closing unread protects you as much as it protects the
 project.
 
-The agreement is not in this repository. It is provided on request: email **cassetta@atriensis.ai**
-and it will be sent to you. Ask before you start; it takes one message.
+The agreement is [CLA.md](CLA.md), version 1.0. Read it, fill in the fields at the top, and email a
+signed copy to **cassetta@atriensis.ai**, stating the version you signed. Ask before you start; it
+takes one message.
+
+A later version of the agreement binds only the people who sign that version — signing 1.0 keeps you
+under 1.0.
+
+### How the agreement differs from the Apache ICLA
+
+The agreement is the Apache Software Foundation's Individual CLA, version 2.2, with four changes.
+They are listed here rather than left to be found by diff.
+
+1. **The counterparty is a person, not a foundation.** The Apache original names The Apache Software
+   Foundation. Here it is the project's copyright holder, with an assignment clause so the agreement
+   survives the project being placed into a company later. A grant to an entity that does not yet
+   exist would be worth nothing.
+
+2. **The nonprofit-purpose sentence is removed.** The Apache original promises that the Foundation
+   will not use contributions in a way "contrary to the public benefit or inconsistent with its
+   nonprofit status and bylaws". The maintainer is not a nonprofit and gives no such undertaking:
+   this project is source-available under the FSL, it has a commercial counterpart, and the
+   sublicensing right in section 2 is exercised knowingly. **This is the substantive difference, and
+   it is stated here rather than left to be discovered.**
+
+3. **A governing-law section is added.** The Apache original has none. Section 9 names German law,
+   and says in the same breath that the choice does not deprive you of protections that cannot be
+   waived under the law where you habitually live. There is deliberately no forum clause.
+
+4. **Apache-specific mechanics are dropped**: the Apache id and notify-project fields, the
+   public-profile note, the ASF privacy-policy reference and the postal address. Delivery is by email
+   to the address above.
+
+The grants themselves — sections 2 and 3, and the representations in 4 through 8 — are the Apache
+text, altered only where it named the Foundation.
 
 ### Trivial changes are exempt
 
