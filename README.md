@@ -236,6 +236,12 @@ the new image will be used.
 | Restart | `docker compose restart` |
 | Rebuild | `docker compose up -d --build` |
 
+## Changes, contributions, security
+
+- [CHANGELOG.md](CHANGELOG.md) — what changed in each released version, and whether it affects you.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how a change gets in, and the agreement it needs first.
+- [SECURITY.md](SECURITY.md) — where to report a vulnerability, and which versions are covered.
+
 ## License
 
 Cassetta is licensed under the [Functional Source License, Version 1.1,
