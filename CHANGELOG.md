@@ -6,6 +6,18 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.26.4] - 2026-09-07
+
+### Added
+
+- The contributor agreement is now in the repository as `CLA.md` rather than sent on request, and
+  `CONTRIBUTING.md` says how it differs from the Apache ICLA it is adapted from — a person rather
+  than a foundation as counterparty, no nonprofit-purpose undertaking, a governing-law section, and
+  Apache-specific mechanics dropped. The agreement carries a version number: a later version binds
+  only the people who sign it.
+
+No behaviour changes.
+
 ## [0.26.3] - 2026-09-07
 
 ### Added
