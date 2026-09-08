@@ -6,6 +6,44 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.28.0] - 2026-09-08
+
+### Changed
+
+- **Installing this package no longer installs a server. If you run one, ask for the extra:**
+  `cassetta[server]` instead of `cassetta`. The container image already does; a `pip` or `uv`
+  install of the package for the purpose of running the server does not, and will start missing
+  FastAPI and uvicorn until the `[server]` is added. Nothing else changes for an operator — no
+  environment variable, no route, no MCP tool, no log field, and no behaviour of the running
+  service.
+
+  The reason is what the old install cost everyone else. `uv tool install` of this repository —
+  the documented way to get the `cassetta` CLI, and the required way to send anything over
+  100 KiB — put **57 packages and 55 MB** on the machine: `uvicorn`, `fastapi`, `starlette`,
+  `uvloop`, `watchfiles`, `websockets`, `httptools` and `slowapi` among them, to run four HTTP
+  commands that need none of them. The same install is now **16 packages and 10 MB**. The
+  documented install lines are unchanged in shape; they simply install less.
+
+  The base dependency set is `httpx`, `typer` and `pyjwt` — what the client imports. The `server`
+  extra carries `fastapi`, `uvicorn`, `mcp` and `slowapi`. The `dev` extra implies `server`, so
+  contributors and CI run the same commands as before with no new flags.
+
+### Removed
+
+- `cassetta.BackendConfig` and `cassetta.build_core_defaults` are no longer importable from the
+  package root. Both are unmoved and unchanged at `cassetta.defaults.factory`, which is where ADR
+  002 puts them and where every existing consumer already imports them from; `cassetta.__version__`
+  is still at the root. The two aliases were the whole reason a client install needed a web
+  framework: importing any submodule executes `__init__.py` first, so the console script could not
+  start without FastAPI present, and nothing under `src/cassetta/cli/` had ever asked for it.
+
+### Fixed
+
+- The `path` field of a send-init request is described in the OpenAPI document as the bundle's name
+  in the recipient's inbox rather than as a leaf path with a filename-shaped example. The field is
+  unchanged; the description was the last copy of a wording already corrected in `docs/REST_API.md`
+  and in `cassetta send --help`.
+
 ## [0.27.0] - 2026-09-08
 
 ### Removed

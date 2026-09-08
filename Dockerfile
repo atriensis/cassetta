@@ -18,12 +18,19 @@ WORKDIR /app
 # Dependency layer first, from the lockfile alone: editing a source file must not re-resolve
 # and re-download the dependency set. LICENSE is copied because pyproject declares
 # `license = "FSL-1.1-ALv2"` and the build backend globs for the file at wheel time.
+#
+# `--extra server` is on **both** sync lines, and leaving it off either one is the failure this
+# comment exists to prevent. Since 0.28.0 the base dependency set is the CLI client alone — three
+# libraries, no FastAPI, no uvicorn — and the server lives in an extra that has to be asked for.
+# `uv sync` is exact, so the project layer without the flag would *remove* what the dependency layer
+# installed. Either omission produces an image that builds successfully, passes every static check,
+# and has no server in it: the CMD below cannot start, and nothing says so until the container runs.
 COPY pyproject.toml uv.lock LICENSE ./
-RUN uv sync --locked --no-dev --no-install-project --no-editable
+RUN uv sync --locked --no-dev --extra server --no-install-project --no-editable
 
 # Project layer.
 COPY src ./src
-RUN uv sync --locked --no-dev --no-editable
+RUN uv sync --locked --no-dev --extra server --no-editable
 
 
 FROM python:3.13-slim

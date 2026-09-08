@@ -196,7 +196,11 @@ class UploadSessionRequest(BaseModel):
         description="Recipient label or alias, e.g. 'alice:main'.",
     )
     path: str = Field(
-        description="Bundle leaf path under the recipient's inbox, e.g. 'project-drop.tgz'.",
+        description=(
+            "The bundle's name in the recipient's inbox, not a local filename. The recipient sees "
+            "it in their inbox listing and puts it verbatim in the peek and pick paths, so it "
+            "names the bundle rather than describing a file inside it."
+        ),
     )
     manifest: SendManifest = Field(
         description="The files to send, declared up front (the send manifest).",
