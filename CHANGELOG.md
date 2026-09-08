@@ -26,7 +26,7 @@ repository's pull-request history and cite none.
 
   The base dependency set is `httpx`, `typer` and `pyjwt` — what the client imports. The `server`
   extra carries `fastapi`, `uvicorn`, `mcp` and `slowapi`. The `dev` extra implies `server`, so
-  contributors and CI run the same commands as before with no new flags.
+  contributors and CI run the same commands as before with no new flags. (#31)
 
 ### Removed
 
@@ -35,14 +35,14 @@ repository's pull-request history and cite none.
   002 puts them and where every existing consumer already imports them from; `cassetta.__version__`
   is still at the root. The two aliases were the whole reason a client install needed a web
   framework: importing any submodule executes `__init__.py` first, so the console script could not
-  start without FastAPI present, and nothing under `src/cassetta/cli/` had ever asked for it.
+  start without FastAPI present, and nothing under `src/cassetta/cli/` had ever asked for it. (#31)
 
 ### Fixed
 
 - The `path` field of a send-init request is described in the OpenAPI document as the bundle's name
   in the recipient's inbox rather than as a leaf path with a filename-shaped example. The field is
   unchanged; the description was the last copy of a wording already corrected in `docs/REST_API.md`
-  and in `cassetta send --help`.
+  and in `cassetta send --help`. (#31)
 
 ## [0.27.0] - 2026-09-08
 
