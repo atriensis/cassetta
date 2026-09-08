@@ -1,0 +1,93 @@
+# The release tag, as a consequence of the merge rather than a step somebody remembers.
+#
+# This repository is squash-only. A tag made on the branch before the merge names a commit that is
+# not on `main` — the branch commit and the squash commit can have the identical tree and the
+# identical parent and still different hashes, because the squash rewrites the message and the
+# committer. Reading the version *after* the merge and tagging the commit that landed is the only
+# way to get this right by construction.
+#
+# It runs on every push to `main`, and on almost all of them it does nothing. That is the design: the
+# common case must be a quiet, green no-op, because a mechanism that costs something on the ordinary
+# path is a mechanism somebody eventually deletes.
+#
+# The release workflow is *called*, never triggered. A tag pushed with GITHUB_TOKEN does not start
+# other workflow runs — GitHub's loop prevention — so a release workflow listening on `push: tags:`
+# would never fire, and would look correct in review. tests/test_workflows.py forbids that shape
+# repository-wide.
+
+name: Tag on merge
+
+on:
+  push:
+    branches: [main]
+
+# Read by default; the one job that needs to write says so for itself.
+permissions:
+  contents: read
+
+# Not keyed on the ref: every run of this workflow is on `main`, and the point is that two merges
+# landing seconds apart cannot both decide that a tag is missing. Cancelling is wrong here — a
+# cancelled run leaves a release untagged with nothing to report it, which is the failure this
+# workflow exists to prevent.
+concurrency:
+  group: tag-on-merge
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag the declared version, if it is new
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      created: ${{ steps.tag.outputs.created }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Brings the tags with it, so the "does this already exist?" question and the tag object
+          # itself are one local repository. It also keeps the push off a shallow clone, which git
+          # can refuse.
+          fetch-depth: 0
+
+      - id: tag
+        run: |
+          set -euo pipefail
+
+          # The same extraction make release-check performs, for the same reason: this is the one
+          # place the version is declared, and reading the file as text needs no environment.
+          version="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/cassetta/__init__.py | head -n 1)"
+
+          if [ -z "$version" ]; then
+              echo "src/cassetta/__init__.py declares no __version__ — nothing to tag" >&2
+              exit 1
+          fi
+
+          echo "version=${version}" >>"$GITHUB_OUTPUT"
+
+          if git rev-parse -q --verify "refs/tags/v${version}" >/dev/null; then
+              echo "created=false" >>"$GITHUB_OUTPUT"
+              printf 'v%s is already tagged — this merge carries no release.\n' "$version"
+              exit 0
+          fi
+
+          # Annotated, with the tag's own name as the message: that is what v0.26.0 through v0.26.5
+          # carry, and a release history where one entry is shaped differently is a question someone
+          # has to answer later.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${version}" -m "v${version}"
+          git push origin "v${version}"
+
+          echo "created=true" >>"$GITHUB_OUTPUT"
+          printf 'tagged %s as v%s\n' "$(git rev-parse --short HEAD)" "$version"
+
+  release:
+    name: Release
+    needs: tag
+    if: needs.tag.outputs.created == 'true'
+    # A call, in this same run — not something the tag push triggers, because it could not be. A job
+    # that carries `uses:` carries no `runs-on` and no `steps` of its own.
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.tag.outputs.version }}

@@ -22,8 +22,9 @@ SUPPORTED_MODES: tuple[str, str, str] = ("inline", "batch", "reference")
 FEATURES: tuple[str, ...] = ("peek", "batch_upload", "reference_download", "rest_send_init")
 
 
-#: Product version — single source of truth is ``cassetta.__version__``
-#: (updated atomically with ``pyproject.toml`` by ``make release``).
+#: Product version — single source of truth is ``cassetta.__version__``,
+#: and now literally so: the packaging metadata is derived from this module
+#: at build time rather than restating it.
 #: ``importlib.metadata`` was tried first and dropped: editable installs
 #: lag behind in-source bumps until ``uv sync``, silently producing
 #: ``server_version`` mismatches after every release bump.

@@ -1,22 +1,29 @@
-"""Guard: the three places this repository states what it is must agree with each other.
+"""Guard: what this repository says about itself, said once and said consistently.
 
-A release is cut from a tree, not from a command, and this tree says its version in two places and
-records what shipped in a third. Any one of them can be forgotten in a bump, and the resulting
-defect is only visible after the tag is public — which is the point at which it is expensive.
+A release is cut from a tree, not from a command. This tree used to say its version in two places
+and record what shipped in a third; either version site could be forgotten in a bump, and the
+resulting defect was only visible after the tag was public — which is the point at which it is
+expensive.
+
+There is now **one** version site, ``src/cassetta/__init__.py``, and ``pyproject.toml`` derives its
+metadata from it at build time. That changes what is worth guarding: not "do the two agree" — there
+is no second one to disagree — but "is there still only one".
 
 Sibling in spirit to ``test_public_surface.py``: the same idea that a rule worth keeping is a rule
 a test holds, rather than one a checklist asks about.
 
-Four things are held here.
+Five things are held here.
 
 * **The changelog's shape.** Sections are unique and newest-first. A duplicated version makes "the
   top section" and "the section for this version" two different things, which is exactly the
   ambiguity the release check downstream must not have to resolve.
 * **The changelog's top section names the version the package declares.** A release whose changelog
   has not caught up ships a document that describes the previous one.
-* **The two version sites agree.** ``pyproject.toml`` is what a consumer installs; the package's own
-  ``__version__`` is what a running deployment reports. When they diverge, the second lies to
-  whoever is holding an incident.
+* **The version is declared in exactly one place.** ``pyproject.toml`` states no literal and points
+  the build backend at the package module. A second site re-added "so it is visible" reintroduces
+  the whole defect while every other guard here stays green.
+* **``release-check`` reads that one place.** Its recipe is shell, so it cannot import anything and
+  cannot be caught by the rest of this file; what it *reads* is asserted by shape instead.
 * **Every declared project link names this repository**, and none names a package index or the
   personal account this project used to live under. The package is not published, so an index link
   would promise a page that does not exist; the old account is where this project *was*.
@@ -37,6 +44,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 _CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 _PYPROJECT = REPO_ROOT / "pyproject.toml"
 _PACKAGE_INIT = REPO_ROOT / "src" / "cassetta" / "__init__.py"
+_MAKEFILE = REPO_ROOT / "Makefile"
+
+# Where the build backend must be told to look for the version. Written as a string because that is
+# what ``pyproject.toml`` carries and what the assertion compares — building it from ``_PACKAGE_INIT``
+# would compare the file against a path derived from itself and pass for either answer.
+_VERSION_SOURCE_PATH = "src/cassetta/__init__.py"
 
 # A released version's section header, in the Keep a Changelog shape this file uses:
 #
@@ -78,17 +91,14 @@ def _pyproject() -> dict[str, object]:
     return tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
 
 
-def _packaging_version() -> str:
-    """The version ``pyproject.toml`` declares."""
-    project = _pyproject()["project"]
-    assert isinstance(project, dict)
-    version = project["version"]
-    assert isinstance(version, str)
-    return version
-
-
 def _package_version() -> str:
-    """The version ``src/cassetta/__init__.py`` declares."""
+    """The version ``src/cassetta/__init__.py`` declares — the only place one is declared.
+
+    Read as text rather than imported, deliberately: every other reader of this literal that is not
+    a Python process reads it the same way. The build backend does, ``make release-check`` does, and
+    the workflow that tags a merge does. A guard that imported it would be the one reader whose
+    answer could differ from all of theirs.
+    """
     match = _DUNDER_VERSION_RE.search(_PACKAGE_INIT.read_text(encoding="utf-8"))
     assert match is not None, f"{_PACKAGE_INIT.name} declares no `__version__` — the release check reads it too"
     return match.group(1)
@@ -156,31 +166,110 @@ def test_changelog_top_section_is_the_declared_version() -> None:
     assert versions, "the changelog carries no version sections at all"
 
     top = _as_text(versions[0])
-    declared = _packaging_version()
+    declared = _package_version()
 
     assert top == declared, (
-        f"pyproject.toml declares version {declared}, but the changelog's newest section is {top}. "
-        "Either the bump has not been recorded, or the record is for a release that is not this one."
+        f"{_PACKAGE_INIT.name} declares version {declared}, but the changelog's newest section is "
+        f"{top}. Either the bump has not been recorded, or the record is for a release that is not "
+        "this one."
     )
 
 
-def test_the_two_version_sites_agree() -> None:
-    """``pyproject.toml`` and ``src/cassetta/__init__.py`` declare the same version.
+def test_the_version_is_declared_in_exactly_one_place() -> None:
+    """``pyproject.toml`` states no version of its own and derives one from the package module.
 
-    Two sites, two audiences: the first is what a consumer resolves and pins, the second is what a
-    running deployment reports about itself. A disagreement is not cosmetic — it means a version
-    number taken from a live server does not identify the code that is running, which is discovered
-    while someone is trying to work out what broke.
+    This replaces a guard that asserted the two version sites agreed. That guard's subject no longer
+    exists — there is one site — and a test whose subject has gone is not passing, it is empty.
 
-    ``make release-check`` holds this same invariant before a tag is cut. Held twice on purpose: this
-    guard catches it during development, that one catches it in a clean clone with no environment,
-    which is the state a release is actually cut from.
+    What is worth holding now is the property that made it redundant. The obvious "improvement" is
+    to put the literal back into ``pyproject.toml`` so a reader can see it in the file they expect
+    it in; that single edit reinstates the original defect, and every other guard in this file stays
+    green over it, because each version site would still be internally consistent.
+
+    Three things, because three separate edits could each break it: the literal is gone, the
+    metadata is declared dynamic, and the backend is pointed at the file that has the literal.
     """
-    packaging = _packaging_version()
-    package = _package_version()
+    project = _pyproject()["project"]
+    assert isinstance(project, dict)
 
-    assert packaging == package, (
-        f"the two version sites disagree: pyproject.toml says {packaging}, src/cassetta/__init__.py says {package}"
+    assert "version" not in project, (
+        "pyproject.toml states a version literal again. It is derived from "
+        f"{_VERSION_SOURCE_PATH} at build time; a second site is the defect this arrangement "
+        "removed, not a convenience"
+    )
+
+    assert project.get("dynamic") == ["version"], (
+        'pyproject.toml must declare `dynamic = ["version"]` — without it the build backend is '
+        f"never asked for a version and the metadata ships with none. Found: {project.get('dynamic')!r}"
+    )
+
+    tool = _pyproject().get("tool")
+    assert isinstance(tool, dict), "pyproject.toml declares no [tool] table, so the version source is unconfigured"
+    hatch = tool.get("hatch")
+    assert isinstance(hatch, dict), (
+        "pyproject.toml declares no [tool.hatch] table, so the version source is unconfigured"
+    )
+    version_source = hatch.get("version")
+    assert isinstance(version_source, dict), (
+        'pyproject.toml declares `dynamic = ["version"]` but no [tool.hatch.version] block, so '
+        "nothing tells the backend where to read it"
+    )
+
+    assert version_source.get("path") == _VERSION_SOURCE_PATH, (
+        f"the build backend must read the version from {_VERSION_SOURCE_PATH}, which is where the "
+        f"package declares it. Found: {version_source.get('path')!r}"
+    )
+
+    # Non-vacuity: the path above is only a single source of truth if the file it names has one.
+    assert _DUNDER_VERSION_RE.search(_PACKAGE_INIT.read_text(encoding="utf-8")) is not None, (
+        f"{_VERSION_SOURCE_PATH} is configured as the version source but declares no `__version__`"
+    )
+
+
+def test_release_check_reads_the_package_module() -> None:
+    """``make release-check`` reads the one version site, and compares the documented pins.
+
+    Asserted by shape rather than by running it, and the reason is the recipe's whole purpose: it is
+    shell so that it works in a clean clone where no virtual environment exists, which is the state
+    a release is cut from. Nothing about that state can be reproduced from inside a test session that
+    is, by definition, running in the environment the recipe must not need.
+
+    So this holds the three things a wrong recipe would get wrong, and the operator runs it for real:
+    it reads the package module, it no longer extracts a version out of ``pyproject.toml`` (the site
+    that no longer has one — a recipe still reading it would find nothing and would have to either
+    fail always or, worse, silently treat "no version" as "nothing to compare"), and it checks the
+    documented install pins, which is the surface that went stale unnoticed and prompted all this.
+    """
+    assert _MAKEFILE.is_file(), "Makefile is missing — it is what a release is checked with"
+    recipe = _MAKEFILE.read_text(encoding="utf-8")
+
+    assert _VERSION_SOURCE_PATH in recipe, (
+        f"the release check does not name {_VERSION_SOURCE_PATH}, which is the only place this "
+        "repository declares its version"
+    )
+
+    # Two separate ways of saying "it does not read pyproject.toml for a version", because the
+    # recipe could keep either half without the other and both halves are wrong.
+    #
+    # The extraction pattern first: `^version = ` is what the old recipe matched, and it is what a
+    # reflex edit would restore. It is not a substring of the `^__version__ = ` the recipe uses now.
+    assert "^version = " not in recipe, (
+        "the release check still extracts a version with the `^version = ` pattern, which matched "
+        "the line pyproject.toml no longer carries. It would find nothing, and a check that finds "
+        "nothing either fails always or treats absence as agreement"
+    )
+
+    # And the file itself, because a recipe that still reads pyproject.toml is reading a file that
+    # has nothing to say about the version. There is no other reason for this target to open it.
+    assert "pyproject" not in recipe.lower(), (
+        "the release check still names pyproject.toml. It no longer declares a version — the build "
+        f"backend derives one from {_VERSION_SOURCE_PATH} — so there is nothing for this check to "
+        "read there"
+    )
+
+    assert "docs" in recipe, (
+        "the release check does not look at docs/. The documented install pins are the surface that "
+        "went a release stale without anyone noticing, which is the defect this check exists to catch"
     )
 
 

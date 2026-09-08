@@ -1,0 +1,83 @@
+# Build the distribution for a release, and prove it is the release it claims to be.
+#
+# Reusable on purpose, and reusable *only*. What defines a release here is the tag, and the tag is
+# placed by tag.yml after a merge — so this workflow is called from there, in the same run, with the
+# version that was just tagged. There is nothing this could usefully mean on its own, which is why it
+# carries no other trigger.
+#
+# It stops one step short of publishing, deliberately. The package name is unclaimed and nothing
+# carries this package, so a publish step would need a name, a credential and a decision this
+# repository has not taken. tests/test_workflows.py holds it to that, so taking the decision later is
+# an edit somebody makes on purpose rather than a drift.
+
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: The version that was just tagged, without the leading `v`.
+        required: true
+        type: string
+
+# It reads the tree and writes nothing back — the tag already exists by the time this runs.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build the distribution and check it against the tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      # No `--extra dev` here: a build needs the build backend, not the gate tools. CI has already
+      # run those against this very commit.
+      - run: uv build
+
+      # The step this whole composition exists for. The version in the built artifact is derived
+      # from src/cassetta/__init__.py by the build backend; the version in the tag was read from the
+      # same file by tag.yml. Asserting they match is what turns "they are both read from one place"
+      # from an argument into an observation.
+      #
+      # The input reaches the script through the environment rather than being interpolated into the
+      # script body. The value comes from this repository's own tree, so nothing hostile can reach
+      # it — but a `run:` block with an expression spliced into it is a shape a reviewer has to stop
+      # and think about, and this one gets exactly one review.
+      - name: The built artifact must carry the version that was tagged
+        env:
+          EXPECTED: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          wheel="dist/cassetta-${EXPECTED}-py3-none-any.whl"
+          sdist="dist/cassetta-${EXPECTED}.tar.gz"
+
+          missing=false
+          for artifact in "$wheel" "$sdist"; do
+              if [ ! -f "$artifact" ]; then
+                  printf 'expected %s, which was not built\n' "$artifact" >&2
+                  missing=true
+              fi
+          done
+
+          if [ "$missing" = true ]; then
+              printf '\nthe tag says %s; the build produced:\n' "$EXPECTED" >&2
+              ls -1 dist/ >&2
+              printf '\nThe tag and the distribution disagree about what this release is.\n' >&2
+              exit 1
+          fi
+
+          printf 'dist/ carries %s, which is what was tagged\n' "$EXPECTED"
+
+      # Kept rather than sent anywhere. Retention is the default; a build artifact that outlived the
+      # question it answers would just be storage.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cassetta-${{ inputs.version }}
+          path: dist/
+          if-no-files-found: error

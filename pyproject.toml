@@ -1,6 +1,6 @@
 [project]
 name = "cassetta"
-version = "0.26.5"
+dynamic = ["version"]
 requires-python = ">=3.13"
 license = "FSL-1.1-ALv2"
 dependencies = [
@@ -21,6 +21,12 @@ dev = [
     "pytest-randomly>=3.15",
     "ruff>=0.8",
     "mypy>=1.13",
+    # Declared rather than inherited. It is reachable today only as a transitive of
+    # `uvicorn[standard]`, so the workflow guard that imports it would otherwise depend on somebody
+    # else's dependency graph — and go red for a reason with nothing to do with this repository the
+    # day that graph changes. The constraint block already pins the version; this only makes the
+    # dependency ours.
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
@@ -35,6 +41,16 @@ Changelog = "https://github.com/atriensis/cassetta/blob/main/CHANGELOG.md"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+# The version is declared once, in the package itself, and read from there at build time. Stating it
+# here as well is what let the two drift: nothing forced them to move together except a habit.
+#
+# The default version source reads the literal out of the file as *text*. That is load-bearing, not a
+# default accepted by omission: `src/cassetta/__init__.py` imports from `cassetta.defaults.factory` at
+# module scope, so the `code` source — which imports the file — would need the package's whole
+# dependency tree present before it could answer what version this is.
+[tool.hatch.version]
+path = "src/cassetta/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cassetta"]
