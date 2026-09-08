@@ -98,7 +98,7 @@ class TestImperativeCheck:
         request = Request(scope)
 
         # 2/minute — three calls; third should overflow.
-        check_rate_limit_imperative(request, "2/minute")
-        check_rate_limit_imperative(request, "2/minute")
+        check_rate_limit_imperative(request, "2/minute", route="broadcast")
+        check_rate_limit_imperative(request, "2/minute", route="broadcast")
         with pytest.raises(RateLimitExceeded):
-            check_rate_limit_imperative(request, "2/minute")
+            check_rate_limit_imperative(request, "2/minute", route="broadcast")

@@ -13,7 +13,6 @@ Sections:
 - [Required](#required)
 - [Upload flow](#upload-flow)
 - [Storage](#storage)
-- [Identity](#identity)
 - [Limits policy](#limits-policy)
 - [Rate limiting and fan-out](#rate-limiting-and-fan-out)
 - [MCP and logging](#mcp-and-logging)
@@ -105,12 +104,6 @@ verifications surface as `jwt_validation_failed` log entries.
 | `CASSETTA_DEFAULT_TTL` | `0` | Default file lifetime in seconds. `0` disables expiry: nothing is ever reported expired and the cleanup sweep does no work. Must not be negative. |
 | `CASSETTA_ALLOWED_PATH_CHARS` | `a-zA-Z0-9\-_./` | Regular-expression character class a stored path may use. Checked on every route and tool that accepts a path, in addition to the unconditional rejection of absolute paths and `..` segments. |
 
-## Identity
-
-| Env var | Default | Meaning |
-|---|---|---|
-| `CASSETTA_INVITE_TTL_SECONDS` | `604800` (7 days) | The lifetime this library validates and carries for invite tokens. Parsed and range-checked at startup — a non-integer or non-positive value stops the server — and then held for whatever invite implementation is attached to it. This is an extension point: no invite implementation ships here, so a value set here is validated and held rather than used. |
-
 ## Limits policy
 
 Parsed into a `LimitsConfig` that parameterises the default limits
@@ -160,8 +153,7 @@ which is the right answer for single-user self-hosting.
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `CASSETTA_RATE_LIMIT_ONBOARD` | `5/minute` | Budget for the onboarding endpoint. Format is `<int>/<unit>`, where unit is one of `sec`, `second`, `min`, `minute`, `hour`, `hourly`; short forms are normalised to long ones. A malformed value exits at startup. |
-| `CASSETTA_RATE_LIMIT_BROADCAST` | `10/minute` | Budget **shared** across the REST `/broadcast` route and the `cassetta_broadcast` tool — one bucket, not one each. Same format. |
+| `CASSETTA_RATE_LIMIT_BROADCAST` | `10/minute` | Budget **shared** across the REST `/broadcast` route and the `cassetta_broadcast` tool — one bucket, not one each. Format is `<int>/<unit>`, where unit is one of `sec`, `second`, `min`, `minute`, `hour`, `hourly`; short forms are normalised to long ones. A malformed value exits at startup. |
 | `CASSETTA_BROADCAST_MAX_TARGETS` | `1000` | Fan-out cap. A broadcast addressed to more recipients than this is rejected before any storage write. Must be greater than zero. |
 
 **Behind a reverse proxy, tell the ASGI server about it.** The budgets above are

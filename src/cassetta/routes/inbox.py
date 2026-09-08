@@ -10,7 +10,6 @@ from fastapi.responses import JSONResponse, Response
 
 from cassetta.auth import get_current_identity
 from cassetta.claims import BundleClaimedError
-from cassetta.config import AppConfig
 from cassetta.dependencies import get_metrics
 from cassetta.downloads import build_reference_payload_for_inbox
 from cassetta.envelopes import build_inline_envelope
@@ -22,6 +21,7 @@ from cassetta.models import (
 )
 from cassetta.protocols.access import AccessPolicy
 from cassetta.protocols.claim_storage import ClaimStorage
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import Identity
 from cassetta.protocols.limits import DownloadEntry, LimitsPolicy, PolicyContext
 from cassetta.protocols.metrics import MetricsProvider
@@ -41,7 +41,7 @@ def _get_backend(request: Request) -> StorageBackend:
     return request.app.state.backends.backend  # type: ignore[no-any-return]
 
 
-def _get_config(request: Request) -> AppConfig:
+def _get_config(request: Request) -> CoreConfig:
     return request.app.state.config  # type: ignore[no-any-return]
 
 

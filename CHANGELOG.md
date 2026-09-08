@@ -6,6 +6,42 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.27.0] - 2026-09-08
+
+### Removed
+
+- `CASSETTA_RATE_LIMIT_ONBOARD` and `CASSETTA_INVITE_TTL_SECONDS` are gone, from the source that
+  parsed them and from `docs/CONFIG.md` and `.env.example` that documented them. Neither governed
+  anything in this repository. The first promised a five-a-minute budget on an onboarding endpoint
+  this server does not serve — nine key creations inside one minute all answered `201` — and the
+  second was validated at startup and then held for an invite implementation that does not ship
+  here, which its own documentation said in the same sentence that offered the knob.
+
+  **What changes for an operator**: setting either now does nothing at all. In particular, a
+  malformed or out-of-range value no longer stops the server — both were range-checked at boot, and
+  that check left with them. Remove them from your environment; nothing replaces them. (#30)
+
+### Changed
+
+- Configuration is a protocol. `create_app`'s `config` parameter is typed by the new
+  `cassetta.protocols.config.CoreConfig` rather than by the concrete `AppConfig`, so an application
+  embedding this server can pass its own settings object — anything carrying the sixteen values
+  this library actually reads. `AppConfig` is unchanged in those sixteen, still exported, and still
+  what `load_config()` returns; it is now the reference implementation rather than the only
+  possible one. A new test requires every member the protocol declares to have a reader under
+  `src/`, so a setting with nothing behind it cannot arrive again. Recorded as
+  `docs/adr/004-configuration-as-a-layer-1-protocol.md`. (#30)
+- `check_rate_limit_imperative` gains a required `route=` keyword naming the counter a rejection
+  belongs to, and the 429 handler reads back what the caller recorded instead of matching the
+  request path against a hardcoded prefix. A rejection that never went through that helper — one
+  raised by a rate-limit decorator, for instance — is still counted as `broadcast`, exactly as
+  before. Any caller of that function outside this repository must pass the new argument. (#30)
+- The `config_loaded` boot event no longer carries a `rate_limit_onboard` value, because the setting
+  behind it no longer exists. No log field was renamed and every other field of that event is
+  unchanged. (#30)
+
+No REST route, status code or MCP tool was added, removed or renamed.
+
 ## [0.26.7] - 2026-09-08
 
 ### Fixed

@@ -1,4 +1,4 @@
-__version__ = "0.26.7"
+__version__ = "0.27.0"
 
 from cassetta.defaults.factory import BackendConfig, build_core_defaults
 

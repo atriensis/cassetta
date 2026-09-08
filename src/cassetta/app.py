@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from cassetta import __version__
 from cassetta import gc as _gc
 from cassetta.auth.jwt_hot_reload import init_jwt_hot_reload, init_jwt_key_slots
-from cassetta.config import AppConfig, load_config
+from cassetta.config import load_config
 from cassetta.defaults.default_limits import LimitsRejection
 from cassetta.defaults.factory import BackendConfig, build_core_defaults
 from cassetta.mcp_auth import MCPAuthMiddleware
@@ -19,6 +19,7 @@ from cassetta.mcp_server import configure as configure_mcp
 from cassetta.mcp_server import create_mcp_server
 from cassetta.middleware import RequestIdMiddleware
 from cassetta.models import LimitsRejectionBody
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.metrics import MetricsProvider
 from cassetta.protocols.storage import BundlePathConflictError, StorageBackend
 from cassetta.rate_limit.limiter import (
@@ -26,6 +27,7 @@ from cassetta.rate_limit.limiter import (
     RateLimitExceeded,
     _record_rate_limit_hit,
     limiter,
+    recorded_rate_limit_route,
 )
 from cassetta.structured_log import configure_logging, safe_emit, struct_log
 
@@ -69,7 +71,7 @@ async def _lease_renewal_task(
 
 async def _ttl_cleanup_loop(
     backend: StorageBackend,
-    config: AppConfig,
+    config: CoreConfig,
     metrics: MetricsProvider | None = None,
 ) -> None:
     """Periodically remove expired bundles across store/ and inbox/ namespaces.
@@ -149,7 +151,7 @@ async def _ttl_cleanup_loop(
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: initialise backends, run MCP + TTL + GC loops."""
-    config: AppConfig = app.state.config
+    config: CoreConfig = app.state.config
     backends: BackendConfig = app.state.backends
 
     struct_log(
@@ -161,7 +163,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "secondary_key": config.jwt_secondary_key is not None,
             "public_base_url": config.public_base_url,
             "dev_mode": app.state.dev_mode,
-            "rate_limit_onboard": config.rate_limit_onboard,
             "rate_limit_broadcast": config.rate_limit_broadcast,
             "broadcast_max_targets": config.broadcast_max_targets,
             "jwt_key_overlap_ttl": config.jwt_key_overlap_ttl,
@@ -230,7 +231,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app(
-    config: AppConfig | None = None,
+    config: CoreConfig | None = None,
     *,
     backends: BackendConfig | None = None,
     extra_log_trees: Sequence[str] = (),
@@ -238,8 +239,11 @@ def create_app(
     """Create and configure the FastAPI application.
 
     Args:
-        config: application configuration; loaded from the environment when
-            omitted.
+        config: application configuration — anything satisfying
+            :class:`~cassetta.protocols.config.CoreConfig`. Loaded from the
+            environment as an :class:`~cassetta.config.AppConfig` when omitted;
+            an application embedding this server passes its own settings object
+            here.
         backends: ready-made backend implementations; the core defaults are
             built from ``config`` when omitted.
         extra_log_trees: names of additional logger trees to route through the
@@ -306,15 +310,11 @@ def create_app(
         # slowapi exposes the parsed Limit on `exc.limit`; we only need
         # the per-bucket window in seconds for Retry-After.
         retry_after = _retry_after_seconds(exc)
-        path = request.url.path
-        if path.startswith("/onboard"):
-            route: str = "onboard"
-        else:
-            # Decorators only sit on /broadcast and /onboard today; default
-            # to broadcast so misconfiguration still emits *a* counter
-            # rather than silently dropping the increment.
-            route = "broadcast"
-        _record_rate_limit_hit(request, route=route, reason="rate")  # type: ignore[arg-type]
+        # The caller names its own route when it drives the limiter, so this
+        # handler attributes a route it does not serve without knowing the
+        # path. A rejection raised by a decorator never passes through that
+        # helper and records nothing; `broadcast` is what it counted before.
+        _record_rate_limit_hit(request, route=recorded_rate_limit_route(request), reason="rate")
         return JSONResponse(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             content={"error": "rate_limit", "retry_after": retry_after},
@@ -352,7 +352,10 @@ def create_app(
     from cassetta.routes.upload import router as upload_router
     from cassetta.routes.uploads import router as uploads_router
 
-    app.add_exception_handler(DownloadError, download_error_handler)  # type: ignore[arg-type]
+    # Registered through the decorator, like the four handlers above it: it types
+    # as an identity over the callable, where `add_exception_handler` declares its
+    # handler as taking a bare `Exception` and rejects a narrower annotation.
+    app.exception_handler(DownloadError)(download_error_handler)
 
     app.include_router(agents_router)
     app.include_router(capabilities_router)

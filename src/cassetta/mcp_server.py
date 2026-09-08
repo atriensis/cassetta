@@ -21,7 +21,6 @@ from cassetta.auth import jwt_tokens
 from cassetta.auth.jwt_hot_reload import JWTKeySlots, _resolve_secondary
 from cassetta.capabilities import build_capabilities_document
 from cassetta.claims import BundleClaimedError
-from cassetta.config import AppConfig
 from cassetta.defaults.default_limits import LimitsRejection, _format_reason
 from cassetta.defaults.factory import BackendConfig
 from cassetta.downloads import (
@@ -35,6 +34,7 @@ from cassetta.path_validation import PathValidationError, validate_path
 from cassetta.protocols.access import AccessPolicy
 from cassetta.protocols.alias import AliasResolver
 from cassetta.protocols.claim_storage import ClaimStorage
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import Identity
 from cassetta.protocols.keystore import KeyStoreProtocol
 from cassetta.protocols.limits import (
@@ -59,7 +59,7 @@ from cassetta.structured_log import safe_emit, struct_log
 logger = logging.getLogger("cassetta")
 
 _backend: StorageBackend | None = None
-_config: AppConfig | None = None
+_config: CoreConfig | None = None
 _access_policy: AccessPolicy | None = None
 _alias_resolver: AliasResolver | None = None
 _key_store: KeyStoreProtocol | None = None
@@ -80,7 +80,7 @@ INBOX_NAMESPACE = "inbox"
 
 
 def configure(
-    config: AppConfig,
+    config: CoreConfig,
     backends: BackendConfig,
     *,
     jwt_keys: JWTKeySlots | None = None,
@@ -116,7 +116,7 @@ def _verify_keys() -> tuple[bytes, bytes | None]:
     """Return ``(primary, secondary)`` for the verify path.
 
     Prefers the runtime-mutable ``JWTKeySlots`` set by lifespan; falls
-    back to the boot-time ``AppConfig`` values when tests drive the MCP
+    back to the boot-time configuration values when tests drive the MCP
     layer without going through ``create_app``.
     """
     if _jwt_keys is not None:
@@ -283,7 +283,7 @@ def _get_backend() -> StorageBackend:
     return _backend
 
 
-def _get_config() -> AppConfig:
+def _get_config() -> CoreConfig:
     assert _config is not None, "MCP server not configured"
     return _config
 
@@ -1187,7 +1187,7 @@ async def _cassetta_broadcast(
     request = ctx.request_context.request if ctx is not None else None
     if request is not None and request.client is not None:
         try:
-            check_rate_limit_imperative(request, config.rate_limit_broadcast)
+            check_rate_limit_imperative(request, config.rate_limit_broadcast, route="broadcast")
         except RateLimitExceeded as exc:
             _get_metrics().increment(
                 "cassetta.rate_limit.hits",

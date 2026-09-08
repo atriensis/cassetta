@@ -3,6 +3,7 @@ import os
 import re
 import sys
 from dataclasses import dataclass, field
+from typing import ClassVar
 from urllib.parse import urlsplit
 
 _MIN_HS256_KEY_BYTES = 32
@@ -129,6 +130,15 @@ def load_limits_config() -> LimitsConfig:
 
 @dataclass(frozen=True)
 class AppConfig:
+    """The configuration this library loads from the environment.
+
+    The reference implementation of :class:`cassetta.protocols.config.CoreConfig` — every field
+    below is one the protocol declares, and a field nothing under ``src/`` reads does not belong
+    here. See ``docs/CONFIG.md`` for the env-var mapping.
+    """
+
+    kind: ClassVar[str] = "core"
+
     setup_token: str
     dev_mode: bool
     storage_path: str
@@ -140,11 +150,9 @@ class AppConfig:
     public_base_url: str = ""
     jwt_secondary_key: bytes | None = None
     jwt_primary_key_source: str = "env"
-    invite_ttl_seconds: int = 604800
     log_format: str = "text"
     limits: LimitsConfig = field(default_factory=LimitsConfig)
     # Operational-resilience env vars.
-    rate_limit_onboard: str = "5/minute"
     rate_limit_broadcast: str = "10/minute"
     broadcast_max_targets: int = 1000
     jwt_key_overlap_ttl: int = 600
@@ -324,22 +332,6 @@ def load_config() -> AppConfig:
         )
         log_format_raw = "text"
 
-    invite_ttl_str = os.environ.get("CASSETTA_INVITE_TTL_SECONDS", "604800")
-    try:
-        invite_ttl_seconds = int(invite_ttl_str)
-    except ValueError:
-        print(
-            f"ERROR: CASSETTA_INVITE_TTL_SECONDS must be an integer, got '{invite_ttl_str}'",
-            file=sys.stderr,
-        )
-        raise SystemExit(1) from None
-    if invite_ttl_seconds <= 0:
-        print(
-            f"ERROR: CASSETTA_INVITE_TTL_SECONDS must be > 0, got {invite_ttl_seconds}",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-
     primary_key, primary_source = _load_jwt_key_pair(
         value_var="CASSETTA_JWT_KEY",
         file_var="CASSETTA_JWT_KEY_FILE",
@@ -356,10 +348,6 @@ def load_config() -> AppConfig:
     assert primary_source is not None
 
     # Operational-resilience env vars.
-    rate_limit_onboard = _parse_rate_limit(
-        "CASSETTA_RATE_LIMIT_ONBOARD",
-        os.environ.get("CASSETTA_RATE_LIMIT_ONBOARD", "5/minute"),
-    )
     rate_limit_broadcast = _parse_rate_limit(
         "CASSETTA_RATE_LIMIT_BROADCAST",
         os.environ.get("CASSETTA_RATE_LIMIT_BROADCAST", "10/minute"),
@@ -378,7 +366,6 @@ def load_config() -> AppConfig:
         dev_mode=setup_token_raw == "",
         storage_path=storage_path,
         keys_file=keys_file,
-        invite_ttl_seconds=invite_ttl_seconds,
         default_ttl=default_ttl,
         allowed_path_chars=allowed_path_chars,
         mcp_allowed_hosts=mcp_allowed_hosts,
@@ -388,7 +375,6 @@ def load_config() -> AppConfig:
         public_base_url=public_base_url,
         log_format=log_format_raw,
         limits=limits,
-        rate_limit_onboard=rate_limit_onboard,
         rate_limit_broadcast=rate_limit_broadcast,
         broadcast_max_targets=broadcast_max_targets,
         jwt_key_overlap_ttl=jwt_key_overlap_ttl,

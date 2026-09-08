@@ -12,7 +12,6 @@ from fastapi.responses import JSONResponse, Response
 from starlette.datastructures import UploadFile
 
 from cassetta.auth import get_current_identity
-from cassetta.config import AppConfig
 from cassetta.defaults.default_limits import LimitsRejection, _format_reason
 from cassetta.dependencies import get_limits_policy, get_metrics
 from cassetta.downloads import build_reference_payload_for_store
@@ -27,6 +26,7 @@ from cassetta.models import (
 )
 from cassetta.path_validation import PathValidationError, validate_path
 from cassetta.protocols.access import AccessPolicy
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import Identity
 from cassetta.protocols.limits import (
     DownloadEntry,
@@ -53,7 +53,7 @@ def _get_backend(request: Request) -> StorageBackend:
     return request.app.state.backends.backend  # type: ignore[no-any-return]
 
 
-def _get_config(request: Request) -> AppConfig:
+def _get_config(request: Request) -> CoreConfig:
     return request.app.state.config  # type: ignore[no-any-return]
 
 
