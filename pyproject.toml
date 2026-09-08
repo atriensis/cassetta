@@ -3,17 +3,31 @@ name = "cassetta"
 dynamic = ["version"]
 requires-python = ">=3.13"
 license = "FSL-1.1-ALv2"
+# The client, and only the client. This is what an install without an extra gets: the three
+# libraries `src/cassetta/cli/` imports beyond the standard library and `cassetta.path_validation`.
+# A fourth entry here would mean the finding behind the split was wrong — it is a question to raise,
+# not a line to add. `tests/test_client_install.py` holds the other side of the same statement.
 dependencies = [
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
     "httpx>=0.27",
-    "mcp>=1.12",
     "pyjwt>=2.10",
-    "slowapi>=0.1.9",
     "typer>=0.21",
 ]
 
 [project.optional-dependencies]
+# The server, asked for by name: `cassetta[server]`. An install that must run
+# `uvicorn --factory cassetta.app:create_app` needs these four and the base three; an install that
+# only wants the CLI needs none of them, which is the point.
+#
+# `starlette` is not here although `routes/files.py`, `routes/agents.py`, `middleware.py` and
+# `rate_limit/limiter.py` import it by name. It arrives as a transitive of `fastapi`, and this list
+# is deliberately the four libraries the split was measured against. Promoting it is a decision of
+# its own — the `pyyaml` line below is what that decision looks like when it is taken.
+server = [
+    "fastapi>=0.115",
+    "mcp>=1.12",
+    "slowapi>=0.1.9",
+    "uvicorn[standard]>=0.30",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -27,6 +41,12 @@ dev = [
     # day that graph changes. The constraint block already pins the version; this only makes the
     # dependency ours.
     "pyyaml>=6.0",
+    # The development environment is a server environment. Every gate in this repository is a bare
+    # `uv run` line and CI runs `uv sync --extra dev` before them — and `uv sync` is exact, so it
+    # uninstalls whatever the requested sets do not ask for. Without this self-reference the test
+    # suite, which imports FastAPI throughout, would need `--extra server` on every command, and
+    # every gate already written would quietly start meaning something else.
+    "cassetta[server]",
 ]
 
 [project.scripts]
@@ -46,9 +66,13 @@ build-backend = "hatchling.build"
 # here as well is what let the two drift: nothing forced them to move together except a habit.
 #
 # The default version source reads the literal out of the file as *text*. That is load-bearing, not a
-# default accepted by omission: `src/cassetta/__init__.py` imports from `cassetta.defaults.factory` at
-# module scope, so the `code` source — which imports the file — would need the package's whole
-# dependency tree present before it could answer what version this is.
+# default accepted by omission. It used to be load-bearing for a second reason as well —
+# `src/cassetta/__init__.py` imported from `cassetta.defaults.factory` at module scope, so the `code`
+# source, which imports the file, needed the whole dependency tree present before it could answer
+# what version this is. That import is gone as of 0.28.0 and the module now imports nothing. The
+# first reason stands on its own: a version is read before dependencies are installed, and
+# `scripts/sync-docs-version.py` and `make release-check` read the same literal the same way, so all
+# three agree by construction rather than by coincidence.
 [tool.hatch.version]
 path = "src/cassetta/__init__.py"
 
