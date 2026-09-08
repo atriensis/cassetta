@@ -188,10 +188,10 @@ from the repository with `uv`, pinned to a release tag:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.4
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.6
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.4 cassetta --help
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.6 cassetta --help
 ```
 
 Pin the tag rather than tracking a branch. A client that silently follows the default branch changes

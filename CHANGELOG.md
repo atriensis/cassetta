@@ -6,6 +6,30 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.26.6] - 2026-09-08
+
+### Changed
+
+- The install commands in the documentation now pin the release you are reading about. They had gone
+  a version stale without anything reporting it, because a pinned tag one release behind still
+  resolves and still installs working code. A test now holds every documented pin to the declared
+  version, and `scripts/sync-docs-version.py` updates them all in one idempotent run. (#28)
+- The version is declared in one place, `src/cassetta/__init__.py`. The packaging metadata is derived
+  from it at build time instead of repeating it, so a bump is one edit rather than two that had to be
+  remembered together. An installed copy reports the same version it did before; only the shape of
+  the metadata changed. (#28)
+- Releases are tagged by the merge rather than by hand. A push to the default branch reads the
+  declared version, and if no tag exists for it, creates the annotated tag on the merge commit and
+  builds the distribution, checking that what was built carries the version that was tagged. A merge
+  that changes no version does nothing. Tagging by hand before a squash merge named a commit that
+  never reached the default branch, which is the mistake this removes. (#28)
+- `make release-check` reads the version from the package and additionally compares the documented
+  install pins against it. It is still shell only, and still runs in a clean clone with no virtual
+  environment. (#28)
+
+Nothing is published to any index. No behaviour changes: no route, status code, configuration
+variable, MCP tool or structured-log field was added, removed or renamed.
+
 ## [0.26.5] - 2026-09-08
 
 ### Fixed
