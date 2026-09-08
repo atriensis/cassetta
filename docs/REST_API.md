@@ -85,6 +85,26 @@ store has (see [Workflow A](#workflow-a--store-model-peer-exchange)). Inbox addr
 recipients; it does not isolate them. A deployment shared between people who should not read each
 other's mail needs more than one Cassetta.
 
+## What `GET /health` answers
+
+```json
+{"status": "ok", "dev_mode": false}
+```
+
+It is the one route that takes **no credential**, which is what makes it usable as a liveness probe
+from a monitoring system holding no key. When the key store is unreachable it answers `503` with
+`{"status": "unhealthy", "reason": "key_store_unreachable", "dev_mode": …}` — same field, on both
+shapes.
+
+`dev_mode` describes the deployment, not the request. It is `true` when `CASSETTA_SETUP_TOKEN` is
+the empty string, which selects dev mode: **no authentication** at all, so `GET /agents` and
+`GET /files/…` answer `200` to a caller presenting nothing, where they would otherwise answer `401`.
+
+**Alert on it.** A server that shipped with an empty setup token looks entirely ordinary from the
+outside — it starts, it is healthy, it serves. This field is the one thing a monitoring system can
+watch that says otherwise, and it is readable without a credential precisely because the probe that
+would catch the mistake has none.
+
 ## Two listing responses
 
 The generated OpenAPI document is the contract for every shape on this page; these two are reproduced
@@ -248,10 +268,10 @@ from the repository with `uv`, pinned to a release tag:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.1
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.2
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.1 cassetta --help
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.2 cassetta --help
 ```
 
 Pin the tag rather than tracking a branch. A client that silently follows the default branch changes
