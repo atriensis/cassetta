@@ -10,6 +10,28 @@ filesystem so you can self-host on a Raspberry Pi, a VPS, or your laptop.
 > is the sole owner of every commit; AI assistance is disclosed here, not in
 > git history.
 
+## Why not just use a shared folder?
+
+Because the handoff is between agents: two or more AI assistants, on different
+machines, need to pass files to each other — not to a person, to each other —
+and a synced directory does not do that.
+
+- **An agent has tool calls, not a filesystem.** It cannot mount your other
+  machine. MCP is the surface it already has, and Cassetta speaks it: twelve
+  `cassetta_*` tools the agent calls directly.
+- **A folder has no addressee.** Everything in it is addressed to everyone, so
+  an agent looking into one knows what is meant for it only by convention. Here
+  a bundle is sent to a label — `bob:main` — and that is the inbox `bob:main`
+  reads.
+- **A folder has no moment of _taken_.** Two agents collect the same handoff, or
+  each assumes the other did. `pick` takes it: the first caller gets the bundle,
+  the second gets `404`.
+- **The machines really are different machines.** A laptop and a desktop are not
+  one filesystem, and sync tools work per user and per device — not per agent,
+  with its own name and its own key.
+
+The rest of this document is how to run it.
+
 ## Quickstart with Docker
 
 You will need Docker and Docker Compose v2.
@@ -25,7 +47,7 @@ Wait a few seconds for the container to become healthy, then verify:
 
 ```bash
 curl http://localhost:16001/health
-# {"status":"ok"}
+# {"status":"ok","dev_mode":false}
 ```
 
 ### Mint your first API key
@@ -216,6 +238,33 @@ that key files never appear in `/files/` listings or get served as user
 data. Back both directories up regularly. To migrate to a new host, stop
 the service, copy `data/` and `data.keys/` across, and start the service
 again on the new host — no extra steps required.
+
+**Who owns those directories depends on the platform.** On Linux the
+container corrects the ownership of both bind mounts during its one
+privileged moment, so after a first start they belong to uid 1001. Modes
+are unchanged, so a copy-based backup still reads them; writing back into
+them by hand needs `sudo`. On Docker Desktop for macOS the host side of a
+bind mount keeps your own ownership whatever the container does to its
+side, so no `sudo` is involved either way.
+
+### Who the container runs as
+
+`docker exec <container> id` answers `uid=0(root)`, and that is not the
+service. The image deliberately carries no `USER` line: a bind mount passes
+host ownership through unchanged, so the container needs one privileged
+moment to make `/data` and `/data.keys` writable by its own account before
+anything starts. The entrypoint does exactly that and then drops for good.
+
+The application is therefore unprivileged by mechanism rather than by
+declaration. To see it for yourself:
+
+```bash
+docker top <container>
+# the uvicorn process runs as 1001
+
+docker exec --user cassetta <container> id
+# a session with the application's own permissions
+```
 
 ### Mixed-content storage (advanced)
 

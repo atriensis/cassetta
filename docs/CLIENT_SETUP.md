@@ -22,11 +22,15 @@ contains the same steps written as direct instructions for the agent.
 ```bash
 CASSETTA_URL='http://your-cassetta-host:16001'
 curl -fsS "$CASSETTA_URL/health"
-# expected: {"status":"ok"}
+# expected: {"status":"ok","dev_mode":false}
 ```
 
 If this fails, the hostname does not resolve from this machine, the port
 is blocked, or the container is not running. Fix that before continuing.
+
+`dev_mode` describes the server, not you. `true` means it was started with
+an empty setup token and authenticates nothing at all — see
+[REST_API.md](REST_API.md#what-get-health-answers).
 
 ## Step 2 — Mint an API key for this agent
 
@@ -171,9 +175,14 @@ Yours will report its own version, and different numbers if the operator
 tightened limits or TTLs — the point of asking is that you do not have to
 guess. The `features` list in particular grows between releases.*
 
+**`--api-key` is not optional.** `GET /capabilities` answers `401`
+without a credential, and unlike `cassetta send` this command reads **no**
+environment variable — `--url` and `--api-key` are the only inputs it has,
+so exporting `CASSETTA_API_KEY` does nothing for it.
+
 ```
-$ cassetta capabilities --url http://localhost:16001
-Server version: 0.26.4
+$ cassetta capabilities --url http://localhost:16001 --api-key "$API_KEY"
+Server version: 0.28.2
 Schema version: 1
 Supported modes: inline, batch, reference
 Features: peek, batch_upload, reference_download, rest_send_init
@@ -241,10 +250,10 @@ and installed from the repository with `uv`, pinned to a release tag:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.1
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.2
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.1 cassetta --help
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.2 cassetta --help
 ```
 
 Either way you get a `cassetta` executable with four subcommands:
@@ -340,6 +349,39 @@ header, so the flag is a pure client-side optimisation.
 | 1 | Transport / I/O / bad argument (network error, unreadable file, invalid path). |
 | 2 | Server returned 4xx (body echoed to stderr — token expired, manifest violation, bundle path conflict, ...). |
 | 3 | Server returned 5xx (body echoed to stderr). |
+
+## Using `cassetta send`
+
+`cassetta upload` is phase 2 on its own: it needs an `upload_url` and a
+token that something else already minted. `cassetta send` does both phases
+in one call — it opens the upload session with your agent key
+(`POST /uploads`) and then streams the tar to the URL that comes back. It
+is the command a *person* types; the split pair is what an agent drives.
+
+| Parameter | Meaning |
+|---|---|
+| `files...` | Positional, one or more. Each is both the local path to read and the entry name inside the bundle, with the same normalisation `cassetta upload` applies: leading `./` and trailing slashes are stripped, absolute paths and `..` segments are rejected before any request. |
+| `--to` | Recipient label — the full `host:project`, e.g. `alice:main`. A value with no colon is taken as a raw inbox name and is not checked against the key store, so it is accepted even when nobody is listening there. |
+| `--path` | The bundle's name in the recipient's inbox, e.g. `handoff-A`. Not a local filename — it is what the recipient sees in their inbox listing and puts in the `peek` and `pick` paths. |
+| `--url` | Server base URL. Falls back to `CASSETTA_URL`. |
+| `--api-key` | Your agent key. Falls back to `CASSETTA_API_KEY`. |
+
+```bash
+export CASSETTA_URL='http://localhost:16001'
+export CASSETTA_API_KEY='cst_...'
+
+cassetta send --to alice:main --path handoff-A ./release-notes.md
+# bundle_id=0191a3d0-1b3c-7e29-8012-a2b3c4d5e6f7
+```
+
+The manifest is computed from the files you name, so the one expensive
+mistake in the hand-rolled REST recipe — declaring the archive as an entry
+of its own manifest, which phase 1 accepts and phase 2 refuses — cannot be
+made here.
+
+Missing configuration or a malformed path fails before any network call,
+exiting 2. Otherwise the exit codes are `cassetta upload`'s: 2 for a 4xx,
+3 for a 5xx, 1 for a transport failure.
 
 ## Using `cassetta download`
 

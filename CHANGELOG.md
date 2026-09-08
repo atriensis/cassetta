@@ -6,6 +6,52 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.28.2] - 2026-09-08
+
+### Added
+
+- **The README now answers the question a reader arrives with: why not just use a shared folder.**
+  Three independent cold reads of this repository put the same item first — the documents said what
+  Cassetta *is* and then how to run it, and never what it is *for*. The new section is the first
+  thing after the opening paragraph, ahead of the quickstart, and gives four reasons a synced
+  directory is not this: an agent has tool calls rather than a filesystem, a folder has no addressee,
+  a folder has no moment of *taken*, and the machines really are different machines. (#33)
+- **`GET /health`'s response is documented**, including `dev_mode` — a field the endpoint has always
+  returned to unauthenticated callers and that appeared in no document. `true` means the deployment
+  was started with an empty `CASSETTA_SETUP_TOKEN` and authenticates nothing at all. **It is worth
+  alerting on**: a server that shipped that way looks entirely ordinary from the outside, and this is
+  the one signal a monitoring system can watch that says otherwise. Nothing about the response
+  changed; it is now written down. (#33)
+- **A reference for `cassetta send`** — every parameter and a worked example, beside the existing
+  `cassetta upload` reference. It is the one command a person types and it had half a sentence. (#33)
+
+### Fixed
+
+- **The quickstart's first command that prints anything printed the wrong thing.** `curl
+  http://localhost:16001/health` was shown answering `{"status":"ok"}`; it answers
+  `{"status":"ok","dev_mode":false}`. The same stale expectation in `docs/CLIENT_SETUP.md`'s Step 1
+  is corrected too. (#33)
+- **The printed `cassetta capabilities` example could not work.** It was shown without a credential,
+  and `GET /capabilities` answers `401` without one. Unlike `cassetta send`, this command reads no
+  environment variable — `--url` and `--api-key` are its only inputs — so a reader could not rescue
+  the example by exporting anything. The example now carries `--api-key`, and the text says why it
+  has to. (#33)
+- **The sample output beside it named `0.26.4`**, two releases stale. It was the only stale version
+  literal under `docs/`, because `scripts/sync-docs-version.py` rewrites `@vX.Y.Z` install pins and
+  cannot see a `Server version:` line. (#33)
+- **The backup instructions did not say who owns the bind mounts.** On Linux the container hands
+  `./data` and `./data.keys` to uid 1001 on first start, so a copy-based backup still reads them but
+  writing back by hand needs `sudo`; on Docker Desktop for macOS they stay yours on the host side and
+  no `sudo` is involved. Both cases are named now. (#33)
+- **`docker exec <container> id` answers `uid=0(root)`, and nothing explained why.** It reads as
+  contradicting the claim that the service runs unprivileged. It does not: the image carries no
+  `USER` line so the entrypoint can correct bind-mount ownership before dropping for good, and
+  `docker top` shows the uvicorn process as 1001. The README says so where an auditor will look. (#33)
+
+Documentation only. No environment variable, REST route, MCP tool, structured-log field or behaviour
+of the running service changes. Nine guards were added to `tests/test_docs_examples.py` so that each
+of the above is a red test rather than a convention.
+
 ## [0.28.1] - 2026-09-08
 
 ### Fixed
