@@ -11,10 +11,16 @@
 #     ./scripts/smoke.sh
 #
 # Requires Docker with Compose v2, curl, openssl and python3. It refuses to run over an existing
-# `.env`, so it will never overwrite the configuration of a deployment you already have, and it
-# tears the stack down again on every exit path.
+# `.env` or an existing key store, so it will never overwrite the configuration of a deployment you
+# already have, and it tears the stack down again on every exit path.
 #
-# Everything it needs, it generates: there is no secret to supply and nothing to configure.
+# Everything it needs, it generates: there is no secret to supply and nothing to configure. On the
+# way out it removes both the `.env` it wrote and the API key store the container created — the
+# latter because that store is durable, carries the one-time `setup_done` flag, and would otherwise
+# leave the README quickstart answering `409 Setup already completed` at its very first call.
+#
+# What it does leave is the file it stored under `data/`, in the reader's own storage directory.
+# That blocks nothing, so it is not swept up here.
 
 set -euo pipefail
 
@@ -60,10 +66,15 @@ die() {
 
 env_file_created=false
 stack_started=false
+key_store_created=false
 
 # Dump logs before tearing down: a scheduled run nobody is watching is worthless if its output
-# does not say what broke. Then take the stack down whatever the outcome, and remove the `.env`
-# this run created — and only that one.
+# does not say what broke. Then take the stack down whatever the outcome, and remove the two things
+# this run brought into existence — and only those two.
+#
+# Each removal is gated on the flag that says this run is responsible for its subject. That is what
+# makes them safe to write at all: a run that refused at pre-flight set no flag and so removes
+# nothing, which is the whole point of refusing.
 cleanup() {
     local status=$?
     set +e
@@ -79,6 +90,11 @@ cleanup() {
 
     if [ "$env_file_created" = true ]; then
         rm -f -- "$REPO_ROOT/.env"
+    fi
+
+    # After the teardown above, deliberately: the container owns this file while it is running.
+    if [ "$key_store_created" = true ]; then
+        rm -f -- "$REPO_ROOT/$KEY_STORE"
     fi
 }
 trap cleanup EXIT
@@ -137,6 +153,12 @@ if [ -e "$KEY_STORE" ]; then
         "POST /setup is one-time and the flag is persisted, so minting a key would answer 409." \
         "Remove that file and run again."
 fi
+
+# Set here rather than after POST /setup, and the placement is the whole guarantee. The check above
+# has just proved nothing is at that path, so from this line on anything appearing there is this
+# run's — including a store left by a container that started and then failed before minting.
+# Claiming it any later would leak exactly those cases.
+key_store_created=true
 
 info "prerequisites present, working tree clean of previous runs"
 

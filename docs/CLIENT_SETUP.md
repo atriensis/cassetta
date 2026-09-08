@@ -241,10 +241,10 @@ and installed from the repository with `uv`, pinned to a release tag:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.6
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.7
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.6 cassetta --help
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.7 cassetta --help
 ```
 
 Either way you get a `cassetta` executable with four subcommands:
@@ -454,14 +454,29 @@ Three reasons not to commit the connection:
 **HTTP 421 "Invalid Host header"**
 
 The MCP endpoint has DNS-rebinding protection — by default it only
-accepts loopback hosts. The server operator must add the hostname clients
-use to `CASSETTA_MCP_ALLOWED_HOSTS` and restart, e.g.:
+accepts loopback hosts. The server operator must add the `Host` header
+value your client sends to `CASSETTA_MCP_ALLOWED_HOSTS` and restart,
+e.g.:
 
 ```
 CASSETTA_MCP_ALLOWED_HOSTS=cassetta.example.com,cassetta.example.com:16001
 ```
 
+**Two entries, and both are needed.** The list is matched against the
+`Host` header literally — nothing resolves a name or strips a port — and
+the port is part of that header whenever it is not the scheme's default.
+So a client pointed at `https://cassetta.example.com` sends the first
+spelling and a client pointed at `http://cassetta.example.com:16001`
+sends the second, and listing only one of them leaves the other on `421`
+with everything looking correctly configured at both ends. An unlisted
+value is still refused, so listing both costs nothing.
+
 This is a server-side fix.
+
+Note that **authentication runs before the host check**: an
+unauthenticated request answers `401` and never reveals the `421`. A
+bare `curl` against `/mcp/` therefore cannot tell you whether the
+allowlist is your problem — send the API key when you probe.
 
 **HTTP 401**
 - Wrong / missing / revoked API key, or wrong / missing setup token.

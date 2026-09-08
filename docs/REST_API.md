@@ -85,6 +85,49 @@ store has (see [Workflow A](#workflow-a--store-model-peer-exchange)). Inbox addr
 recipients; it does not isolate them. A deployment shared between people who should not read each
 other's mail needs more than one Cassetta.
 
+## Two listing responses
+
+The generated OpenAPI document is the contract for every shape on this page; these two are reproduced
+here because they are the ones a reader reaches for while writing a client, and because each has a
+field whose meaning is not obvious from its name.
+
+### `GET /keys`
+
+```json
+{"keys": [{"label": "work-laptop:notes",
+           "key_prefix": "cst_ab12",
+           "created_at": "2026-09-08T09:14:21Z",
+           "is_active": true}]}
+```
+
+**No hash and no key material comes back** — not a truncated key, not a digest of one. `key_prefix`
+is the leading characters, enough to tell two keys apart in a log line and not enough to present as
+a credential. A key's secret is returned exactly once, by the call that mints it.
+
+### `GET /inbox/{agent}/`
+
+```json
+{"agent": "bob:main",
+ "files": [{"path": "handoff-A",
+            "size": 150000,
+            "created_at": "2026-09-08T09:20:05Z",
+            "sender": "alice:main",
+            "remaining_ttl": null,
+            "file_count": 1,
+            "bundle_id": "0191a3d0-1b3c-7e29-8012-a2b3c4d5e6f7",
+            "schema_version": 1,
+            "files": [{"name": "notes.md", "size": 150000, "mime": "text/markdown"}]}]}
+```
+
+- `path` is the bundle's name — the `path` the sender passed to `POST /uploads` — and it is what you
+  put in the `peek`, `pick` and `DELETE` paths.
+- `size` is the **content's** total, the sum of `files[].size`. It is not the size of the archive
+  that carried it, which is larger and which the recipient never sees.
+- `remaining_ttl` is seconds, or `null` when the bundle does not expire.
+- **A reserved bundle that was never uploaded leaves no entry.** The listing shows delivered
+  bundles, not sessions: a `POST /uploads` whose phase 2 never happened is invisible here, so an
+  empty listing does not mean a send was refused.
+
 ## Workflow A — store-model peer exchange
 
 The store model is a shared key/value space of files. One agent writes; any agent with a key reads.
@@ -124,6 +167,19 @@ immediately. A `to` without one is taken as a raw inbox name and is not checked 
 is accepted `201` even when no such recipient has ever existed, and the bundle lands in a namespace
 the intended reader is not listening on. Nothing reports an error on either side.
 
+**`path` is the bundle's name in the recipient's inbox, not a local filename.** It is what the
+recipient sees as `path` in their inbox listing and what they put in the `peek` and `pick` paths, so
+it is worth choosing as a name rather than copying from whatever the archive on your disk is called.
+The server percent-encodes it into the `upload_url` it returns — `path: "handoff-A"` sent to
+`bob:main` comes back as `…/upload/inbox%2Fbob%3Amain%2Fhandoff-A`.
+
+**The manifest lists what is *inside* the archive.** One entry per file the tar contains, weighed
+before you send. The archive itself is never one of its own entries — and getting that wrong is
+expensive, because phase 1 has no bytes to check the manifest against and answers `201` to anything
+well-formed. Phase 2 is where every tar entry is checked against it, so declaring the archive gets
+you `400 {"error":"manifest_violation","reason":"extra_file"}` naming the file you actually packed,
+one call after the call that accepted the mistake.
+
 ```bash
 BASE="http://localhost:16001"
 ME="alice:main"                     # your own agent label
@@ -131,25 +187,29 @@ KEY="Bearer cst_…"                  # an agent key
 TO="bob:main"                       # recipient label — the full host:project, always
 
 # Phase 1 (REST): POST /uploads with your agent key → an upload-token + the upload_url.
+# path names the bundle in the recipient's inbox; the manifest names the file the archive holds.
 curl -fsS -X POST -H "Authorization: $KEY" -H "Content-Type: application/json" \
-     -d "{\"to\":\"$TO\",\"path\":\"bundle.tar\",\"manifest\":{\"file_count\":1,\"files\":[{\"name\":\"bundle.tar\",\"size\":NNN}]}}" \
+     -d "{\"to\":\"$TO\",\"path\":\"handoff-A\",\"manifest\":{\"file_count\":1,\"files\":[{\"name\":\"notes.md\",\"size\":NNN}]}}" \
      "$BASE/uploads"
 # → 201 {"mode":"batch","upload_url":"…/upload/<bundle_path>","batch_token":"…","bundle_id":"…","expires_at":"…"}
 
 # Phase 2 (REST): consume the batch_token (an upload-token) to upload the bytes to upload_url.
+# The local archive holds notes.md — the entry the manifest above declares.
 curl -fsS -X POST -H "Authorization: Bearer <batch_token>" \
+     -H "Content-Type: application/x-tar" \
      --data-binary @bundle.tar "$BASE/upload/<bundle_path>"
 
 # --- The recipient reads in reference mode ---
-# List + peek (read-only over REST)
+# List + peek (read-only over REST). <path> is the path sent in phase 1 — here, handoff-A.
 curl -fsS -H "Authorization: $KEY" "$BASE/inbox/$ME/"                     # list
 curl -fsS -H "Authorization: $KEY" "$BASE/inbox/$ME/<path>/peek"          # peek, non-consuming
 
 # Pick consumes the bundle and returns a reference envelope (claim/download-token, TTL 300 s)
 curl -fsS -X POST -H "Authorization: $KEY" "$BASE/inbox/$ME/<path>/pick"  # → reference envelope
 
-# Fetch the referenced file with the download-token + matching identity header (two-factor)
-curl -fsS -H "Authorization: Bearer <download-token>" \
+# Fetch the referenced file with the download-token + matching identity header (two-factor).
+# Without X-Sender the request is 401; it must match the token's recipient claim.
+curl -fsS -H "Authorization: Bearer <download-token>" -H "X-Sender: $ME" \
      "$BASE/download/<bundle_path>/<name>"
 ```
 
@@ -188,10 +248,10 @@ from the repository with `uv`, pinned to a release tag:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.6
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.7
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.6 cassetta --help
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.7 cassetta --help
 ```
 
 Pin the tag rather than tracking a branch. A client that silently follows the default branch changes
