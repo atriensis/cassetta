@@ -6,6 +6,40 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.26.5] - 2026-09-08
+
+### Fixed
+
+- The documents now agree with each other and with the shipped surface. Nine contradictions were
+  settled against the implementation rather than between documents: registering the MCP server
+  (`claude mcp add` and the required trailing slash, replacing a settings-file recipe the client's
+  schema rejects and an address that redirects where MCP clients will not follow), the body for
+  minting a key (`host` and `project`, never a pre-joined `label`) and the two credentials that
+  endpoint accepts, addressing a recipient by the full `host:project` label, `X-Sender` as the
+  identity half of the download route's two-factor check rather than a header the inbox routes read,
+  and the passages describing endpoints and policies that are not in this repository. (#26)
+- A bare recipient name is now documented as what it is: unvalidated passthrough. A `to` containing a
+  colon is verified against the key store and a label nobody holds is refused; a `to` without one is
+  accepted even for a recipient that has never existed, and the bundle lands in a namespace the
+  intended reader is not listening on, with no error on either side. (#26)
+- The single-user posture of inboxes is stated where inboxes are introduced, in the README, the
+  endpoint table and the glossary: under the access policy this repository ships, any valid key may
+  list and read any label's inbox. It was true before and written down nowhere. (#26)
+- Installing the client is now possible from the documentation. No index carries this package, so
+  `pip install cassetta` could never work; the two `uv` forms are given instead, pinned to a release
+  tag, alongside a statement that nothing publishes it. (#26)
+- The front page indexes every document under `docs/`. Three of nine were reachable from it, so the
+  configuration reference, the glossary and the architecture decisions could not be found from the
+  entry point; and the self-hosting steps name all three variables the server requires, plus the MCP
+  host allowlist, instead of one. (#26)
+- Version stamps are removed from the REST reference rather than renumbered — the OpenAPI document
+  reports the version itself, and a number written into prose is the part that goes stale. Re-checking
+  what they vouched for found the endpoint table already accurate and the capabilities sample wrong:
+  it predates the `rest_send_init` feature the server advertises, so it is regenerated. (#26)
+
+No behaviour changes: no route, status code, configuration variable, MCP tool or structured-log field
+was added, removed or renamed.
+
 ## [0.26.4] - 2026-09-07
 
 ### Added
