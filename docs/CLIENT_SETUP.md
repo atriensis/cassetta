@@ -32,34 +32,48 @@ is blocked, or the container is not running. Fix that before continuing.
 
 Each (machine, project) pair should have its **own** API key. The label
 identifies the agent in audit logs and is what you revoke / rotate later.
-Recommended format:
+You do not choose the label directly: you send a **machine** and a
+**project**, and the server joins them as `machine:project`.
 
-```
-<machine>:<project>
-```
-
-Examples: `home-laptop:assistant`, `work-laptop:financial-toolbox`,
-`pi:scratch`, `ci-runner:integration-tests`.
+Examples of the result: `home-laptop:assistant`,
+`work-laptop:financial-toolbox`, `pi:scratch`,
+`ci-runner:integration-tests`.
 
 ```bash
 SETUP_TOKEN='<the cassetta setup token>'
-LABEL='this-machine:this-project'
+HOST='this-machine'
+PROJECT='this-project'
 
 curl -fsS -X POST \
   -H "X-Setup-Token: $SETUP_TOKEN" \
   -H "Content-Type: application/json" \
   "$CASSETTA_URL/keys" \
-  -d "{\"label\":\"$LABEL\"}"
+  -d "{\"host\":\"$HOST\",\"project\":\"$PROJECT\"}"
 ```
 
-The response includes `"api_key": "cst_..."`. **Save it now** — it is
-shown only once. There is no way to read it back later; if you lose it,
-rotate with `POST /keys/{label}/rotate`.
+**Send `host` and `project`, not a pre-joined `label`.** A body of
+`{"label": "..."}` is rejected with HTTP 422 naming `host` and `project`
+as the missing fields — the label is a derived value the server computes
+and returns, never an input.
 
-If the label already exists, you get HTTP 409 — pick another label.
+The response includes `"label": "this-machine:this-project"` and
+`"api_key": "cst_..."`. **Save the key now** — it is shown only once.
+There is no way to read it back later; if you lose it, rotate with
+`POST /keys/{label}/rotate`. The colon goes into that URL unencoded:
+`POST /keys/this-machine:this-project/rotate`, and likewise
+`DELETE /keys/this-machine:this-project`.
+
+`POST /keys` accepts the `X-Setup-Token` header shown above **or** an
+`Authorization: Bearer cst_...` header holding an existing agent key.
+Either mints a new key; use whichever credential you already have.
+
+If the label already exists, you get HTTP 409 — pick another machine or
+project name.
 
 For a **brand-new server with no keys yet**, use `POST /setup` instead of
-`POST /keys` (same body, same response shape).
+`POST /keys`: same body, same response shape. It takes only the setup
+token — there is no agent key to present yet — and returns HTTP 409 once
+any key exists, which is what makes it a one-time bootstrap.
 
 ## Step 3 — Register the MCP server
 
@@ -152,15 +166,17 @@ Two surfaces return the **same** document:
 
 CLI introspection for operators:
 
-*Sample below reflects release v0.15.0 defaults; your server may show
-different numbers if the operator tightened limits or TTLs.*
+*The sample below is one server answering with the built-in defaults.
+Yours will report its own version, and different numbers if the operator
+tightened limits or TTLs — the point of asking is that you do not have to
+guess. The `features` list in particular grows between releases.*
 
 ```
 $ cassetta capabilities --url http://localhost:16001
-Server version: 0.15.0
+Server version: 0.26.4
 Schema version: 1
 Supported modes: inline, batch, reference
-Features: peek, batch_upload, reference_download
+Features: peek, batch_upload, reference_download, rest_send_init
 Limits:
   per_file_max: unlimited
   per_bundle_total_max: unlimited
@@ -217,6 +233,26 @@ tightened caps mid-session). Refresh the cache on reconnect, or after
 a rejection whose `constraint` does not match what the cached caps
 predicted.
 
+## Installing the `cassetta` CLI
+
+**No package index carries Cassetta.** There is no `pip install cassetta`
+to run — the client is declared at `pyproject.toml` `[project.scripts]`
+and installed from the repository with `uv`, pinned to a release tag:
+
+```bash
+# Persistent — for a machine that will use the client repeatedly.
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.4
+
+# One-off — runs the command and leaves nothing installed.
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.4 cassetta --help
+```
+
+Either way you get a `cassetta` executable with four subcommands:
+`upload`, `download`, `send` and `capabilities`. Pin the tag rather than
+tracking a branch: a client that quietly follows the default branch
+changes under you between runs, which makes every problem report a
+question about which revision was installed.
+
 ## Using `cassetta upload`
 
 The legacy `cassetta_send` MCP tool and the
@@ -234,7 +270,7 @@ names the agent declared to `cassetta_send_init`:
 
 ```bash
 cassetta upload \
-  --url  "http://localhost:16001/upload/inbox%2Falice%2Frelease-notes.md" \
+  --url  "http://localhost:16001/upload/inbox%2Falice%3Amain%2Frelease-notes.md" \
   --token "eyJhbGciOiJIUzI1Ni..." \
   ./release-notes.md
 ```
@@ -335,9 +371,12 @@ For each file, one HTTP GET to the envelope's `files[i].url` with:
 - `Authorization: Bearer <download_token>` — the envelope's JWT,
   reused verbatim on every file request.
 - `X-Sender: <recipient>` — read out of the JWT's `recipient` claim
-  (no signature verification client-side; the server verifies). This
-  is the same identity header the sibling `/inbox/*` / `/files/*`
-  routes expect, reused here.
+  (no signature verification client-side; the server verifies). It is
+  the identity half of the two-factor check on `GET /download/...`: the
+  token proves the claim, the header declares who is redeeming it, and a
+  mismatch is a 403 `identity_mismatch`. This header belongs to the
+  download route only — `/inbox/*` and `/files/*` do not read it, and
+  authenticate with the agent key alone.
 
 Streaming is used throughout — each response body is `iter_bytes`-pulled
 straight to disk without buffering the full file in RAM.
@@ -443,14 +482,19 @@ This is a server-side fix.
   wrong (storage permissions, expired key, etc.).
 
 
-## Broadcast a bundle to your team
+## Broadcast a bundle to every visible recipient
 
 `POST /broadcast/<path>` delivers a bundle to every recipient your access
-policy considers visible. The `<path>` segment is the **logical destination
-address** — the alias resolver expands it into per-target inbox addresses
-(e.g. on Team-tier deployments, only your teammates' inboxes are written).
-Path segments with embedded slashes (`team-alpha/morning-update.md`) are
-supported via FastAPI's `:path` converter.
+policy considers visible. **In this repository that means every agent
+holding an active key**: the access policy shipped here allows every
+action and the visibility set is the whole key store. There is no
+grouping to configure, and no way to broadcast to a subset — if you need
+one, send to each label individually.
+
+The `<path>` segment is the **logical destination address** — the alias
+resolver expands it into per-target inbox addresses. Path segments with
+embedded slashes (`team-alpha/morning-update.md`) are supported via
+FastAPI's `:path` converter.
 
 ```bash
 curl -X POST "http://localhost:16001/broadcast/team-alpha/morning-update.md" \
@@ -463,41 +507,42 @@ The response distinguishes per-target outcomes:
 ```json
 {
   "path": "team-alpha/morning-update.md",
-  "delivered_to": ["bob", "carol"],
-  "denied":  [{"target": "dan",  "reason": "access_denied"}],
-  "failed":  [{"target": "eve",  "error":  "resolver_error: ..."}],
+  "delivered_to": ["bob:main", "carol:main"],
+  "denied":  [{"target": "dan:main",  "reason": "access_denied"}],
+  "failed":  [{"target": "eve:main",  "error":  "resolver_error: ..."}],
   "total_delivered": 2,
   "total_denied":    1,
   "total_failed":    1
 }
 ```
 
-Cross-team recipients (under `TeamAccessPolicy`) are silently filtered out
-of the visibility set — they do not appear in `delivered_to`, `denied`, or
-`failed`. This is the anti-leak invariant: broadcasts cannot enumerate labels
-the caller is not permitted to see.
+Targets are named by key label throughout — the recipients are taken from
+the key store, and the sender's own label is excluded.
 
-## Admin endpoints (cloud only)
+> **Not in this repository.** The commercial distribution adds a
+> team-scoped access policy that filters recipients outside your team out
+> of the visibility set entirely — they appear in none of
+> `delivered_to`, `denied` or `failed`, so a broadcast cannot be used to
+> enumerate labels you are not permitted to see. Nothing here implements
+> that, because there are no teams here: see **Core / Cloud** in
+> [GLOSSARY.md](GLOSSARY.md). Mentioned so that a `delivered_to` list
+> which looks short on one deployment and complete on another is not a
+> surprise.
 
-Cloud deployments that expose `/admin/users`, `/admin/teams`, or
-`/admin/invites` MUST set `CASSETTA_ADMIN_ROUTES=enabled` (case-insensitive)
-in the server environment before bootstrap. Without the opt-in, requests
-to any `/admin/*` path return 404 and the OpenAPI schema does not include
-them. With the opt-in, the configured `AccessPolicy` decides per-request
-behavior:
+## Admin endpoints — not in this repository
 
-- **`DefaultAccessPolicy` (`kind=core`)**: allow-all — boot log carries
-  `security_model=unrestricted_admin`. Suitable only for trusted local
-  setups; the warning is loud for a reason.
-- **`TeamAccessPolicy` (`kind=cloud`)**: operator-only — boot log carries
-  `security_model=policy_gated`. Non-operator callers get 403.
+`/admin/users`, `/admin/teams` and `/admin/invites` **do not exist here**.
+This server mounts no `/admin/*` route at all: any such request is a 404,
+the OpenAPI document contains nothing under that prefix, and there is no
+environment variable that turns them on — [CONFIG.md](CONFIG.md)
+enumerates every variable this server reads, and a test keeps that list
+honest in both directions.
 
-```bash
-export CASSETTA_ADMIN_ROUTES=enabled
-# Boot log includes:
-#   admin_routes.mounted policy_kind=cloud security_model=policy_gated \
-#       routers=['admin_users', 'admin_teams', 'admin_invites']
-```
+They belong to the commercial distribution described under **Core /
+Cloud** in [GLOSSARY.md](GLOSSARY.md), which builds on this one. This
+section exists so that a reader who has met those endpoints elsewhere —
+in the other distribution's documentation, or in an agent's memory of a
+different deployment — gets an answer here rather than concluding they
+have misconfigured something.
 
-If admin routes are absent from the boot log AND you set the env var,
-verify the spelling — the parser is a strict allowlist (`enabled` only).
+Everything else in this document describes routes this repository serves.

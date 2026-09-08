@@ -24,11 +24,13 @@ Ask the human for these three things:
    `op read 'op://VAULT/ITEM/FIELD'`, K8s secret, plain file, ...). Use
    the **exact** retrieval method they tell you. Do not invent vault
    paths or environment variable names.
-3. **A label for this agent** — recommended format `<machine>:<project>`,
-   for example `work-laptop:assistant` or `home-laptop:financial-toolbox`.
+3. **A machine name and a project name for this agent** — the two halves
+   of its label, which the server joins as `<machine>:<project>`, for
+   example `work-laptop:assistant` or `home-laptop:financial-toolbox`.
    Each (machine, project) pair must have its own unique label. If the
    human is unsure, suggest one based on the hostname and the current
-   project directory name.
+   project directory name. You send the two halves separately, never the
+   joined string — see Step 2.
 
 ## Step 1 — Verify the server is reachable
 
@@ -54,28 +56,41 @@ then POST to `/keys`:
 # Example using 1Password CLI — replace with the human's actual method
 SETUP_TOKEN="$(op read 'op://VAULT/ITEM/FIELD')"
 
-LABEL='<from step 0>'
+HOST='<machine name from step 0>'
+PROJECT='<project name from step 0>'
 
 curl -fsS -X POST \
   -H "X-Setup-Token: $SETUP_TOKEN" \
   -H "Content-Type: application/json" \
   "$CASSETTA_URL/keys" \
-  -d "{\"label\":\"$LABEL\"}"
+  -d "{\"host\":\"$HOST\",\"project\":\"$PROJECT\"}"
 ```
 
-The response is JSON containing `"api_key": "cst_..."`. **Capture this
-value immediately** — Cassetta shows the key only once. If you lose it
-you must rotate the key.
+**The body is `host` and `project`, two separate fields.** The server
+joins them and returns the result as `label`; sending a pre-joined
+`{"label": "..."}` is rejected with HTTP 422 naming `host` and `project`
+as missing.
+
+The response is JSON containing `"label": "host:project"` and
+`"api_key": "cst_..."`. **Capture the key immediately** — Cassetta shows
+it only once. If you lose it you must rotate the key.
+
+`POST /keys` accepts the `X-Setup-Token` header shown above **or** an
+`Authorization: Bearer cst_...` agent key. If this workspace already
+holds a working key, use it and do not ask the human for the setup token
+a second time.
 
 If you get HTTP 409, the label already exists. Ask the human whether to
-pick a new label or rotate the existing key with
-`POST /keys/{label}/rotate`.
+pick a new one or rotate the existing key with
+`POST /keys/{label}/rotate` — the colon in the label goes into the URL
+as-is, e.g. `POST /keys/work-laptop:assistant/rotate`.
 
-If you get HTTP 401, the setup token is wrong. Re-check Step 0.
+If you get HTTP 401, the credential is wrong. Re-check Step 0.
 
 If this is a brand-new server with no keys yet, the human should tell
-you so — in that case use `POST /setup` instead of `POST /keys` (same
-body, same response shape).
+you so — in that case use `POST /setup` instead of `POST /keys`. Same
+body, same response shape; it takes only the setup token, because there
+is no agent key to present yet, and it answers 409 once any key exists.
 
 ## Step 3 — Register the MCP server
 
@@ -179,11 +194,23 @@ total size and the configured `CASSETTA_MAX_INLINE_SIZE` threshold
 ### Inline path — small bundle, single MCP chain
 
 Call `cassetta_send_init` with the recipient address and a manifest
-listing each file you will send:
+listing each file you will send.
+
+**`to` is always the recipient's full `host:project` label.** This is the
+one mistake here that fails silently, so it is worth the paragraph. A `to`
+containing a colon is looked up in the server's key store: if no active
+key holds that label you get HTTP 404 `unknown_recipient` and you know at
+once. A `to` without a colon is taken as a raw inbox name and checked
+against nothing — `"to": "alice"` is accepted with a 201 even if no such
+recipient has ever existed, and the bundle lands in `inbox/alice/`, a
+different namespace from `inbox/alice:main/`. The recipient's
+`cassetta_inbox` lists the label namespace, sees nothing, and reports no
+error; neither does the send. Ask the human for the recipient's exact
+label rather than guessing the short form.
 
 ```json
 {
-  "to": "alice",
+  "to": "alice:main",
   "manifest": {
     "file_count": 2,
     "files": [
@@ -231,20 +258,37 @@ returns the batch branch instead:
 {
   "bundle_id": "0191a3d0-1b3c-7e29-8012-a2b3c4d5e6f7",
   "mode": "batch",
-  "upload_url": "http://localhost:16001/upload/inbox%2Falice%2Fproject-drop.tgz",
+  "upload_url": "http://localhost:16001/upload/inbox%2Falice%3Amain%2Fproject-drop.tgz",
   "batch_token": "eyJhbGciOiJIUzI1Ni...",
   "expires_at": "2026-04-19T20:10:00Z"
 }
 ```
 
 You cannot feed the bytes back through MCP in this mode. Shell out to
-the `cassetta upload` CLI (bundled with the `cassetta` Python
-package, `[project.scripts]` entry, installed as `cassetta` on
-`$PATH`):
+the `cassetta upload` CLI.
+
+**If `cassetta` is not on `$PATH`, install it first.** There is no
+package on PyPI or any other index — the client lives in the Cassetta
+repository and is installed from it with `uv`, pinned to a release tag:
+
+```bash
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.4
+```
+
+Or run it without installing anything:
+
+```bash
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.4 \
+  cassetta upload --url ... --token ... <files>
+```
+
+Tell the human which of the two you used. Do not invent a `pip install`
+line: nothing publishes this package, so one would fail. With the client
+available, the upload is:
 
 ```bash
 cassetta upload \
-  --url  "http://localhost:16001/upload/inbox%2Falice%2Fproject-drop.tgz" \
+  --url  "http://localhost:16001/upload/inbox%2Falice%3Amain%2Fproject-drop.tgz" \
   --token "eyJhbGciOiJIUzI1Ni..." \
   src/main.py data/big.bin README.md
 ```
@@ -325,9 +369,9 @@ for f in envelope["files"]:
   "bundle": { /* full meta.json */ },
   "files": [
     {"name": "notes.md",  "size": 120000, "mime": "text/markdown",
-     "url": "http://localhost:16001/download/inbox%2Falice%2Fdrop/notes.md"},
+     "url": "http://localhost:16001/download/inbox%2Falice%3Amain%2Fdrop/notes.md"},
     {"name": "logo.png",  "size": 450000, "mime": "image/png",
-     "url": "http://localhost:16001/download/inbox%2Falice%2Fdrop/logo.png"}
+     "url": "http://localhost:16001/download/inbox%2Falice%3Amain%2Fdrop/logo.png"}
   ],
   "download_token": "eyJhbGciOi…",
   "expires_at": "2026-04-20T22:45:00Z"
@@ -335,9 +379,12 @@ for f in envelope["files"]:
 ```
 
 Bytes **never** appear in an MCP response in this mode. The
-`download_token` is a single JWT that authorizes every listed URL; the
-server additionally requires the same identity header you use on
-`/inbox/*` / `/files/*` (two-factor — JWT + identity).
+`download_token` is a single JWT that authorizes every listed URL, and
+`GET /download/...` additionally requires an `X-Sender: <your label>`
+header matching the token's `recipient` claim (two-factor — JWT +
+identity). That header belongs to the download route alone: the
+`/inbox/*` and `/files/*` routes do not read it, and sending it there
+changes nothing.
 
 You should **not** fetch these URLs yourself inside the tool-call loop —
 that pulls bytes back into the LLM context, which is the whole problem
@@ -364,7 +411,7 @@ listings. The claim resolves one of two ways:
 - **All files fetched via the URLs** — bundle is deleted, claim is
   cleared. Standard "pick consumed" semantics.
 - **You do nothing (crash, network drop, forgot to shell out)** — the
-  claim expires after `download_claim_ttl` (default 15 min) and the
+  claim expires after `download_claim_ttl` (default 300 seconds) and the
   bundle reappears in listings for a retry.
 
 `cassetta_get` (store) is **not** claim-backed — the store path is

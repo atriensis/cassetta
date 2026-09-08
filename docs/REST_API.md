@@ -1,10 +1,10 @@
 # Cassetta REST API reference
 
-The REST API as of core **v0.21.0**.
-
 MCP is Cassetta's primary surface; REST is the plain-HTTP fallback — every operation is usable with a
-plain `curl` and a Bearer token (Constitution §IV). The interactive, always-current contract is served
-live (see [Interactive docs](#interactive-docs)); this page is the narrative companion.
+plain `curl` and a Bearer token (Constitution §IV). The generated OpenAPI document your server serves
+is the always-current contract and reports its own version (see [Interactive docs](#interactive-docs));
+this page is the narrative companion and carries no version number of its own, so that it cannot
+disagree with the server you are pointing at.
 
 - **Base URL**: `http://<host>:16001` (default port). Examples below use `BASE="http://localhost:16001"`.
 - **Auth header**: `Authorization: Bearer <token>` (examples use `KEY="Bearer cst_…"`).
@@ -15,12 +15,31 @@ Three token types front the surface. Present the right one for the call you are 
 
 | Token | Form | Where it comes from | TTL | What it authorises |
 |-------|------|---------------------|-----|--------------------|
-| **Agent key** | Bearer, prefix `cst_` | `POST /setup` (first key, via the setup-token) or `POST /keys` (subsequent keys, via an existing agent key) | Long-lived (until rotated or deleted) | Store CRUD (`/files/*`), inbox read/peek/pick (`/inbox/*`), broadcast, key management (`/keys*`), capabilities, agent listing |
+| **Agent key** | Bearer, prefix `cst_` | `POST /setup` (first key, via the setup-token) or `POST /keys` (subsequent keys, via the setup-token **or** an existing agent key) | Long-lived (until rotated or deleted) | Store CRUD (`/files/*`), inbox read/peek/pick (`/inbox/*`), broadcast, key management (`/keys*`), capabilities, agent listing |
 | **Upload-token** | Short-lived JWT | Minted by directed send-init phase 1 — MCP `send_init` **or** REST `POST /uploads` (`CASSETTA_UPLOAD_TOKEN_TTL`) | 300 s | A single directed upload — consumed by `POST /upload/{bundle_path}`. A plain `cst_` key on `/upload` is rejected (401); mint this token with `POST /uploads` (presenting your agent key). |
 | **Claim / download-token** | Reference envelope returned by a consuming `pick` | `POST /inbox/{agent}/{path}/pick` in reference mode (`CASSETTA_DOWNLOAD_CLAIM_TTL`) | 300 s | A single referenced-file fetch — consumed by `GET /download/{bundle_path}/{name}` together with a matching identity header (two-factor) |
 
 The agent key is the credential for almost everything. The other two are short-lived, single-purpose
 tokens that gate the directed-send and reference-download flows.
+
+### Minting a key
+
+Both `POST /setup` and `POST /keys` take the same body — `host` and `project`, never a pre-joined
+`label`:
+
+```bash
+curl -fsS -X POST -H "Content-Type: application/json" \
+     -H "X-Setup-Token: $SETUP_TOKEN" \
+     "$BASE/keys" -d '{"host":"work-laptop","project":"notes"}'
+# → 201 {"label":"work-laptop:notes","api_key":"cst_…","created_at":"…"}
+```
+
+`label` comes back in the response, derived as `host:project`; sending it as an input field is
+rejected `422` naming `host` and `project` as the missing fields. `POST /keys` accepts the setup
+token shown above **or** an `Authorization: Bearer` agent key — an agent that already holds a key
+does not need the setup token again. `POST /setup` is the bootstrap case and takes only the setup
+token, because on a server with no keys yet there is no agent key to present; it answers `409` once a
+key exists.
 
 ## Endpoint table
 
@@ -29,11 +48,11 @@ tokens that gate the directed-send and reference-download flows.
 | Auth | Method | Path | Purpose |
 |------|--------|------|---------|
 | none | `GET` | `/health` | Liveness probe |
-| setup-token | `POST` | `/setup` | Bootstrap the first agent key |
-| agent key | `POST` | `/keys` | Create an agent key |
-| agent key | `GET` | `/keys` | List agent keys |
-| agent key | `POST` | `/keys/{label}/rotate` | Rotate an agent key |
-| agent key | `DELETE` | `/keys/{label}` | Delete an agent key |
+| setup-token | `POST` | `/setup` | Bootstrap the first agent key (body `{"host","project"}`) |
+| setup-token or agent key | `POST` | `/keys` | Create an agent key (body `{"host","project"}`) |
+| setup-token or agent key | `GET` | `/keys` | List agent keys |
+| setup-token or agent key | `POST` | `/keys/{label}/rotate` | Rotate an agent key |
+| setup-token or agent key | `DELETE` | `/keys/{label}` | Delete an agent key |
 | agent key | `GET` | `/capabilities` | Discover advertised limits, TTLs, and modes |
 | agent key | `GET` | `/agents` | List agents visible to the caller |
 | agent key | `POST` | `/broadcast/{path}` | Send a file/bundle to every visible recipient |
@@ -54,10 +73,21 @@ tokens that gate the directed-send and reference-download flows.
 > `PUT /inbox/{agent}/{path}` is a removed legacy endpoint and always returns `410 Gone` — use the
 > directed upload flow (`POST /upload/{bundle_path}`) instead.
 
+Two things the table does not show.
+
+**The `{label}` segment carries a colon.** Every label is `host:project`, and both routes that take
+one accept it unencoded: `DELETE /keys/work-laptop:notes` and `POST /keys/work-laptop:notes/rotate`
+answer `200`.
+
+**`{agent}` is not checked against the caller.** Under the access policy this repository ships, any
+valid agent key may list, peek, read and pick any label's inbox — the same single-user posture the
+store has (see [Workflow A](#workflow-a--store-model-peer-exchange)). Inbox addressing separates
+recipients; it does not isolate them. A deployment shared between people who should not read each
+other's mail needs more than one Cassetta.
+
 ## Workflow A — store-model peer exchange
 
 The store model is a shared key/value space of files. One agent writes; any agent with a key reads.
-Field-verified against v0.21.0.
 
 ```bash
 BASE="http://localhost:16001"
@@ -86,13 +116,19 @@ phase 1 (`send_init`) validates the manifest and mints a short-lived **upload-to
 
 Phase 1 is available over **both MCP (`send_init`) and REST (`POST /uploads`)**. A plain agent key on
 `/upload` still returns `401` — the upload-token is the required credential — but over REST you mint
-that token with `POST /uploads` (presenting your agent key), then consume it in phase 2:
+that token with `POST /uploads` (presenting your agent key), then consume it in phase 2.
+
+**Address the recipient by the full `host:project` label.** A `to` containing a colon is looked up in
+the key store, so a label nobody holds is refused `404 unknown_recipient` and you find out
+immediately. A `to` without one is taken as a raw inbox name and is not checked against anything: it
+is accepted `201` even when no such recipient has ever existed, and the bundle lands in a namespace
+the intended reader is not listening on. Nothing reports an error on either side.
 
 ```bash
 BASE="http://localhost:16001"
-ME="alice"                          # your agent label
+ME="alice:main"                     # your own agent label
 KEY="Bearer cst_…"                  # an agent key
-TO="bob:main"                       # recipient label
+TO="bob:main"                       # recipient label — the full host:project, always
 
 # Phase 1 (REST): POST /uploads with your agent key → an upload-token + the upload_url.
 curl -fsS -X POST -H "Authorization: $KEY" -H "Content-Type: application/json" \
@@ -117,7 +153,7 @@ curl -fsS -H "Authorization: Bearer <download-token>" \
      "$BASE/download/<bundle_path>/<name>"
 ```
 
-## What REST can / can't do (v0.21.0)
+## What REST can / can't do
 
 - ✅ **Store model** — full CRUD over `/files/*` with a plain agent key.
 - ✅ **Inbox reads** — list / peek / pick over `/inbox/*` with a plain agent key.
@@ -141,8 +177,33 @@ The generated, always-current OpenAPI contract is served live (unauthenticated):
 
 ## CLI
 
-The `cassetta` command-line client ships with the package (`pip install cassetta` → `cassetta --help`):
+The `cassetta` command-line client ships in this repository, declared at `pyproject.toml`
+`[project.scripts]`. It is what an agent shells out to when a payload is too large to pass through
+MCP.
+
+### Installing it
+
+**There is no package on PyPI or any other index**, so there is nothing to `pip install`. Install
+from the repository with `uv`, pinned to a release tag:
+
+```bash
+# Persistent — for a machine that will use the client repeatedly.
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.4
+
+# One-off — runs the command and leaves nothing installed.
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.4 cassetta --help
+```
+
+Pin the tag rather than tracking a branch. A client that silently follows the default branch changes
+under you between one run and the next, which turns every report into a question about which revision
+was in play.
+
+### The commands
 
 - `cassetta upload` — stream a tar bundle to `POST /upload/{bundle_path}`
 - `cassetta download` — fetch every file in a reference envelope via `GET /download/...`
+- `cassetta send` — both phases at once: mint the upload session, then stream the tar
 - `cassetta capabilities` — print the server's advertised limits and features
+
+`cassetta --help` lists them, and each takes `--help` of its own. See
+[CLIENT_SETUP.md](CLIENT_SETUP.md) for the full reference — flags, exit codes and failure states.

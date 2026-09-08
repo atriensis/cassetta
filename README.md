@@ -92,37 +92,45 @@ steps stop working, that run goes red.
 
 ### Connect an MCP agent
 
-Add Cassetta to your agent's MCP server configuration. For Claude Code, the
-recommended location is `<your-project>/.claude/settings.local.json`:
+Register Cassetta with your agent's MCP client. For Claude Code, that is the
+`claude mcp add` CLI, run from the project directory the agent works in:
 
-```json
-{
-  "mcpServers": {
-    "cassetta": {
-      "url": "http://localhost:16001/mcp",
-      "headers": {
-        "Authorization": "Bearer cst_..."
-      }
-    }
-  }
-}
+```bash
+claude mcp add \
+  --transport http \
+  cassetta \
+  "http://localhost:16001/mcp/" \
+  --header "Authorization: Bearer cst_..."
 ```
 
-Your agent can now call `cassetta_put`, `cassetta_get`, `cassetta_list`,
-`cassetta_send`, `cassetta_inbox`, `cassetta_pick`, and `cassetta_peek`.
-The non-destructive `cassetta_peek` tool (and the matching
-`GET /.../peek` REST endpoints) returns bundle metadata without
-consuming the bundle; see [docs/REST_API.md](docs/REST_API.md) for
-details.
+Two details decide whether this works:
 
-**Why `settings.local.json` and not committed config?** Each (machine, project)
-should have its own API key for clean audit trails and per-machine revocation.
-See [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) for the full rationale, key
-labelling conventions, and troubleshooting.
+- **The trailing slash on `/mcp/` is required.** Without it the server answers
+  `307` redirecting to `/mcp/`, and MCP clients do not follow the redirect — the
+  connection fails silently rather than reporting an error.
+- **Do not hand-write the server into `.claude/settings.json` or
+  `.claude/settings.local.json`.** Claude Code's settings schema has no field for
+  MCP servers and rejects the attempt. `claude mcp add` writes to
+  `~/.claude.json`, sectioned by project path, which is why its default `local`
+  scope means "this project on this machine".
+
+Restart the session — MCP servers load only at start — and your agent gains the
+twelve `cassetta_*` tools, from storing and listing files to sending a bundle to
+another agent's inbox and picking one up. Among them is the non-destructive
+`cassetta_peek` (and the matching `GET /.../peek` REST endpoints), which returns
+bundle metadata without consuming the bundle.
+[docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) lists every tool and what it does;
+[docs/REST_API.md](docs/REST_API.md) covers the REST equivalents.
+
+**Why not committed config?** Each (machine, project) should have its own API key
+for clean audit trails and per-machine revocation — so the registration is
+per-machine state, not something to check into a repository where the key would
+travel with it. [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) has the full
+rationale, the key labelling conventions, and troubleshooting.
 
 **Want the agent to configure itself?** Send your agent the contents of
-[docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) — it will ask you for the URL and
-API key, then create or update `settings.local.json` for you.
+[docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) — it will ask you for the URL and the
+setup token, mint its own key, and run `claude mcp add` for you.
 
 > **Before exposing this server beyond `localhost`**, replace the
 > development-only `CASSETTA_JWT_KEY` shipped in `.env.example` with a
@@ -139,8 +147,10 @@ API key, then create or update `settings.local.json` for you.
 
 ## Configuration
 
-All configuration is read from environment variables. The `.env.example` file
-documents every supported variable with its default. The most important ones:
+All configuration is read from environment variables. `.env.example` is a
+copyable starting point and [docs/CONFIG.md](docs/CONFIG.md) is the full
+reference. The table below is the short list — the variables most deployments
+touch, not all of them:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -166,8 +176,25 @@ a Raspberry Pi at home, a $5 VPS, an old laptop, or a corporate sandbox.
 1. Install Docker Engine and Docker Compose v2 from your distro packages or
    from <https://docs.docker.com/engine/install/>.
 2. Clone or copy this repository to the server.
-3. Create `.env` from `.env.example` and set a strong `CASSETTA_SETUP_TOKEN`.
-4. Run `docker compose up -d`.
+3. Create `.env` from `.env.example` and set the three variables the server
+   requires — it refuses to start without them, naming the one it missed:
+   - `CASSETTA_SETUP_TOKEN` — a long random string. (The empty string is also
+     accepted and selects dev mode, which disables authentication entirely.
+     Local experiments only.)
+   - `CASSETTA_PUBLIC_BASE_URL` — the address agents can actually reach, which
+     is what upload and download URLs are composed from. Not the bind address,
+     when the two differ.
+   - `CASSETTA_JWT_KEY` — a freshly generated signing key, or
+     `CASSETTA_JWT_KEY_FILE` pointing at one. Do not ship the placeholder in
+     `.env.example`; see the warning above.
+4. If agents will reach MCP from another machine, add their hostnames to
+   `CASSETTA_MCP_ALLOWED_HOSTS`. It is empty by default, which means loopback
+   only, and a request from elsewhere is rejected with `421 Invalid Host header`.
+5. Run `docker compose up -d`.
+
+Everything else has a working default. [docs/CONFIG.md](docs/CONFIG.md) is the
+full reference — every variable the server reads, its default, and its effect —
+and a test keeps it in step with the source in both directions.
 
 ### Persistence and backups
 
@@ -186,8 +213,17 @@ can drop a regular file into `./data/` by hand, or share the storage
 directory with another tool, and Cassetta will list and serve those files.
 Plain files use the filesystem's mtime as their `created_at` and have no
 sender attribution. The `/inbox/` namespace does **not** accept plain
-files (sender attribution is required) — only files written via
-`PUT /inbox/` or `cassetta_send` appear in inbox listings.
+files (sender attribution is required): a bundle appears in an inbox
+listing only when it arrived through the two-phase send flow or a
+broadcast, both of which record who sent it. There is no single-request
+write to an inbox — the legacy `PUT /inbox/{agent}/{path}` was retired
+and now answers `410 Gone` naming its replacement.
+
+Inboxes separate recipients; they do not isolate them. Under the access
+policy shipped here, any valid API key may list and read any label's
+inbox, exactly as it may read any file in the store. That is the right
+answer for one person self-hosting, and the wrong one for a machine
+shared between people who should not read each other's mail.
 
 ### Networking and TLS
 
@@ -198,9 +234,18 @@ public exposure put it behind a reverse proxy that handles TLS, for example
 ship its own TLS termination — that is your reverse proxy's job and gives you
 flexibility around certificates and renewal.
 
-If you do not need remote access, bind the host port to `127.0.0.1` only by
-setting `CASSETTA_PORT=127.0.0.1:16001` is not supported directly; instead
-edit `docker-compose.yml` to use `"127.0.0.1:${CASSETTA_PORT:-16001}:16001"`.
+If you do not need remote access, bind the host port to loopback so the service
+is unreachable from the rest of the network. The address to bind is part of the
+port mapping, so edit `docker-compose.yml` — it carries the substitution to make
+as a comment on the line above:
+
+```yaml
+ports:
+  - "127.0.0.1:${CASSETTA_PORT:-16001}:16001"
+```
+
+`CASSETTA_PORT` itself stays what it is: the published host port, read by Compose
+alone and never by the server.
 
 ### Multi-arch support
 
@@ -235,6 +280,24 @@ the new image will be used.
 | Health | `curl http://localhost:16001/health` |
 | Restart | `docker compose restart` |
 | Rebuild | `docker compose up -d --build` |
+
+## Documentation
+
+Everything under `docs/`, and what each file answers:
+
+- [docs/CONFIG.md](docs/CONFIG.md) — every environment variable the server reads,
+  its default and its effect. The one to open when something will not start.
+- [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) — connecting an MCP agent by hand:
+  minting a key, registering the server, the `cassetta` CLI, troubleshooting.
+- [docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) — the same steps written as
+  instructions to paste into an agent, plus how an agent sends and receives.
+- [docs/REST_API.md](docs/REST_API.md) — the REST surface: credentials, every
+  endpoint, two worked workflows.
+- [docs/GLOSSARY.md](docs/GLOSSARY.md) — the project's vocabulary, and what is
+  and is not part of this repository.
+- [docs/LICENSE_FAQ.md](docs/LICENSE_FAQ.md) — what the licence lets you do, in
+  plain terms.
+- [docs/adr/](docs/adr/) — the architecture decisions and why they were taken.
 
 ## Changes, contributions, security
 
