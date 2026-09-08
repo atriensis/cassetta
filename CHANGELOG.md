@@ -25,7 +25,7 @@ repository's pull-request history and cite none.
   every check in this repository was green, and the break was visible only to someone installing
   from an index without a lock file. If you had independently installed `mcp 2.x` alongside this
   package, you now get a resolution conflict naming `mcp>=1.12,<2` at install time instead of an
-  import error at start-up. Migrating this package to `mcp` 2.x is a separate piece of work.
+  import error at start-up. Migrating this package to `mcp` 2.x is a separate piece of work. (#32)
 
 ### Changed
 
@@ -38,7 +38,7 @@ repository's pull-request history and cite none.
 
   **No resolved version moves.** With the lock file, this release resolves to exactly the versions
   `0.28.0` resolved to; the declarations add edges, not bounds. No environment variable, REST route,
-  MCP tool, log field or behaviour of the running server changes.
+  MCP tool, log field or behaviour of the running server changes. (#32)
 
 ## [0.28.0] - 2026-09-08
 
