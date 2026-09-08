@@ -46,11 +46,11 @@ repository's pull-request history and cite none.
 - **`docker exec <container> id` answers `uid=0(root)`, and nothing explained why.** It reads as
   contradicting the claim that the service runs unprivileged. It does not: the image carries no
   `USER` line so the entrypoint can correct bind-mount ownership before dropping for good, and
-  `docker top` shows the uvicorn process as 1001. The README says so where an auditor will look.
+  `docker top` shows the uvicorn process as 1001. The README says so where an auditor will look. (#33)
 
 Documentation only. No environment variable, REST route, MCP tool, structured-log field or behaviour
 of the running service changes. Nine guards were added to `tests/test_docs_examples.py` so that each
-of the above is a red test rather than a convention. (#33)
+of the above is a red test rather than a convention.
 
 ## [0.28.1] - 2026-09-08
 
