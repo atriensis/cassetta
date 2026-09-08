@@ -19,7 +19,7 @@ repository's pull-request history and cite none.
 
   **What changes for an operator**: setting either now does nothing at all. In particular, a
   malformed or out-of-range value no longer stops the server — both were range-checked at boot, and
-  that check left with them. Remove them from your environment; nothing replaces them.
+  that check left with them. Remove them from your environment; nothing replaces them. (#30)
 
 ### Changed
 
@@ -30,15 +30,15 @@ repository's pull-request history and cite none.
   what `load_config()` returns; it is now the reference implementation rather than the only
   possible one. A new test requires every member the protocol declares to have a reader under
   `src/`, so a setting with nothing behind it cannot arrive again. Recorded as
-  `docs/adr/004-configuration-as-a-layer-1-protocol.md`.
+  `docs/adr/004-configuration-as-a-layer-1-protocol.md`. (#30)
 - `check_rate_limit_imperative` gains a required `route=` keyword naming the counter a rejection
   belongs to, and the 429 handler reads back what the caller recorded instead of matching the
   request path against a hardcoded prefix. A rejection that never went through that helper — one
   raised by a rate-limit decorator, for instance — is still counted as `broadcast`, exactly as
-  before. Any caller of that function outside this repository must pass the new argument.
+  before. Any caller of that function outside this repository must pass the new argument. (#30)
 - The `config_loaded` boot event no longer carries a `rate_limit_onboard` value, because the setting
   behind it no longer exists. No log field was renamed and every other field of that event is
-  unchanged.
+  unchanged. (#30)
 
 No REST route, status code or MCP tool was added, removed or renamed.
 
