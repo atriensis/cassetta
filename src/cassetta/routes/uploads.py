@@ -17,7 +17,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from cassetta.auth.dependencies import get_current_identity
-from cassetta.config import AppConfig
 from cassetta.dependencies import (
     get_access_policy,
     get_alias_resolver,
@@ -27,6 +26,7 @@ from cassetta.dependencies import (
 from cassetta.models import UploadSession, UploadSessionRequest
 from cassetta.protocols.access import AccessPolicy
 from cassetta.protocols.alias import AliasResolver
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import Identity
 from cassetta.protocols.limits import LimitsPolicy
 from cassetta.protocols.metrics import MetricsProvider
@@ -61,7 +61,7 @@ async def create_upload_session(
     short-lived credential to use. Stream the tar archive to ``upload_url``
     carrying ``batch_token`` to complete the send.
     """
-    config: AppConfig = request.app.state.config
+    config: CoreConfig = request.app.state.config
     try:
         result = await prepare_send_init(
             to=payload.to,

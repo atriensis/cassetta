@@ -5,7 +5,7 @@ holder. Initialised from boot-time ``config.jwt_primary_key`` /
 ``config.jwt_secondary_key`` and mutated in place by SIGHUP-driven
 rotations. The verify path reads ``slots.primary`` and the
 :func:`_resolve_secondary` helper at call time — never the boot-time
-``AppConfig`` field once rotation has occurred.
+boot-time configuration field once rotation has occurred.
 
 Multi-worker safety: ``loop.add_signal_handler`` only registers the
 handler when ``_is_single_worker()`` returns True; otherwise emits
@@ -30,7 +30,7 @@ from cassetta.structured_log import struct_log
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
-    from cassetta.config import AppConfig
+    from cassetta.protocols.config import CoreConfig
 
 _logger = logging.getLogger("cassetta")
 
@@ -83,7 +83,7 @@ def _is_single_worker() -> bool:
     return True
 
 
-def _validate_overlap_ttl(config: AppConfig) -> None:
+def _validate_overlap_ttl(config: CoreConfig) -> None:
     """Emit ``config_validation_warning`` when the overlap is too short."""
     overlap = config.jwt_key_overlap_ttl
     min_required = max(
@@ -124,7 +124,7 @@ def _decode_key_material(raw: bytes) -> bytes | None:
 
 async def _handle_rotation(app: FastAPI) -> None:
     """SIGHUP body: re-read the key file, swap slots, emit the event."""
-    config: AppConfig = app.state.config
+    config: CoreConfig = app.state.config
     file_path = os.environ.get("CASSETTA_JWT_KEY_FILE", "").strip()
 
     if not file_path:
@@ -212,7 +212,7 @@ def _install_sighup_handler(app: FastAPI) -> None:
 
 
 def init_jwt_key_slots(app: FastAPI) -> None:
-    """Populate ``app.state.jwt_keys`` from boot-time ``AppConfig``.
+    """Populate ``app.state.jwt_keys`` from the boot-time configuration.
 
     Called from ``create_app`` (NOT lifespan) so even ASGI test clients
     that bypass lifespan see a populated holder. The lock is a stub
@@ -220,7 +220,7 @@ def init_jwt_key_slots(app: FastAPI) -> None:
     the running loop so the SIGHUP handler can grab it without
     cross-loop reuse.
     """
-    config: AppConfig = app.state.config
+    config: CoreConfig = app.state.config
     app.state.jwt_keys = JWTKeySlots(
         primary=config.jwt_primary_key,
         secondary=config.jwt_secondary_key,
@@ -237,7 +237,7 @@ def init_jwt_hot_reload(app: FastAPI) -> None:
     handles the runtime concerns that need a running asyncio loop.
     Idempotent — a second call simply re-installs the handler.
     """
-    config: AppConfig = app.state.config
+    config: CoreConfig = app.state.config
     _validate_overlap_ttl(config)
     app.state.jwt_keys_lock = asyncio.Lock()
 

@@ -173,7 +173,6 @@ class TestOperationalResilienceEnvVars:
     ) -> None:
         _seed_required_env(monkeypatch)
         for var in (
-            "CASSETTA_RATE_LIMIT_ONBOARD",
             "CASSETTA_RATE_LIMIT_BROADCAST",
             "CASSETTA_BROADCAST_MAX_TARGETS",
             "CASSETTA_JWT_KEY_OVERLAP_TTL",
@@ -182,7 +181,6 @@ class TestOperationalResilienceEnvVars:
         from cassetta.config import load_config
 
         config = load_config()
-        assert config.rate_limit_onboard == "5/minute"
         assert config.rate_limit_broadcast == "10/minute"
         assert config.broadcast_max_targets == 1000
         assert config.jwt_key_overlap_ttl == 600
@@ -192,14 +190,12 @@ class TestOperationalResilienceEnvVars:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
-        monkeypatch.setenv("CASSETTA_RATE_LIMIT_ONBOARD", "20/hour")
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_BROADCAST", "100/minute")
         monkeypatch.setenv("CASSETTA_BROADCAST_MAX_TARGETS", "50")
         monkeypatch.setenv("CASSETTA_JWT_KEY_OVERLAP_TTL", "1200")
         from cassetta.config import load_config
 
         config = load_config()
-        assert config.rate_limit_onboard == "20/hour"
         assert config.rate_limit_broadcast == "100/minute"
         assert config.broadcast_max_targets == 50
         assert config.jwt_key_overlap_ttl == 1200
@@ -209,24 +205,11 @@ class TestOperationalResilienceEnvVars:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_required_env(monkeypatch)
-        monkeypatch.setenv("CASSETTA_RATE_LIMIT_ONBOARD", "5/min")
         monkeypatch.setenv("CASSETTA_RATE_LIMIT_BROADCAST", "10/sec")
         from cassetta.config import load_config
 
         config = load_config()
-        assert config.rate_limit_onboard == "5/minute"
         assert config.rate_limit_broadcast == "10/second"
-
-    def test_malformed_rate_limit_onboard_exits(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        _seed_required_env(monkeypatch)
-        monkeypatch.setenv("CASSETTA_RATE_LIMIT_ONBOARD", "not-a-rate")
-        from cassetta.config import load_config
-
-        with pytest.raises(SystemExit):
-            load_config()
 
     def test_malformed_rate_limit_broadcast_exits(
         self,

@@ -20,7 +20,6 @@ from pathlib import Path
 from cassetta.backends.filesystem.claim_storage import FilesystemClaimStorage
 from cassetta.backends.filesystem.keystore import FileKeyStore
 from cassetta.backends.filesystem.storage import FilesystemBackend
-from cassetta.config import AppConfig
 from cassetta.defaults.default_access import DefaultAccessPolicy
 from cassetta.defaults.default_alias import DefaultAliasResolver
 from cassetta.defaults.default_identity import DefaultIdentityProvider
@@ -30,6 +29,7 @@ from cassetta.defaults.default_transport import CoreReferenceTransport
 from cassetta.protocols.access import AccessPolicy
 from cassetta.protocols.alias import AliasResolver
 from cassetta.protocols.claim_storage import ClaimStorage
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import IdentityProvider
 from cassetta.protocols.keystore import KeyStoreProtocol
 from cassetta.protocols.limits import LimitsPolicy
@@ -53,7 +53,7 @@ class BackendConfig:
     claim_store: ClaimStorage
 
 
-def build_core_defaults(config: AppConfig) -> BackendConfig:
+def build_core_defaults(config: CoreConfig) -> BackendConfig:
     """Construct the core reference defaults from ``config``.
 
     The ``key_store`` instance is constructed once and shared with

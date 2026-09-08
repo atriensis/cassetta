@@ -97,7 +97,6 @@ def _configured_app(
         default_ttl=config.default_ttl,
         allowed_path_chars=config.allowed_path_chars,
         mcp_allowed_hosts=config.mcp_allowed_hosts,
-        invite_ttl_seconds=config.invite_ttl_seconds,
         log_format=config.log_format,
         limits=limits,
     )

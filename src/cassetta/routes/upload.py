@@ -25,11 +25,11 @@ from fastapi.responses import JSONResponse
 
 from cassetta.auth import jwt_tokens
 from cassetta.auth.jwt_hot_reload import _resolve_secondary
-from cassetta.config import AppConfig
 from cassetta.defaults.default_limits import (
     DEFAULT_PER_FILE_MAX,
     LimitsRejection,
 )
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.metrics import MetricsProvider
 from cassetta.protocols.storage import BundlePathConflictError, StorageBackend
 from cassetta.streaming import SyncStreamReader
@@ -44,7 +44,7 @@ def _get_backend(request: Request) -> StorageBackend:
     return request.app.state.backends.backend  # type: ignore[no-any-return]
 
 
-def _get_config(request: Request) -> AppConfig:
+def _get_config(request: Request) -> CoreConfig:
     return request.app.state.config  # type: ignore[no-any-return]
 
 
@@ -103,7 +103,7 @@ def _stream_tar_into_writer(
     manifest_files: list[dict[str, Any]],
     tar_mode: str,
     *,
-    config: AppConfig,
+    config: CoreConfig,
 ) -> int:
     """Iterate the tar stream synchronously, writing each entry.
 

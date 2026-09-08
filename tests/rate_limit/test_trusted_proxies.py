@@ -105,15 +105,15 @@ class TestPerIpBucketing:
         a = _build_request(client_ip="198.51.100.7")
         b = _build_request(client_ip="198.51.100.8")
         # 1/minute — each IP can do exactly one before being told off.
-        check_rate_limit_imperative(a, "1/minute")
-        check_rate_limit_imperative(b, "1/minute")
+        check_rate_limit_imperative(a, "1/minute", route="broadcast")
+        check_rate_limit_imperative(b, "1/minute", route="broadcast")
         with pytest.raises(RateLimitExceeded):
-            check_rate_limit_imperative(a, "1/minute")
+            check_rate_limit_imperative(a, "1/minute", route="broadcast")
         with pytest.raises(RateLimitExceeded):
-            check_rate_limit_imperative(b, "1/minute")
+            check_rate_limit_imperative(b, "1/minute", route="broadcast")
 
     def test_same_ip_shares_bucket_across_calls(self) -> None:
         peer = _build_request(client_ip="198.51.100.42")
-        check_rate_limit_imperative(peer, "1/minute")
+        check_rate_limit_imperative(peer, "1/minute", route="broadcast")
         with pytest.raises(RateLimitExceeded):
-            check_rate_limit_imperative(peer, "1/minute")
+            check_rate_limit_imperative(peer, "1/minute", route="broadcast")

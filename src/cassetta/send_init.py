@@ -21,13 +21,13 @@ from typing import Any, Literal
 
 from cassetta.auth import jwt_tokens
 from cassetta.auth.manifest_validation import validate_manifest
-from cassetta.config import AppConfig
 from cassetta.defaults.default_limits import LimitsRejection, _format_reason
 from cassetta.mime import pick_mime
 from cassetta.models import SendManifest
 from cassetta.path_validation import PathValidationError, validate_path
 from cassetta.protocols.access import AccessPolicy
 from cassetta.protocols.alias import AliasResolver
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import Identity
 from cassetta.protocols.limits import (
     LimitsPolicy,
@@ -147,7 +147,7 @@ async def prepare_send_init(
     manifest: SendManifest,
     identity: Identity,
     sender_label: str | None,
-    config: AppConfig,
+    config: CoreConfig,
     access_policy: AccessPolicy,
     alias_resolver: AliasResolver | None,
     limits_policy: LimitsPolicy,

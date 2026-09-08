@@ -32,12 +32,12 @@ import jwt as _jwt
 
 from cassetta.auth import jwt_tokens
 from cassetta.claims import ClaimRecord
-from cassetta.config import AppConfig
 from cassetta.envelopes import (
     ReferenceEnvelope,
     build_reference_envelope_with_path,
 )
 from cassetta.protocols.claim_storage import ClaimStorage
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import Identity
 from cassetta.protocols.limits import LimitsPolicy, PolicyContext
 from cassetta.protocols.reference_transport import ReferenceTransport
@@ -91,7 +91,7 @@ def _expires_iso(now_epoch: int, ttl_s: int) -> str:
 
 async def build_reference_payload_for_inbox(
     *,
-    config: AppConfig,
+    config: CoreConfig,
     policy: LimitsPolicy,
     transport: ReferenceTransport,
     claim_store: ClaimStorage,
@@ -166,7 +166,7 @@ async def build_reference_payload_for_inbox(
 
 def build_reference_payload_for_store(
     *,
-    config: AppConfig,
+    config: CoreConfig,
     policy: LimitsPolicy,
     transport: ReferenceTransport,
     identity: Identity,

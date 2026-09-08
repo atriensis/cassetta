@@ -12,7 +12,11 @@ The module owns:
   rejection raised before any storage write.
 - ``check_rate_limit_imperative`` — the imperative entry point used by
   the MCP ``cassetta_broadcast`` tool body (the per-tool-call boundary
-  that the HTTP-level decorator cannot reach).
+  that the HTTP-level decorator cannot reach). The caller names the route
+  its traffic belongs to; the helper records that name on the request.
+- ``recorded_rate_limit_route`` — reads it back. The 429 handler counts
+  what the caller said rather than guessing from the request path, so a
+  route this library does not serve is still attributed correctly.
 
 The module is owned by the open core, and a downstream distribution reaches
 it through ``request.app.state.limiter`` only — nothing downstream needs to
@@ -35,6 +39,30 @@ if TYPE_CHECKING:
 
 
 limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
+
+# The counters a rejection can be attributed to. Deliberately still two names
+# rather than a free string: the alphabet is the seam, and a caller naming its
+# own route is not the same as a caller inventing a metric tag.
+RateLimitRoute = Literal["onboard", "broadcast"]
+
+# Where the route travels between the helper and the exception handler. It lives
+# on the request's own scope state, which Starlette shares across every
+# ``Request`` built on that scope — so the handler's request sees what the route
+# handler's request recorded, and nothing leaks between requests.
+_ROUTE_STATE_ATTR = "cassetta_rate_limit_route"
+
+# What a rejection that never passed through the helper is counted as. A
+# decorator-raised one is the case: it cannot record anything, and this is what
+# the handler attributed it to before the route became the caller's to name.
+_DEFAULT_ROUTE: RateLimitRoute = "broadcast"
+
+
+def recorded_rate_limit_route(request: Request) -> RateLimitRoute:
+    """The route recorded for this request, or ``broadcast`` if none was."""
+    route = getattr(request.state, _ROUTE_STATE_ATTR, None)
+    if route == "onboard" or route == "broadcast":
+        return route
+    return _DEFAULT_ROUTE
 
 
 class FanoutCapExceeded(Exception):
@@ -59,7 +87,7 @@ def _check_fanout_cap(target_count: int, max_targets: int) -> None:
 def _record_rate_limit_hit(
     request: Request,
     *,
-    route: Literal["onboard", "broadcast"],
+    route: RateLimitRoute,
     reason: Literal["rate", "fanout_cap"],
 ) -> None:
     """Emit ``cassetta.rate_limit.hits`` against the configured provider.
@@ -77,18 +105,31 @@ def _record_rate_limit_hit(
     )
 
 
-def check_rate_limit_imperative(request: Request, rate_string: str) -> None:
+def check_rate_limit_imperative(
+    request: Request,
+    rate_string: str,
+    *,
+    route: RateLimitRoute,
+) -> None:
     """Drive the shared limiter bucket from a non-decorator call site.
 
     Used by the MCP ``cassetta_broadcast`` tool body — HTTP middleware
     cannot count per-tool-call traffic on a long-lived MCP/SSE request,
     so the tool calls into this helper at its entry point.
 
+    ``route`` names the counter this traffic belongs to, and the caller is
+    the one that knows: this library serves ``broadcast``, and an
+    application embedding it serves routes this library has never heard
+    of. The name is recorded on the request *before* the bucket is
+    consulted, so the :class:`RateLimitExceeded` raised below is already
+    attributable by the time the app-level handler sees it.
+
     Raises :class:`RateLimitExceeded` (slowapi's exception) when the
     bucket would overflow. The MCP tool body MUST translate it into a
     ``ValueError`` whose message is the JSON object
     ``{"error": "rate_limit", "retry_after": <seconds>}``.
     """
+    setattr(request.state, _ROUTE_STATE_ATTR, route)
     parsed: RateLimitItem = parse(rate_string)
     key = get_remote_address(request)
     if not limiter._limiter.hit(parsed, key):
@@ -111,8 +152,10 @@ def check_rate_limit_imperative(request: Request, rate_string: str) -> None:
 __all__ = [
     "FanoutCapExceeded",
     "RateLimitExceeded",
+    "RateLimitRoute",
     "_check_fanout_cap",
     "_record_rate_limit_hit",
     "check_rate_limit_imperative",
     "limiter",
+    "recorded_rate_limit_route",
 ]

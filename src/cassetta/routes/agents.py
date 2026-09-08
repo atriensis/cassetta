@@ -15,7 +15,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from starlette.datastructures import UploadFile
 
 from cassetta.auth import get_current_identity, get_key_store
-from cassetta.config import AppConfig
 from cassetta.dependencies import (
     get_access_policy,
     get_alias_resolver,
@@ -26,6 +25,7 @@ from cassetta.mime import pick_mime
 from cassetta.path_validation import PathValidationError, validate_path
 from cassetta.protocols.access import AccessPolicy
 from cassetta.protocols.alias import AliasResolver
+from cassetta.protocols.config import CoreConfig
 from cassetta.protocols.identity import Identity
 from cassetta.protocols.keystore import KeyStoreProtocol
 from cassetta.protocols.limits import (
@@ -54,7 +54,7 @@ def _get_backend(request: Request) -> StorageBackend:
     return request.app.state.backends.backend  # type: ignore[no-any-return]
 
 
-def _get_config(request: Request) -> AppConfig:
+def _get_config(request: Request) -> CoreConfig:
     return request.app.state.config  # type: ignore[no-any-return]
 
 
@@ -163,7 +163,7 @@ async def broadcast(
     # Per-IP rate limit, sharing one budget with MCP.
     # The unified RateLimitExceeded handler at app.py emits the 429
     # envelope and increments cassetta.rate_limit.hits{route=broadcast}.
-    check_rate_limit_imperative(request, config.rate_limit_broadcast)
+    check_rate_limit_imperative(request, config.rate_limit_broadcast, route="broadcast")
     # 0) Validate path.
     try:
         validate_path(path, allowed_chars=config.allowed_path_chars)

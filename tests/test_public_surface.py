@@ -122,12 +122,16 @@ _SHIPPED_FILES = ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md",
 _TEXT_SUFFIXES = frozenset({".cfg", ".ini", ".json", ".md", ".py", ".toml", ".txt", ".yaml", ".yml"})
 
 # Environment variables belonging to the private cloud repository. ``CASSETTA_AZURE_`` is a
-# prefix, so every ``CASSETTA_AZURE_*`` name is caught rather than one specific spelling.
+# prefix, so every ``CASSETTA_AZURE_*`` name is caught rather than one specific spelling. The last
+# two were parsed here once and governed nothing here; a name this repository stopped reading
+# belongs on this list for the same reason as one it never read.
 _CLOUD_ENV_VARS = (
     "CASSETTA_AZURE_",
     "CASSETTA_STORAGE_BACKEND",
     "CASSETTA_KEYSTORE_BACKEND",
     "CASSETTA_ADMIN_ROUTES",
+    "CASSETTA_RATE_LIMIT_ONBOARD",
+    "CASSETTA_INVITE_TTL_SECONDS",
 )
 
 # A whole ``CASSETTA_*`` variable name. The trailing ``[A-Z0-9]`` is what makes it a *name*: prose
