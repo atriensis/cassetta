@@ -7,13 +7,14 @@ import json
 import os
 import tempfile
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
 import httpx
 import pytest
 
 from cassetta.app import create_app
 from cassetta.backends.filesystem.storage import FilesystemBackend
-from cassetta.config import AppConfig, LimitsConfig, load_config
+from cassetta.config import LimitsConfig, load_config
 from cassetta.defaults.default_limits import CoreLimitsPolicy
 from cassetta.mcp_server import configure as configure_mcp
 from cassetta.mcp_server import set_sender_label
@@ -75,18 +76,11 @@ async def policy_client(
     )
     policy = CoreLimitsPolicy(limits)
 
-    config = load_config()
-    config = AppConfig(
-        setup_token=config.setup_token,
-        dev_mode=config.dev_mode,
-        storage_path=config.storage_path,
-        keys_file=config.keys_file,
-        default_ttl=config.default_ttl,
-        allowed_path_chars=config.allowed_path_chars,
-        mcp_allowed_hosts=config.mcp_allowed_hosts,
-        log_format=config.log_format,
-        limits=limits,
-    )
+    # `replace` rather than a fresh `AppConfig(...)`: the field list this used to re-type by hand had
+    # dropped `jwt_primary_key`, so the rebuilt config could not sign — and PyJWT >= 2.13 says so.
+    # `replace` carries every field forward from the config `load_config()` built, including whatever
+    # is added to the dataclass after this line is written. `tests/test_signing_key_fixtures.py`.
+    config = replace(load_config(), limits=limits)
     app = create_app(
         config,
         backends=make_backends(config, limits_policy=policy),
