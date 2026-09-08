@@ -176,8 +176,26 @@ it under, and matters only when something sits in front of it.
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `CASSETTA_MCP_ALLOWED_HOSTS` | empty | Comma-separated allowlist of `Host` header values accepted at the MCP endpoint — DNS-rebinding protection. Empty means localhost only; set your external hostnames to reach MCP from another machine. |
+| `CASSETTA_MCP_ALLOWED_HOSTS` | empty | Comma-separated allowlist of `Host` header values accepted at the MCP endpoint — DNS-rebinding protection. Matched **literally, port included**: `cassetta.example.com` and `cassetta.example.com:16001` are two different entries. Empty means loopback only. |
 | `CASSETTA_LOG_FORMAT` | `text` | `text` or `json`. Any other value falls back to `text` with a warning on stderr rather than failing the boot. Every structured-log event renders in the chosen format. |
+
+`CASSETTA_MCP_ALLOWED_HOSTS` is a list of `Host` header values, not a list of names. Nothing
+normalises, resolves or strips a port from it — the value a client puts in the header is compared
+against the list as a string, and a client puts the port in that header whenever it is not the
+scheme's own default (80 for `http`, 443 for `https`). Cassetta's default port is neither, so a
+deployment on `:16001` is reached with the port in the header and needs both spellings:
+
+```
+CASSETTA_MCP_ALLOWED_HOSTS=cassetta.example.com,cassetta.example.com:16001
+```
+
+With only the first entry, every MCP call from that client answers `421 Invalid Host header` while
+both the variable and the client's configuration look right. An unlisted value is still refused, so
+listing both costs nothing.
+
+One thing to know before you debug this from outside: **authentication runs before the host check.**
+An unauthenticated probe answers `401` and never reveals the `421`, so a bare `curl` against `/mcp/`
+tells you nothing about whether the allowlist is the problem. Send the key.
 
 ## Command-line client
 

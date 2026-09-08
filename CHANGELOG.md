@@ -6,6 +6,48 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.26.7] - 2026-09-08
+
+### Fixed
+
+- The worked send example in the REST reference now completes when it is copied. Its manifest named
+  the tar archive instead of the file inside it, which phase 1 accepted with a `201` and phase 2 then
+  refused with `400 manifest_violation / extra_file` — naming the reader's own file as the extra one,
+  so the message pointed at their payload rather than at the manifest they had copied. The manifest
+  now names a tar member, as `docs/CLIENT_SETUP.md` always said it must, and the upload call carries
+  the `Content-Type: application/x-tar` the client sends. (#29)
+- The download command in the same block sends the `X-Sender` identity header. The sentence above it
+  promised a "download-token + matching identity header (two-factor)" and the command sent only the
+  token, so following the reference produced a `401`. The header was named correctly in three other
+  documents and did not appear in the REST reference at all. (#29)
+- `path` is documented as what it is: the bundle's name inside the recipient's inbox, used verbatim
+  by the recipient in the `peek` and `pick` paths. The reference and `cassetta send --help` both
+  spelled it like a local filename, and `--help` is the only reference for that flag anywhere. (#29)
+- `CASSETTA_MCP_ALLOWED_HOSTS` is described where it is defined as a list of `Host` header values
+  matched literally, port included, rather than as a list of hostnames. A client reaching the service
+  on a non-default port sends the port in the header, so an operator who set the bare name got `421`
+  on every MCP call while both the variable's description and their own configuration looked right.
+  Both spellings have to be listed, which the troubleshooting example already showed and now
+  explains. Authentication runs before the host check, so an unauthenticated probe answers `401` and
+  never reveals the `421` — stated for anyone debugging one. (#29)
+- `GET /keys` and the inbox listing show their response shapes, including that `GET /keys` returns no
+  hash and no key material, that the listing's `size` is the content's total rather than the
+  archive's, and that a reserved bundle which was never uploaded leaves no entry. (#29)
+
+### Changed
+
+- `scripts/smoke.sh` removes the API key store it created, alongside the `.env` it already removed.
+  It had removed only the `.env`, leaving a store carrying `setup_done: true`; the documented
+  quickstart's first call then answered `409 Setup already completed` — at the first step of the
+  thing the reader had run the script to prove. A store that was already there is still never
+  touched, and the pre-flight refusal that makes the removal safe is unchanged. Operator-visible
+  consequence: running the script twice in a row previously hit that refusal and now does not. A
+  tree poisoned by an older copy is cured by removing `data.keys/.cassetta-keys.json`, which the
+  README now says. (#29)
+
+Nothing is published to any index. No behaviour of the running service changes: no route, status
+code, configuration variable, MCP tool or structured-log field was added, removed or renamed.
+
 ## [0.26.6] - 2026-09-08
 
 ### Changed

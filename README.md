@@ -85,10 +85,18 @@ clone:
 ./scripts/smoke.sh
 ```
 
-It refuses to run over an existing `.env`, so it will not disturb a deployment you already
-have, and it takes the stack down again when it finishes. The same script runs once a week
-against the default branch, which is what keeps this quickstart honest: if the documented
-steps stop working, that run goes red.
+It refuses to run over an existing `.env` or an existing key store, so it will not disturb a
+deployment you already have; it takes the stack down again when it finishes, and it removes
+both the `.env` and the API key store it created, so the quickstart above still works
+afterwards. The one thing it leaves behind is the file it stored under `data/`, which is your
+own storage directory and blocks nothing. The same script runs once a week against the default
+branch, which is what keeps this quickstart honest: if the documented steps stop working, that
+run goes red.
+
+Older copies of the script removed only the `.env`. If you ran one, the key store it left
+behind carries `setup_done: true` and the quickstart's first call answers
+`409 {"detail":"Setup already completed"}` — which arrives at the first step of the thing you
+ran the script to prove. Remove `data.keys/.cassetta-keys.json` and start again.
 
 ### Connect an MCP agent
 
@@ -161,7 +169,7 @@ touch, not all of them:
 | `CASSETTA_DEFAULT_TTL` | `0` | Default file TTL in seconds. `0` disables expiration. |
 | `CASSETTA_JWT_KEY` | *(required)* | Base64-encoded HS256 signing key, ≥32 bytes decoded. The shipped `.env.example` carries a fixed dev-only placeholder so quickstart works clone-and-run; replace before any deployment beyond `localhost`. Use `CASSETTA_JWT_KEY_FILE` for managed-secret setups. |
 | `CASSETTA_PUBLIC_BASE_URL` | *(required)* | Absolute base URL used to compose download / upload URLs in batch responses. |
-| `CASSETTA_MCP_ALLOWED_HOSTS` | *(empty)* | Comma-separated Host header allowlist for the MCP endpoint (DNS-rebinding protection). Empty means localhost-only. Set to your external hostname(s) when accessing MCP from another machine. |
+| `CASSETTA_MCP_ALLOWED_HOSTS` | *(empty)* | Comma-separated allowlist of `Host` header values for the MCP endpoint (DNS-rebinding protection). Matched literally, port included, so a deployment on a non-default port needs both spellings: `cassetta.example.com,cassetta.example.com:16001`. Empty means loopback-only. |
 
 To change a value, edit `.env` and run `docker compose up -d` again — no
 image rebuild is needed.
@@ -187,9 +195,12 @@ a Raspberry Pi at home, a $5 VPS, an old laptop, or a corporate sandbox.
    - `CASSETTA_JWT_KEY` — a freshly generated signing key, or
      `CASSETTA_JWT_KEY_FILE` pointing at one. Do not ship the placeholder in
      `.env.example`; see the warning above.
-4. If agents will reach MCP from another machine, add their hostnames to
-   `CASSETTA_MCP_ALLOWED_HOSTS`. It is empty by default, which means loopback
-   only, and a request from elsewhere is rejected with `421 Invalid Host header`.
+4. If agents will reach MCP from another machine, add to
+   `CASSETTA_MCP_ALLOWED_HOSTS` the `Host` header values those clients will send.
+   It is empty by default, which means loopback only, and a request from elsewhere
+   is rejected with `421 Invalid Host header`. The list is matched literally and
+   the port is part of the header, so a client reaching you on `:16001` sends
+   `name:16001` and needs that spelling listed — usually alongside the bare name.
 5. Run `docker compose up -d`.
 
 Everything else has a working default. [docs/CONFIG.md](docs/CONFIG.md) is the

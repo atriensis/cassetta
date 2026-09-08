@@ -99,7 +99,11 @@ async def _send_async(
 def send(
     files: list[str] = typer.Argument(..., help="Local file paths to include in the tar."),
     to: str = typer.Option(..., "--to", help="Recipient alias, e.g. alice:main."),
-    path: str = typer.Option(..., "--path", help="Destination bundle path, e.g. drop.tgz."),
+    path: str = typer.Option(
+        ...,
+        "--path",
+        help="Name for the bundle in the recipient's inbox, e.g. handoff-A. Not a local filename.",
+    ),
     url: str | None = typer.Option(
         None,
         "--url",
