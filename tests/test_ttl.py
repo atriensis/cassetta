@@ -8,6 +8,11 @@ import pytest
 from cassetta.app import create_app
 from cassetta.backends.filesystem.storage import FilesystemBackend
 
+# 36 bytes, above the 32 `config.py` requires of an HS256 key. Passed explicitly wherever this file
+# builds an `AppConfig`: a config that can sign carries a key, in tests for the same reason as in
+# production. See `tests/test_signing_key_fixtures.py`.
+_TEST_JWT_KEY = b"test-test-test-test-test-test-test-t"
+
 
 @pytest.fixture
 async def ttl_client(
@@ -103,6 +108,7 @@ class TestTTLCleanup:
             default_ttl=1,
             allowed_path_chars=r"a-zA-Z0-9\-_./",
             mcp_allowed_hosts=(),
+            jwt_primary_key=_TEST_JWT_KEY,
         )
 
         now = time.time()

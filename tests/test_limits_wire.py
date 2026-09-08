@@ -13,6 +13,7 @@ import asyncio
 import os
 import tempfile
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
 import httpx
 import pytest
@@ -87,19 +88,11 @@ def _configured_app(
     make_backends,
 ) -> tuple:
     policy = CoreLimitsPolicy(limits)
-    config: AppConfig = load_config()
-    # Apply the overridden limits to config so MCP uses the same policy params
-    config = AppConfig(
-        setup_token=config.setup_token,
-        dev_mode=config.dev_mode,
-        storage_path=config.storage_path,
-        keys_file=config.keys_file,
-        default_ttl=config.default_ttl,
-        allowed_path_chars=config.allowed_path_chars,
-        mcp_allowed_hosts=config.mcp_allowed_hosts,
-        log_format=config.log_format,
-        limits=limits,
-    )
+    # Apply the overridden limits to config so MCP uses the same policy params. `replace` rather than
+    # a fresh `AppConfig(...)`: the field list this used to re-type by hand had dropped
+    # `jwt_primary_key`, so the rebuilt config could not sign. `replace` carries every field forward,
+    # including whatever is added to the dataclass later. `tests/test_signing_key_fixtures.py`.
+    config: AppConfig = replace(load_config(), limits=limits)
     app = create_app(
         config,
         backends=make_backends(config, limits_policy=policy),

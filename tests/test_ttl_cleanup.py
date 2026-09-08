@@ -9,6 +9,10 @@ from cassetta.config import AppConfig
 _real_sleep = asyncio.sleep
 
 
+# 36 bytes, above the 32 `config.py` requires of an HS256 key. See `tests/test_signing_key_fixtures.py`.
+_TEST_JWT_KEY = b"test-test-test-test-test-test-test-t"
+
+
 def _make_config(**overrides: object) -> AppConfig:
     defaults = {
         "setup_token": "test",
@@ -20,7 +24,11 @@ def _make_config(**overrides: object) -> AppConfig:
         "mcp_allowed_hosts": (),
     }
     defaults.update(overrides)
-    return AppConfig(**defaults)  # type: ignore[arg-type]
+    # The signing key is lifted out of the dict and named at the call, so the guard can see it. A key
+    # inside `**defaults` is a field list assembled somewhere else, which is exactly the shape that
+    # lost `jwt_primary_key` in the first place. `pop` keeps a caller's override working.
+    jwt_primary_key = defaults.pop("jwt_primary_key", _TEST_JWT_KEY)
+    return AppConfig(jwt_primary_key=jwt_primary_key, **defaults)  # type: ignore[arg-type]
 
 
 async def _fast_sleep(_seconds: float) -> None:

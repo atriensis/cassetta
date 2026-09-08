@@ -117,9 +117,13 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "anyio" },
     { name = "fastapi" },
+    { name = "limits" },
     { name = "mcp" },
     { name = "mypy" },
+    { name = "packaging" },
+    { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -127,23 +131,35 @@ dev = [
     { name = "pyyaml" },
     { name = "ruff" },
     { name = "slowapi" },
+    { name = "starlette" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 server = [
+    { name = "anyio" },
     { name = "fastapi" },
+    { name = "limits" },
     { name = "mcp" },
+    { name = "pydantic" },
     { name = "slowapi" },
+    { name = "starlette" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "anyio", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "anyio", marker = "extra == 'server'", specifier = ">=4.0" },
     { name = "fastapi", marker = "extra == 'dev'", specifier = ">=0.115" },
     { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
-    { name = "mcp", marker = "extra == 'dev'", specifier = ">=1.12" },
-    { name = "mcp", marker = "extra == 'server'", specifier = ">=1.12" },
+    { name = "limits", marker = "extra == 'dev'", specifier = ">=2.3" },
+    { name = "limits", marker = "extra == 'server'", specifier = ">=2.3" },
+    { name = "mcp", marker = "extra == 'dev'", specifier = ">=1.12,<2" },
+    { name = "mcp", marker = "extra == 'server'", specifier = ">=1.12,<2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13" },
+    { name = "packaging", marker = "extra == 'dev'", specifier = ">=24.0" },
+    { name = "pydantic", marker = "extra == 'dev'", specifier = ">=2.0" },
+    { name = "pydantic", marker = "extra == 'server'", specifier = ">=2.0" },
     { name = "pyjwt", specifier = ">=2.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
@@ -153,6 +169,8 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
     { name = "slowapi", marker = "extra == 'dev'", specifier = ">=0.1.9" },
     { name = "slowapi", marker = "extra == 'server'", specifier = ">=0.1.9" },
+    { name = "starlette", marker = "extra == 'dev'", specifier = ">=0.40" },
+    { name = "starlette", marker = "extra == 'server'", specifier = ">=0.40" },
     { name = "typer", specifier = ">=0.21" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'dev'", specifier = ">=0.30" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'server'", specifier = ">=0.30" },

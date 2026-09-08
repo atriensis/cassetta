@@ -15,17 +15,32 @@ dependencies = [
 
 [project.optional-dependencies]
 # The server, asked for by name: `cassetta[server]`. An install that must run
-# `uvicorn --factory cassetta.app:create_app` needs these four and the base three; an install that
-# only wants the CLI needs none of them, which is the point.
+# `uvicorn --factory cassetta.app:create_app` needs these and the base three; an install that only
+# wants the CLI needs none of them, which is the point.
 #
-# `starlette` is not here although `routes/files.py`, `routes/agents.py`, `middleware.py` and
-# `rate_limit/limiter.py` import it by name. It arrives as a transitive of `fastapi`, and this list
-# is deliberately the four libraries the split was measured against. Promoting it is a decision of
-# its own — the `pyyaml` line below is what that decision looks like when it is taken.
+# `mcp` is capped because 2.x renamed `FastMCP` to `MCPServer` and moved it: `src/cassetta/mcp_server.py`
+# imports `mcp.server.fastmcp`, which does not exist there. Until 0.28.1 this list said `mcp>=1.12`
+# with no upper bound, so `pip install "cassetta[server]"` resolved a server that could not start —
+# invisible to every gate here, because `uv.lock` pins 1.27.0, and visible to everyone installing
+# from an index. `<2` is the bound the SDK's own error message names. It is the only cap in this
+# list: every other dependency was measured at its newest release and passes.
+#
+# `anyio`, `limits`, `pydantic` and `starlette` are declared rather than inherited, for the reason
+# the `pyyaml` line below gives. All four are imported by name under `src/` and used to arrive only
+# as transitives of `fastapi`, `slowapi` and `httpx` — so a change in somebody else's dependency
+# graph would have broken this package for a reason with nothing to do with it. `pydantic` is the
+# sharpest: `models.py` imports `field_validator`, which is v2-only, while `fastapi>=0.115` still
+# admits v1. Floors are the lowest version this code is known to work with, not the pinned one:
+# declaring these adds resolution edges and moves no version.
+# `tests/test_declared_dependencies.py` holds the general rule.
 server = [
+    "anyio>=4.0",
     "fastapi>=0.115",
-    "mcp>=1.12",
+    "limits>=2.3",
+    "mcp>=1.12,<2",
+    "pydantic>=2.0",
     "slowapi>=0.1.9",
+    "starlette>=0.40",
     "uvicorn[standard]>=0.30",
 ]
 dev = [
@@ -41,6 +56,10 @@ dev = [
     # day that graph changes. The constraint block already pins the version; this only makes the
     # dependency ours.
     "pyyaml>=6.0",
+    # Same decision, taken for the same reason by `tests/test_declared_dependencies.py`, which parses
+    # requirement strings and canonicalises distribution names rather than comparing them as text.
+    # Reachable today only as a transitive of `pytest`.
+    "packaging>=24.0",
     # The development environment is a server environment. Every gate in this repository is a bare
     # `uv run` line and CI runs `uv sync --extra dev` before them — and `uv sync` is exact, so it
     # uninstalls whatever the requested sets do not ask for. Without this self-reference the test
@@ -164,7 +183,8 @@ mypy_path = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "--import-mode=importlib -m 'not slow'"
+addopts = "--import-mode=importlib -m 'not slow and not network'"
 markers = [
     "slow: tests over ~10s (1 GB disk-pressure probe)",
+    "network: resolves dependencies from the public index (slow, and answers a different question every day; run with -m network)",
 ]

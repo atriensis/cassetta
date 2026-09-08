@@ -6,6 +6,40 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.28.1] - 2026-09-08
+
+### Fixed
+
+- **`pip install "cassetta[server]"` produced a server that could not start.** Resolution succeeded
+  and the import did not:
+
+  ```
+  ModuleNotFoundError: No module named 'mcp.server.fastmcp'
+  ```
+
+  The `server` extra asked for `mcp>=1.12` with no upper bound, and the current release of that SDK
+  is `2.x`, where `FastMCP` was renamed to `MCPServer` and the module this package imports no longer
+  exists. The extra now says `mcp>=1.12,<2`.
+
+  **Nothing regressed and nothing here had ever failed** — `uv.lock` pins `mcp` to a 1.x release, so
+  every check in this repository was green, and the break was visible only to someone installing
+  from an index without a lock file. If you had independently installed `mcp 2.x` alongside this
+  package, you now get a resolution conflict naming `mcp>=1.12,<2` at install time instead of an
+  import error at start-up. Migrating this package to `mcp` 2.x is a separate piece of work.
+
+### Changed
+
+- **The `server` extra declares four libraries it had been getting by accident**: `anyio`, `limits`,
+  `pydantic` and `starlette`. All four are imported by name under `src/` and used to arrive only as
+  transitives of `fastapi`, `slowapi` and `httpx` — so a change in one of *those* projects'
+  dependency lists could have broken this one for a reason having nothing to do with it. `pydantic`
+  was the sharpest case: this code imports `field_validator`, which exists only in Pydantic 2, while
+  the floor the package declared, `fastapi>=0.115`, still admits Pydantic 1.
+
+  **No resolved version moves.** With the lock file, this release resolves to exactly the versions
+  `0.28.0` resolved to; the declarations add edges, not bounds. No environment variable, REST route,
+  MCP tool, log field or behaviour of the running server changes.
+
 ## [0.28.0] - 2026-09-08
 
 ### Changed
