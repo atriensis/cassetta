@@ -6,6 +6,51 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.28.4] - 2026-09-09
+
+Three families of untruth in documents a stranger reads. **Nothing an operator runs changes** — no
+environment variable, REST route, MCP tool, log field or behaviour of the running server. What
+changes is what the documents claim, and one of those claims was about what you may build on this.
+
+### Changed
+
+- **The licence summary in `README.md` reaches all three limbs of the restriction.** It read "you may
+  not offer it as a managed service", which never reaches the third and broadest limb: `LICENSE`
+  forbids offering the same or **substantially similar functionality** — functionality, not service
+  shape. A reader planning a competing *product* rather than a competing service could conclude from
+  the README that they were clear, and the README was the only licence text most of them would read.
+  The licence itself is unchanged; the summary of it was narrower than what it summarised.
+
+- **`docs/LICENSE_FAQ.md` no longer describes internal use as free of every term.** Its enumeration
+  of the three limbs was already correct; the summary twelve lines above it was not. The FSL conditions
+  every grant it makes — on the Permitted Purpose, on keeping the notices when you redistribute, on not
+  suing over patents — so the accurate statement is that those uses are Permitted Purposes and cost
+  nothing, which is what it now says.
+
+- **The AI-assistance disclosure in `README.md` no longer makes a claim about this repository's git
+  history.** It said assistance was disclosed in the README "and not in git history". Nine of this
+  repository's squash merges carry a session link in their body, so the sentence was false about the
+  tree it shipped with. The history is not being rewritten — this repository is pinned by tag from
+  elsewhere and a rewrite breaks a build that works — so the sentence is what changed. The statement
+  beside it, that the human author is the sole owner of every commit, is true and stays.
+
+- **Eight docstrings under `tests/` no longer point into directories that did not come across the
+  split.** Each named a document that exists only in the private repository this one was flattened out
+  of, in text a contributor reads in the editor and will try to follow. Five of them said what their
+  test covered *by* pointing, so each now states the invariant in this repository's own terms, which
+  is what the pointer was standing in for.
+
+- **`tests/test_key_creation.py`** was named after a numbered document in that same private
+  repository. Renamed; nothing referenced the old name.
+
+### Added
+
+- **Four regression locks, one per defect above** — two in `tests/test_docs_examples.py`, two in
+  `tests/test_public_surface.py`. Each was seen failing on the tree before the tree was repaired, and
+  the two carrying an exception were shown still to bite elsewhere with the exception in place. The
+  licence guard reads every markdown document git tracks rather than a list of them, so the next
+  document to acquire a licence summary is covered on the day it is written.
+
 ## [0.28.3] - 2026-09-09
 
 Three checks that named a truth and left a person responsible for keeping it true. **Nothing an

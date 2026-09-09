@@ -35,12 +35,20 @@ assertion, because every one of them is a scan that finds nothing when the thing
 Two of the nine reach for the running service rather than restating it. That is the point: the
 defect they hold is a document and a service disagreeing, and a test that restates the response is
 one more copy to go stale.
+
+The last two hold a document to something that is not the service at all. One holds the licence
+summary to the licence, because a summary narrower than what it summarises tells a reader planning a
+competing product that they are clear; the other holds the AI-assistance disclosure to what this
+repository's history actually contains, because the sentence claimed the history did not carry
+something that nine of its commits do. Neither is about an example, and both belong here for the same
+reason the nine above do: they are defects a reader finds and the document cannot find in itself.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -779,4 +787,210 @@ def test_the_container_docs_answer_docker_exec_id() -> None:
         f"{region.where}: the section names root and the service uid but never says the image "
         "carries no `USER` line. Without that, `docker exec` landing as root reads as a defect "
         "rather than as the cost of correcting bind-mount ownership at start-up"
+    )
+
+
+# --- item 10: the disclosure says only what this repository's history keeps ----------------------
+
+# The AI-assistance disclosure, found by what it is about rather than by where it sits. A block
+# quote can be moved up or down a document without ceasing to be the disclosure.
+_DISCLOSURE_SUBJECT = "AI coding tools"
+
+# The half of that passage that is true and stays. Held by name because deleting the paragraph is
+# the cheapest way to make a carelessly written version of this guard green, and the guard has to
+# fail on that rather than pass.
+_OWNERSHIP_CLAIM = "sole owner of every commit"
+
+# A claim about where AI assistance is *not* disclosed: a negation, then a preposition of place,
+# then the version-control record. Phrased as that relationship rather than as the one spelling
+# that happened to be wrong — "not in git history", "never in the commit messages" and "nowhere in
+# the log" are the same claim, and only the first of them was ever written here.
+#
+# The `in` is what keeps the rule narrow enough to run over the whole README. Without it, an
+# ordinary and perfectly true sentence — "the human author is the sole owner of every commit, not
+# the model" — reads as a negation beside the word `commit` and is reported. With it, only a claim
+# about a *location* matches, which is the class of claim this guard exists to stop.
+_DENIED_LOCATION_RE = re.compile(
+    r"\b(?:not|never|nowhere|neither|nor)\b[^.;]{0,30}?\bin\b[^.;]{0,30}?"
+    r"(?:git|commits?\b|histor\w*|version[- ]control|changelog)",
+    re.IGNORECASE,
+)
+
+
+def _paragraphs(path: Path) -> list[tuple[int, str]]:
+    """Every blank-line-separated paragraph, folded to one line, as (first line number, prose).
+
+    Folding is not cosmetic here. The claim this guard hunts was written across a line break —
+    "…disclosed here, not in" / "git history." — so a per-line scan sees a negation on one line and
+    the thing being denied on the next, and reports agreement. A sentence is the unit; a source line
+    is a typographic accident, exactly as it is for the shell continuations folded further up.
+
+    Block-quote markers are stripped as part of the fold, so the same helper reads quoted and
+    unquoted prose alike.
+    """
+    paragraphs: list[tuple[int, str]] = []
+    start = 0
+    collected: list[str] = []
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        stripped = re.sub(r"^\s*>\s?", "", line).strip()
+        if not stripped:
+            if collected:
+                paragraphs.append((start, " ".join(collected)))
+                collected = []
+            continue
+        if not collected:
+            start = lineno
+        collected.append(stripped)
+    if collected:
+        paragraphs.append((start, " ".join(collected)))
+    return paragraphs
+
+
+def test_the_readme_makes_no_claim_about_git_history() -> None:
+    """The AI-assistance disclosure claims nothing about where the disclosure does *not* appear.
+
+    It used to: "AI assistance is disclosed here, not in git history". Nine of this repository's
+    squash merges carry a session link in their body, so the sentence was false about the tree it
+    shipped with — and false in the direction that costs most, because a reader checking a claim
+    about provenance is a reader who has decided it matters.
+
+    The rule cannot be "the claim must be true". Nothing this guard can assert makes it true: the
+    nine commit bodies stay, on measured cost, because the repository is pinned by tag from elsewhere
+    and a rewrite breaks a build that works. So the rule is the other one — do not make the claim.
+    A negative statement about the history is the only part that was wrong, and it is the only part
+    forbidden here.
+
+    The ownership assertion below is what stops that from being satisfied by deletion. Both halves
+    have to hold: the passage still says who owns the work, and it says nothing about where the
+    disclosure is absent.
+    """
+    paragraphs = _paragraphs(_README)
+    disclosure = [text for _, text in paragraphs if _DISCLOSURE_SUBJECT in text]
+
+    # Non-vacuity: a disclosure that has gone from the document makes no false claim either, and a
+    # guard that cannot find it would report that as compliance.
+    assert len(disclosure) == 1, (
+        f"expected exactly one paragraph in README.md disclosing that this project is built with "
+        f"{_DISCLOSURE_SUBJECT}, found {len(disclosure)}. The disclosure is the passage this guard "
+        "holds; without it there is nothing here to be right or wrong about"
+    )
+
+    assert _OWNERSHIP_CLAIM in disclosure[0], (
+        f"the disclosure no longer says the human author is the {_OWNERSHIP_CLAIM}. That statement is "
+        "true, and it is the half of the passage worth keeping — removing it is not a way to satisfy "
+        "the rule below"
+    )
+
+    denied = [f"README.md:{lineno}: {text}" for lineno, text in paragraphs if _DENIED_LOCATION_RE.search(text)]
+
+    assert not denied, (
+        "README.md claims where AI assistance is *not* disclosed. Nine squash merges in this "
+        "repository carry a session link in their body, so a claim of that shape is false about the "
+        "tree it ships with — and the history is not being rewritten, so the sentence is what "
+        "changes:\n  " + "\n  ".join(denied)
+    )
+
+
+# --- item 11: no summary of the licence is narrower than the licence -----------------------------
+
+# A document is summarising the restriction when it names it. Deliberately not "mentions the FSL":
+# a licence badge or a link to `LICENSE` is a reference rather than a summary, and demanding the
+# full definition of one would be nonsense rather than strictness.
+_RESTRICTION_RE = re.compile(r"compet(?:ing|itive)\s+use", re.IGNORECASE)
+
+# The third and broadest limb of the licence's Competing Use definition, in the licence's own
+# words. It is about *functionality*, not about service shape — which is exactly the reach a short
+# summary loses first, and the reader who is misled by losing it is the one planning a competing
+# product rather than a competing service.
+_THIRD_LIMB = "substantially similar"
+
+# The mirror defect: a summary wider than the licence. Every grant in the FSL is conditioned — on
+# the Permitted Purpose, on the redistribution clause, on the patent-termination clause — so the
+# licence describes no use of the Software as unrestricted, and neither may a document summarising it.
+_OVERSTATEMENT = "unrestricted"
+
+
+def _tracked_markdown() -> list[Path]:
+    """Every markdown document git tracks, in a stable order.
+
+    A rule rather than a list. The two documents that summarise the licence today are ``README.md``
+    and ``docs/LICENSE_FAQ.md``, but the next one to acquire a summary is most likely ``CLA.md`` or
+    ``CONTRIBUTING.md`` — a contributor agreement is *about* the terms — and neither is inside this
+    module's usual ``docs/``-and-``README`` file set. Enumerating the shipped documents here would
+    put a second copy of that list in the tree, and this repository already needed a guard
+    (``test_every_root_markdown_is_guarded``) for the first copy growing a hole.
+
+    Tracked rather than globbed: an untracked draft in a working tree is not published, and failing
+    the suite over one would be a false positive about a document no reader can see.
+    """
+    listing = subprocess.run(
+        ["git", "ls-files", "-z", "*.md"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout
+    return sorted(REPO_ROOT / name for name in listing.split("\0") if name)
+
+
+def test_no_summary_of_the_licence_narrows_what_it_forbids() -> None:
+    """Every document that says what the licence forbids says all of it, and overstates no grant.
+
+    ``LICENSE`` defines a Competing Use in three limbs, and the third is the broad one: offering
+    "the same or substantially similar functionality as the Software". A summary that stops at "you
+    may not offer it as a managed service" never reaches it, and the reader it fails is the one it
+    matters most to — someone planning a competing *product*, who reads the README, concludes they
+    are clear, and never opens ``LICENSE``.
+
+    The two halves here are one defect seen from either side. A summary narrower than the licence
+    gives away protection the licence grants; a summary wider than it — "free and unrestricted" —
+    promises terms the licence does not contain. A licence protects a business exactly as far as the
+    project's own documents do not narrow it, and binds a user exactly as far as they do not widen it.
+
+    ``LICENSE`` itself is not in this scan and never should be: it is the thing these documents are
+    being held to, not one of them.
+    """
+    documents = _tracked_markdown()
+
+    # Non-vacuity: a listing that returned nothing would satisfy every assertion below.
+    assert len(documents) >= 10, f"git tracks only {len(documents)} markdown documents — the listing is wrong"
+
+    described: list[tuple[Path, str]] = []
+    for path in documents:
+        text = path.read_text(encoding="utf-8")
+        if _RESTRICTION_RE.search(text):
+            described.append((path, text))
+
+    # Non-vacuity: if no document describes the restriction, the limb check below holds nothing.
+    assert described, (
+        "no document in this repository says what the licence forbids. The restriction is the one "
+        "thing a reader has to understand before building on this, so either the summaries have "
+        "gone or this guard has stopped recognising them"
+    )
+
+    narrow = [
+        f"{path.relative_to(REPO_ROOT)}: names the restriction, never reaches {_THIRD_LIMB!r}"
+        for path, text in described
+        if _THIRD_LIMB not in text
+    ]
+
+    assert not narrow, (
+        "a document summarises the licence's restriction without reaching its third limb. The "
+        "licence forbids offering the same or substantially similar *functionality*, not merely a "
+        "competing managed service — a summary may be short, but it may not be narrower than what "
+        "it summarises:\n  " + "\n  ".join(narrow)
+    )
+
+    overstated = [
+        f"{path.relative_to(REPO_ROOT)}:{lineno}: {line.strip()}"
+        for path in documents
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if _OVERSTATEMENT in line.lower()
+    ]
+
+    assert not overstated, (
+        f"a document calls a permitted use {_OVERSTATEMENT!r}. The licence says that about nothing: "
+        "every grant in it is conditioned on the Permitted Purpose, on keeping the notices when you "
+        "redistribute, and on not suing over patents. Free of charge is what these uses are:\n  "
+        + "\n  ".join(overstated)
     )

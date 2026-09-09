@@ -7,8 +7,7 @@ plain REST API. Storage is pluggable; the default backend is the local
 filesystem so you can self-host on a Raspberry Pi, a VPS, or your laptop.
 
 > Cassetta is built with the assistance of AI coding tools. The human author
-> is the sole owner of every commit; AI assistance is disclosed here, not in
-> git history.
+> is the sole owner of every commit.
 
 ## Why not just use a shared folder?
 
@@ -370,9 +369,16 @@ Everything under `docs/`, and what each file answers:
 Cassetta is licensed under the [Functional Source License, Version 1.1,
 ALv2 Future License](LICENSE) (FSL-1.1-ALv2).
 
-You can use, modify, and self-host Cassetta freely. The only restriction
-is competitive use — you may not offer it as a managed service that
-competes with Cassetta.
+You can use, modify, and self-host Cassetta freely, including inside a
+company. The only restriction is competing use: you may not make Cassetta
+available to others in a commercial product or service that substitutes
+for Cassetta, substitutes for anything the licensor offers using it, or
+offers the same or substantially similar functionality. That last limb is
+about functionality rather than service shape — a competing product is as
+much a competing use as a competing managed service.
+
+[docs/LICENSE_FAQ.md](docs/LICENSE_FAQ.md) explains all of this at length;
+[LICENSE](LICENSE) is what governs.
 
 The license automatically converts to [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 two years after each version's release date.

@@ -1,8 +1,9 @@
 """Contract test for `cassetta_send_init` MCP tool.
 
-Asserts the response shape matches ``contracts/mcp-send-init.md`` for
-both the inline and batch branches: field names, discriminant, ISO-8601
-expiry, JWT-shaped token string.
+The response is what an agent branches on, so its shape is the contract rather
+than a detail of it. Asserted on both branches the tool can return — inline and
+batch — down to field names, the discriminant that tells the two apart, an
+ISO-8601 expiry, and a token that is JWT-shaped rather than merely non-empty.
 """
 
 from __future__ import annotations

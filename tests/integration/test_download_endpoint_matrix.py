@@ -1,7 +1,9 @@
 """``GET /download/{bundle_path}/{name}`` error matrix.
 
-Exercise every outcome per ``contracts/download-endpoint.md`` test
-matrix: 200 (happy, idempotent, primary-key, secondary-key rotation),
+Every outcome the route can produce, held in one file because this route's
+correctness is a property of the whole matrix rather than of any single row —
+each way of failing authentication has to answer alike, whatever went wrong:
+200 (happy, idempotent, primary-key, secondary-key rotation),
 401 (missing bearer, bad signature, expired, immature, missing claim,
 bundle_path_mismatch, name_not_in_claim), 404 (bundle_gone,
 name_not_in_manifest). Every 401 carries

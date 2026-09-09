@@ -1,6 +1,11 @@
 """Integration tests for the ``cassetta capabilities`` CLI subcommand.
 
-Covers contracts/capabilities-cli.md (output format + exit codes).
+Two things a person typing this command depends on: that it prints every section
+of the handshake it was asked for — server and schema version, modes, features,
+limits, TTLs — and that it distinguishes its failures by exit code, so a script
+can tell "the server is unreachable" (1) from "the server answered and refused"
+(2). A command that collapsed both onto 1 would be usable by hand and useless in
+a health check.
 """
 
 from __future__ import annotations

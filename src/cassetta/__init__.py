@@ -11,6 +11,6 @@ whole defect in exactly the same way, which is why the absence is a test rather 
 `tests/test_client_install.py`, and the 0.28.0 entry in `CHANGELOG.md` for what changed and why.
 """
 
-__version__ = "0.28.3"
+__version__ = "0.28.4"
 
 __all__ = ["__version__"]
