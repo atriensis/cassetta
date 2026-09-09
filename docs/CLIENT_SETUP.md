@@ -182,7 +182,7 @@ so exporting `CASSETTA_API_KEY` does nothing for it.
 
 ```
 $ cassetta capabilities --url http://localhost:16001 --api-key "$API_KEY"
-Server version: 0.28.2
+Server version: 0.28.3
 Schema version: 1
 Supported modes: inline, batch, reference
 Features: peek, batch_upload, reference_download, rest_send_init
@@ -250,10 +250,10 @@ and installed from the repository with `uv`, pinned to a release tag:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.2
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.3
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.2 cassetta --help
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.3 cassetta --help
 ```
 
 Either way you get a `cassetta` executable with four subcommands:
