@@ -6,6 +6,31 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.28.3] - 2026-09-09
+
+Three checks that named a truth and left a person responsible for keeping it true. **Nothing an
+operator runs changes** — no environment variable, REST route, MCP tool, log field or behaviour of
+the running server. One string a maintainer sees is corrected, below.
+
+### Changed
+
+- **`make release-check` now compares the sample output as well as the install pins, and says so.**
+  Its closing line read "the declared version, `CHANGELOG.md` and the `docs/` pins all agree" — true
+  about what it compared, and read as a statement about the documents. That gap is how a version
+  literal in `docs/CLIENT_SETUP.md` sat two releases behind while three separate checks reported the
+  documents current. The check now covers both shapes and its success line names both.
+
+- **`scripts/sync-docs-version.py` rewrites the `Server version:` sample output too.** It matched
+  install pins only, so the guard added in `0.28.2` had no fix half: the next bump would have turned
+  it red and the repair would have been a hand edit — the arrangement that produced the defect in the
+  first place. Finding no sample output anywhere under `docs/` is now a failure, for the reason the
+  script already gave for finding no pins: nothing to compare is not agreement.
+
+- **The dependency-declaration guard walks `tests/` as well as `src/`.** A test can acquire an
+  undeclared import as easily as a module can, and one had — `packaging`, declared in `0.28.1` only
+  because a person noticed it by eye, one file away from the guard that names that class of defect.
+  The wider walk finds nothing today; it is there so the next one is not found by eye.
+
 ## [0.28.2] - 2026-09-08
 
 ### Added

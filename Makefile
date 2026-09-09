@@ -1,11 +1,16 @@
 # Release consistency, and nothing else.
 #
-# This repository declares its version once, in the package itself. Two things are derived from that
-# declaration by hand rather than by machinery, and either can be forgotten in a bump: the changelog
-# section recording what shipped, and the install commands the documents hand a reader. Both defects
-# are only visible after the tag is public, which is the point at which they are expensive — and the
-# second is worse than the first, because a pin one release behind still resolves and still installs
-# working code, so nothing reports it.
+# This repository declares its version once, in the package itself. Three things are derived from
+# that declaration, and any of them can be forgotten in a bump: the changelog section recording what
+# shipped, the install commands the documents hand a reader, and the sample of what
+# `cassetta capabilities` prints. All three defects are only visible after the tag is public, which
+# is the point at which they are expensive — and the last two are worse than the first, because a pin
+# one release behind still resolves and still installs working code, and a stale sample output is
+# just a number in a code block. Nothing reports either.
+#
+# The changelog is still written by hand. The other two have machinery —
+# scripts/sync-docs-version.py rewrites both — so what this target checks for them is that somebody
+# ran it.
 #
 # `release-check` answers, in one command, whether the tree is internally consistent as a release.
 #
@@ -55,4 +60,21 @@ release-check:
 		echo "  Fix with: python scripts/sync-docs-version.py" >&2; \
 		exit 1; \
 	fi; \
-	echo "release-check: $$version — the declared version, $(CHANGELOG) and the $(DOCS)/ pins all agree"
+	samples="$$(grep -rhoE 'Server version: *[0-9]+\.[0-9]+\.[0-9]+' '$(DOCS)' | sed 's/.*: *//' | sort -u)"; \
+	if [ -z "$$samples" ]; then \
+		echo "release-check: no documented sample output found under $(DOCS)/." >&2; \
+		echo "  \`cassetta capabilities\` prints \"Server version: X.Y.Z\", and the" >&2; \
+		echo "  documented sample of it is the one version literal no install-pin" >&2; \
+		echo "  check can see. Nothing to compare is not agreement." >&2; \
+		exit 1; \
+	fi; \
+	stale="$$(printf '%s\n' "$$samples" | grep -vx "$$version" || true)"; \
+	if [ -n "$$stale" ]; then \
+		echo "release-check: a documented sample output names another release." >&2; \
+		echo "  $(PACKAGE_INIT) declares  $$version" >&2; \
+		echo "  $(DOCS)/ samples print    $$(printf '%s' "$$stale" | tr '\n' ' ')" >&2; \
+		echo "  Nothing else looks at this shape, so it goes stale in silence." >&2; \
+		echo "  Fix with: python scripts/sync-docs-version.py" >&2; \
+		exit 1; \
+	fi; \
+	echo "release-check: $$version — the declared version, $(CHANGELOG), the $(DOCS)/ install pins and the $(DOCS)/ sample output all agree"

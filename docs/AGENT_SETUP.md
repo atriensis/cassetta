@@ -272,13 +272,13 @@ package on PyPI or any other index — the client lives in the Cassetta
 repository and is installed from it with `uv`, pinned to a release tag:
 
 ```bash
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.2
+uv tool install git+https://github.com/atriensis/cassetta.git@v0.28.3
 ```
 
 Or run it without installing anything:
 
 ```bash
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.2 \
+uvx --from git+https://github.com/atriensis/cassetta.git@v0.28.3 \
   cassetta upload --url ... --token ... <files>
 ```
 

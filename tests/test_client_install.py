@@ -36,19 +36,34 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+_PYPROJECT = REPO_ROOT / "pyproject.toml"
 
 # The server stack, as top-level import names. One list, read by both tests and by the two
 # non-vacuity controls: adding a server dependency later means adding it here and nowhere else.
 #
-# `starlette` is on this list although it is not declared in the `server` extra — it arrives as a
-# transitive of `fastapi`, and four modules under `src/` import it by name. What the client must not
-# reach is the server *stack*, not the *declared list*; a list derived from `pyproject.toml` would go
-# quiet about starlette the moment that extra changed shape.
+# **Written here rather than derived from the `server` extra**, and the reason has inverted since it
+# was first written down. It used to be that the extra was too *narrow*: `starlette` was imported by
+# four modules under `src/` and declared nowhere, so a list derived from `pyproject.toml` would have
+# gone quiet about it. `0.28.1` declared it, along with three others.
+#
+# The extra is now too *wide* instead. It names **`anyio`**, and every correct client install
+# contains `anyio`: `httpx` is a base dependency of this package and declares `anyio` unconditionally
+# (no extra, no marker). A derived list would therefore name as forbidden a distribution that a
+# right-shaped installation has, which is a false statement about the thing this file exists to
+# describe.
+#
+# What the client must not reach is the server *stack*. What the extra declares is the server
+# *install profile*. Those overlap and are not the same set — held apart by
+# `test_the_forbidden_list_is_not_the_server_extra` below, rather than by this comment asking the
+# next reader to remember.
 _FORBIDDEN = ("fastapi", "starlette", "uvicorn", "mcp", "slowapi")
 
 # Said in the refusal so the two controls can tell "this guard refused it" from "it is not installed".
@@ -121,6 +136,78 @@ def test_the_package_root_pulls_in_no_server_module() -> None:
         "src/cassetta/__init__.py imports server-side code — most likely a convenience re-export of "
         "a name that already lives where ADR 002 puts it, cassetta.defaults.factory. Import it from "
         "there instead. Traceback:\n" + result.stderr
+    )
+
+
+def _server_extra() -> set[str]:
+    """The distributions the ``server`` extra declares, as canonical names.
+
+    Read at run time rather than transcribed. A copy of this list kept here would be a second
+    statement of the same fact, and would go stale exactly the way the comment above `_FORBIDDEN`
+    did — which is the defect this test was written to retire.
+    """
+    project = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))["project"]
+    extras = project.get("optional-dependencies", {})
+    assert "server" in extras, "pyproject.toml declares no `server` extra — this guard compares against it"
+    return {canonicalize_name(Requirement(spec).name) for spec in extras["server"]}
+
+
+def test_the_forbidden_list_is_not_the_server_extra() -> None:
+    """``_FORBIDDEN`` is not the ``server`` extra, and specifically must not gain ``anyio``.
+
+    The obvious tidy-up for the list above is to stop maintaining it by hand and derive it from
+    ``pyproject.toml``. That would be wrong, and it would be wrong in a way no other test here
+    notices: every assertion in this file would stay green while the guard started refusing correct
+    installations.
+
+    ``anyio`` is the reason. It is declared in the ``server`` extra, and it is also in every install
+    of the *client* — ``httpx`` is a base dependency of this package and declares ``anyio``
+    unconditionally, with no extra and no marker. A ``_FORBIDDEN`` derived from the extra would
+    therefore name as forbidden a distribution that a correct client installation has.
+
+    **Measured, because the obvious version of that sentence is wrong.** Blocking ``anyio`` does
+    *not* currently break ``import cassetta.cli``: ``httpx`` is imported at module level but defers
+    importing ``anyio`` until an async path needs it. So a derived list would not turn the two guards
+    above red — it would sit there being false, and the day ``httpx`` stopped deferring, the failure
+    would arrive looking like a defect in this package. Resting on that timing is the same mistake as
+    depending on somebody else's dependency graph, which is what
+    ``tests/test_declared_dependencies.py`` exists to stop.
+
+    Two assertions, because they fail differently and a wrong change could pass either one alone:
+
+    * the inequality catches the derivation, but would also pass on a ``_FORBIDDEN`` that differs
+      only by somebody having *added* ``anyio`` to it;
+    * the ``anyio`` clause catches that, but would pass on a list derived from the extra minus
+      ``anyio`` — the derivation, done carefully, which is still a list nobody is maintaining.
+
+    The comparison is between import names and distribution names, which coincide for every entry on
+    both sides today. That they coincide is what makes the inequality meaningful rather than
+    accidental; if a future entry breaks it, the two sets stop being comparable and this test should
+    be re-thought rather than patched.
+    """
+    extra = _server_extra()
+    forbidden = {canonicalize_name(name) for name in _FORBIDDEN}
+
+    # Non-vacuity: an empty extra would satisfy the inequality below for the wrong reason.
+    assert len(extra) >= 2, f"the `server` extra declares {len(extra)} distribution(s) — too few for this comparison"
+
+    assert forbidden != extra, (
+        "`_FORBIDDEN` has become the `server` extra. It must not be derived from pyproject.toml: the "
+        "extra declares `anyio`, which a correct client install contains (httpx requires it), so a "
+        "derived list refuses installations that are exactly right. The client must not reach the "
+        f"server *stack*; the extra describes the server *install profile*.\n  extra: {sorted(extra)}"
+    )
+
+    assert "anyio" in extra, (
+        "the `server` extra no longer declares `anyio`, so the argument above no longer has its "
+        "example. Either the declaration was dropped — which would undeclare something src/ imports "
+        "by name — or this guard is now reading the wrong table"
+    )
+
+    assert "anyio" not in forbidden, (
+        "`anyio` has been added to `_FORBIDDEN`. It belongs in a client install: `httpx` is a base "
+        "dependency of this package and requires it unconditionally, so blocking it makes the two "
+        "guards above assert that a correct installation is broken"
     )
 
 

@@ -43,6 +43,7 @@ from packaging.utils import canonicalize_name
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC = PROJECT_ROOT / "src"
+TESTS = PROJECT_ROOT / "tests"
 PYPROJECT = PROJECT_ROOT / "pyproject.toml"
 
 # This package's own import name. Excluded from the imported set rather than added to the declared
@@ -63,18 +64,18 @@ def _declared_distributions() -> set[str]:
     return {canonicalize_name(Requirement(spec).name) for spec in specs}
 
 
-def _imported_roots() -> dict[str, list[str]]:
-    """Third-party import roots under `src/`, mapped to the files that import them.
+def _imported_roots(walk_root: Path) -> dict[str, list[str]]:
+    """Third-party import roots under `walk_root`, mapped to the files that import them.
 
     `ast.walk` rather than a scan of module-level statements: an import inside a function, and an
     import inside `if TYPE_CHECKING:`, both name a distribution someone has to supply. The guarded
     one is not hypothetical here — `rate_limit/limiter.py` has one, and `mypy` resolves it for real.
 
-    `ast.parse` is deliberately not wrapped: a file under `src/` that does not parse is a defect to
-    surface, not to route around.
+    `ast.parse` is deliberately not wrapped: a file that does not parse is a defect to surface, not
+    to route around.
     """
     roots: dict[str, list[str]] = defaultdict(list)
-    for path in sorted(SRC.rglob("*.py")):
+    for path in sorted(walk_root.rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         relative = str(path.relative_to(PROJECT_ROOT))
         for node in ast.walk(tree):
@@ -93,10 +94,29 @@ def _imported_roots() -> dict[str, list[str]]:
     }
 
 
+def _local_module_names(walk_root: Path) -> set[str]:
+    """Top-level names that a module inside `walk_root` supplies, rather than a distribution.
+
+    Only meaningful for a tree whose files are imported by bare name. `tests/` is such a tree: this
+    project declares no `__init__.py` under it (see the `--import-mode=importlib` note in
+    `pyproject.toml`), so a directory that wants a shared helper puts itself on `sys.path` from its
+    `conftest.py` and imports the helper as a top-level module. `tests/observability/` does exactly
+    that, for `_obs_helpers`.
+
+    Both shapes count: a module file, and a directory that is a package. Nothing here asks whether
+    the name is *reachable* from any particular test — a name this tree defines is a name this tree
+    can supply, and the alternative is reimplementing pytest's path handling in a guard about
+    dependency declarations.
+    """
+    names = {path.stem for path in walk_root.rglob("*.py")}
+    names |= {path.name for path in walk_root.rglob("*") if path.is_dir() and (path / "__init__.py").is_file()}
+    return names
+
+
 def test_every_third_party_import_is_a_declared_dependency() -> None:
     """No module under `src/` imports a distribution `pyproject.toml` does not ask for."""
     declared = _declared_distributions()
-    roots = _imported_roots()
+    roots = _imported_roots(SRC)
     installed = packages_distributions()
 
     assert "fastapi" in roots, (
@@ -132,4 +152,75 @@ def test_every_third_party_import_is_a_declared_dependency() -> None:
         + "\n\nEither the name is misspelled, or it is imported and installed by nothing — the same "
         "defect as an undeclared dependency, met one step earlier. Skipping these is how the check "
         "above goes quiet about exactly the roots it most needs to see."
+    )
+
+
+def test_every_third_party_import_under_tests_is_declared() -> None:
+    """No module under `tests/` imports a distribution `pyproject.toml` does not ask for.
+
+    The same rule as the guard above with a wider root, and it is a separate test rather than a
+    parameterisation so that a failure says which half of the tree is wrong. The two differ in two
+    ways, and both are the sort of thing a later reader gets wrong by assuming symmetry.
+
+    **`dev` counts here, and does not count there.** A root imported under `tests/` may be satisfied
+    by *any* declared group, `dev` included — a test dependency is exactly what `dev` is for. A root
+    imported under `src/` may not: `src/` is what ships, and a shipped module whose import is
+    satisfied only by the development extra is broken for everyone who installs the package. The
+    guard above does not express that distinction because every group is pooled there too; what
+    saves it is that `src/` imports nothing `dev`-only today. If it ever does, *that* is the test to
+    split, not this one.
+
+    **A name supplied by a module inside `tests/` is not a distribution.** This tree contains
+    `tests/observability/_obs_helpers.py`, imported by six files as a bare `_obs_helpers` because
+    that directory's `conftest.py` puts itself on `sys.path` — the documented convention here, since
+    this project has no `__init__.py` under `tests/`. Under `src/` the question never arises: every
+    module lives inside the `cassetta` package and is reached through it. So `unresolved` means
+    something different in the two trees, and the wider walk has to say so or it is red on a correct
+    tree.
+
+    That exclusion is asked **only after** a root fails to resolve to an installed distribution,
+    which is the part that matters. A test module that shadowed a real distribution name — a
+    `tests/httpx.py` — would still take the ordinary path and still have to be declared; were
+    locality asked first, such a file would quietly excuse the very import it shadows.
+    """
+    declared = _declared_distributions()
+    roots = _imported_roots(TESTS)
+    installed = packages_distributions()
+    local = _local_module_names(TESTS)
+
+    # Non-vacuity, and it carries this guard on its own: extending the walk finds nothing today, so
+    # there is no list of violations to prove the walk happened. `pytest` is imported by most files
+    # here and is the root whose absence would mean the scan has stopped seeing the test tree.
+    assert "pytest" in roots, (
+        f"the walk of {TESTS} found no `pytest` import, so it has stopped seeing this project's "
+        f"tests — it found {sorted(roots)}. A check that inspects nothing passes over everything."
+    )
+
+    undeclared: list[str] = []
+    unresolved: list[str] = []
+
+    for root, files in sorted(roots.items()):
+        distributions = installed.get(root, [])
+        if not distributions:
+            if root in local:
+                continue
+            unresolved.append(f"  {root} — imported by {', '.join(files)}")
+        elif not any(canonicalize_name(dist) in declared for dist in distributions):
+            shipped_by = " / ".join(sorted(distributions))
+            undeclared.append(f"  {root} (shipped by {shipped_by}) — imported by {', '.join(files)}")
+
+    assert not undeclared, (
+        f"{len(undeclared)} import root(s) under tests/ resolve to a distribution this package does "
+        "not declare, so the suite passes only as long as something else happens to depend on "
+        "them:\n" + "\n".join(undeclared) + "\n\nDeclare each in `[project.optional-dependencies] "
+        "dev`. That is where a dependency of the tests belongs, and it is the decision this "
+        "repository has already taken twice, for `pyyaml` and for `packaging` — the second of which "
+        "was caught by a person reading a diff, one file away from this guard."
+    )
+
+    assert not unresolved, (
+        f"{len(unresolved)} import root(s) under tests/ map to no installed distribution and to no "
+        "module inside tests/ either:\n" + "\n".join(unresolved) + "\n\nEither the name is "
+        "misspelled, or it is imported and installed by nothing. A local helper module is not this "
+        f"case — those are recognised by name from {TESTS.name}/ itself."
     )

@@ -273,6 +273,77 @@ def test_release_check_reads_the_package_module() -> None:
     )
 
 
+def _release_check_success_line() -> str:
+    """The line ``release-check`` prints when everything it compared agrees.
+
+    Singled out because it is the one operator-visible string this target produces on the happy path,
+    and the only thing most people will ever read of it.
+    """
+    recipe = _MAKEFILE.read_text(encoding="utf-8")
+    lines = [
+        line for line in recipe.splitlines() if "release-check: $$version" in line and line.lstrip().startswith("echo")
+    ]
+    assert len(lines) == 1, (
+        f"expected exactly one success line in the release-check recipe, found {len(lines)}. This "
+        "guard reads that line to check what it claims, and cannot do so if there are two"
+    )
+    return lines[0]
+
+
+def test_release_check_compares_the_sample_output_version() -> None:
+    """``make release-check`` compares the documented sample output, and claims only what it compared.
+
+    The second half is the point, and it is a lesson this repository paid for. Until 0.28.3 the
+    recipe closed with
+
+        the declared version, CHANGELOG.md and the docs/ pins all agree
+
+    which is **true about pins and read as being about the documents**. A ``Server version:`` literal
+    in ``docs/CLIENT_SETUP.md`` sat two releases behind while this check, and two tests, reported
+    agreement — none of them was wrong, and all three were narrower than they sounded.
+
+    So two things are held here: that the sample output is compared at all, and that the sentence
+    announcing success names what was actually looked at. A check whose success message overstates
+    its own coverage is worse than one that does not run, because it answers the question that would
+    otherwise have been asked.
+
+    Asserted by shape rather than by running it, for the reason
+    :func:`test_release_check_reads_the_package_module` gives at length: the recipe is shell so that
+    it works in a clean clone with no virtual environment, which is the state a release is cut from
+    and is not a state reproducible from inside this test session.
+    """
+    assert _MAKEFILE.is_file(), "Makefile is missing — it is what a release is checked with"
+    recipe = _MAKEFILE.read_text(encoding="utf-8")
+
+    assert "Server version" in recipe, (
+        "the release check does not look at the `Server version:` sample output. It is a version "
+        "literal in docs/ that no install-pin check can see — which is exactly how it went stale"
+    )
+
+    # A comparison that cannot fail on absence is not a comparison. The recipe already has this
+    # branch for pins, and the reason is written into it: nothing to compare is not agreement.
+    assert "no documented sample output" in recipe, (
+        "the release check has no branch for finding *no* sample output under docs/. Without it a "
+        "documentation tree that had lost the sample satisfies this check by having nothing to be "
+        "wrong about — the same silence the pin branch above already refuses"
+    )
+
+    # The pin comparison is not replaced by the new one; both shapes go stale independently.
+    assert "cassetta\\.git@v" in recipe, (
+        "the release check no longer extracts the documented install pins. The sample output is a "
+        "second shape to compare, not a substitute for the first"
+    )
+
+    success = _release_check_success_line()
+    assert "sample output" in success, (
+        "the release check's success line does not mention the sample output, so it goes on claiming "
+        f"agreement about a narrower set than it now checks. Found:\n  {success.strip()}"
+    )
+    assert "pins" in success, (
+        f"the release check's success line no longer mentions the install pins it compares. Found:\n  {success.strip()}"
+    )
+
+
 def test_project_urls_all_name_this_repository() -> None:
     """Every declared project link points into this repository.
 
