@@ -69,6 +69,19 @@ identifier in the whole tree, and it would have landed unchecked. The guard requ
 root-level markdown file git tracks to be inside the tuple, which is a rule rather than a longer
 list, and so has no next document to forget.
 
+The fifteenth is the eleventh's other half. That one catches the *number* of a private document
+wherever it is written; this one catches a *pointer* into one of the two directories that held those
+documents — ``specs/`` and ``contracts/`` — which stayed behind in the private repository. It is a
+narrow rule on purpose: the fifth guard above already scans nine repository roots but only over
+shipped prose and ``src/``, and widening *it* to the tests was measured and rejected, because most of
+what it would then find under ``tests/`` is path-traversal attack strings and glob patterns. Two roots
+over the whole tree finds residue and nothing else.
+
+The sixteenth is the eleventh's *third* half, for the shape neither of the others can see: a
+three-digit number in a file's own name, with none of the ``brief``/``FR``/``SC``/``T``/``US``
+decoration that makes a number recognisable as a citation. What distinguishes it from a numbered
+document that legitimately lives here is where the number sits — see the guard for the argument.
+
 These are regression **locks**, not a one-off cleanup script: each must keep failing if what it
 describes comes back.
 """
@@ -669,6 +682,107 @@ def test_no_internal_identifiers_in_tracked_files() -> None:
         "tracked files cite the private chain's numbering. The briefs, tasks and stories these "
         "name are not in this repository and cannot be looked up from it — drop the number and "
         "keep the sentence:\n" + "\n".join(offenders)
+    )
+
+
+# The two directories of the former monorepo that held the documents the numbering above points at.
+# Neither came across the split, so neither can be opened from here.
+#
+# Same lookbehind idiom as the two path guards at the top of this file, and load-bearing for the
+# same reason: it is what keeps `./drop/contracts/x.md` — a path in a *reader's* upload bundle —
+# from being read as a pointer into this repository.
+_LEFT_BEHIND_PATH_RE = re.compile(r"(?<![\w./-])(?:specs|contracts)/")
+
+
+def test_no_pointer_into_a_directory_the_split_left_behind() -> None:
+    """No tracked file points at ``specs/`` or ``contracts/``.
+
+    ``test_no_dangling_repo_links`` above catches this class already, and catches it better — it
+    resolves every pointer against the tree instead of naming two roots. But it reads shipped prose
+    and ``src/`` only, and every surviving pointer of this kind was in a docstring under ``tests/``:
+    a contributor reads those in the editor, which makes a pointer there *more* likely to be
+    followed, not less.
+
+    Widening that guard to ``tests/`` was measured and rejected rather than skipped. Its nine roots
+    over ``tests/`` trip 22 files on about 35 tokens, of which two are residue and the rest are
+    path-traversal attack strings (``../etc/passwd``), glob patterns (``src/cassetta/**/*.py``) and
+    paths inside a reader's own bundle — an exception list long enough to swallow the lock. Two roots
+    over the whole tree trip eight files, seven of them residue and the eighth this one. Narrow rule,
+    whole tree; wide rule, shipped surface. Neither replaces the other.
+
+    The one exception is by path and only by path: writing these two roots out is this file's job.
+    An exception bought instead by weakening the pattern would produce the same green and a guard
+    that no longer says what it checks — the same argument the identifier guard above makes, and the
+    reason both use ``_GUARD_SELF_PATH`` rather than a pattern carve-out.
+    """
+    scanned = _tracked_text_files()
+    # Non-vacuity: a truncated listing would otherwise make this guard silently green forever.
+    assert len(scanned) >= 150, f"scanned only {len(scanned)} files — the tracked-file listing is wrong"
+
+    offenders: list[str] = []
+    for path in scanned:
+        rel = path.relative_to(REPO_ROOT)
+        if rel == _GUARD_SELF_PATH:
+            continue
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if _LEFT_BEHIND_PATH_RE.search(line):
+                offenders.append(f"{rel}:{lineno}: {line.strip()}")
+
+    assert not offenders, (
+        "tracked files point into directories that stayed behind in the private repository this one "
+        "was split out of. A reader who follows one finds nothing, and reads this as a repository "
+        "with missing parts — state the invariant in this repository's own terms instead, which is "
+        "what the pointer was standing in for:\n" + "\n".join(offenders)
+    )
+
+
+# A bare three-digit run: not part of a longer number, so `0.28.4` and a uid like `1001` are not it.
+_BARE_TRIPLE_RE = re.compile(r"(?<!\d)\d{3}(?!\d)")
+
+# A leading ordinal — the form a numbered document uses to say "I am number NNN".
+_LEADING_ORDINAL_RE = re.compile(r"^\d{3}[-_]")
+
+
+def test_no_file_is_named_after_a_private_brief() -> None:
+    """No tracked path names a document that is not in this repository.
+
+    The identifier guard above reads a number as a citation when it comes with decoration —
+    ``brief``, ``FR-``, ``SC-``, ``T``, ``US``. A file named after the chain that produced it carries
+    the number with none of that: an undecorated three digits appended to an otherwise ordinary
+    name. It says exactly as much to an outside reader as the decorated form does, which is nothing,
+    and publishes the same private backlog by existing.
+
+    **Why four ADR filenames are not offenders and that one was.** The distinction is not an
+    exception, it is the rule. An ADR's number *resolves*: it names the document carrying it, and
+    that document is here. The test file's number named a brief in a repository the reader cannot
+    open. Machine-checkably, that difference is *where the number sits* — a leading ordinal is a
+    file saying which number it is; a number anywhere else in the name is a reference to something
+    that is not this file.
+
+    The limit, stated rather than left to be discovered: a file whose *leading* number cited
+    something elsewhere would pass here. Nothing is named that way, because a leading ordinal is the
+    convention for numbering a document and is not used for citing one.
+
+    Whole path components, and every component rather than the last: a directory named after its
+    chain carries the number where no scan of file contents can reach it, and a number can sit in a
+    suffix as easily as in a stem.
+    """
+    tracked = _tracked_paths()
+    # Non-vacuity: an empty or truncated listing would otherwise make this guard green forever.
+    assert len(tracked) >= 150, f"listed only {len(tracked)} paths — the tracked-file listing is wrong"
+
+    offenders: list[str] = []
+    for name in tracked:
+        for part in Path(name).parts:
+            cited = _BARE_TRIPLE_RE.search(_LEADING_ORDINAL_RE.sub("", part))
+            if cited:
+                offenders.append(f"{name}: {part!r} carries {cited.group(0)}")
+
+    assert not offenders, (
+        "tracked paths carry a three-digit number that is not the file's own ordinal. The number "
+        "names a document in the private repository this one was split out of, so it answers "
+        "nothing for a reader here and discloses the shape of a backlog they cannot read — rename "
+        "the file and keep the name:\n" + "\n".join(offenders)
     )
 
 

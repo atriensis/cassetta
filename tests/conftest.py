@@ -145,7 +145,10 @@ async def claim_storage_factory(
 ) -> AsyncIterator[ClaimStorageFactory]:
     """Yield a ``(base_dir=None) -> ClaimStorage`` async factory.
 
-    See ``specs/517-claimstore-cloud-parity/research.md §Decision 6``.
+    A factory rather than a ready-made store, because the root is the caller's choice: tests that
+    also write bundle files pass their own ``tmp_path`` so claims land beside them, and the rest
+    take the ``tmp_path/.claims`` default. A fixture yielding one store would have to pick one of
+    those two roots for everybody.
     """
     from cassetta.backends.filesystem.claim_storage import FilesystemClaimStorage
 

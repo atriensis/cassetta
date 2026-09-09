@@ -21,7 +21,10 @@ as permitted:
   under this licence.
 
 So self-hosting Cassetta for your own agents, modifying it, and deploying it
-internally are all free and unrestricted.
+internally are all Permitted Purposes, and all free of charge. Free of charge is
+not the same as free of terms: the licence still asks you to keep the notices when
+you redistribute, still ends your patent licence if you sue over patents, and still
+draws the line at a Competing Use — which the next section defines.
 
 ## What is a "Competing Use" (a.k.a. competitive use) — the one thing you can't do?
 

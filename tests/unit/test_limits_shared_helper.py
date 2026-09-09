@@ -1,8 +1,10 @@
 """Unit tests for ``cassetta.limits.check_manifest_against_limits``.
 
-Covers the invariants from contracts/check-manifest-against-limits.md:
-determinism, ordering of checks, null handling, purity (zero I/O, zero
-logging), and re-exported public surface.
+The one place a manifest is judged against advertised limits: the default limits
+policy calls nothing else, so whichever upload path reaches that policy gets this
+answer, and it has to be the same answer every time it is asked. That is what the
+five groups below hold: determinism, ordering of checks, null handling, purity
+(zero I/O, zero logging), and re-exported public surface.
 """
 
 from __future__ import annotations
@@ -79,7 +81,10 @@ def test_determinism_across_invocations() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Ordering invariants (contracts/check-manifest-against-limits.md §Ordering)
+# Ordering invariants: which violation is reported when a manifest breaks more
+# than one limit. The answer has to be fixed, because it is what the uploader
+# reads and fixes first — a helper that reported whichever check happened to run
+# first would send two callers with the same manifest to two different problems.
 # ---------------------------------------------------------------------------
 
 

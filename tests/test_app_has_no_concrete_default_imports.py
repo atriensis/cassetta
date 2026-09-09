@@ -5,8 +5,12 @@ Walks the full Layer 2 surface: every ``src/cassetta/**/*.py`` except Layer 3
 construction homes (``defaults/factory.py``, ``defaults/default_*.py``,
 ``backends/**``, ``protocols/**``, ``**/__init__.py``).
 
-See ``specs/520-backendconfig-layer2-cleanup/contracts/regression_lock.md``
-for the walk-set contract and exclusion rationale.
+The exclusions are the rule, not holes in it: every excluded path is a place
+where naming a concrete class is the job. A factory constructs them, a
+``default_*`` module *is* one, ``backends/**`` is Layer 3 itself, ``protocols/**``
+declares what they implement, and an ``__init__.py`` re-exports them. Everything
+else is Layer 2, where a concrete name is the defect this locks out — an
+annotation or import that binds product logic to one backend.
 """
 
 from __future__ import annotations

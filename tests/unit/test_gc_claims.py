@@ -3,7 +3,9 @@
 Parametrized via ``claim_storage_factory`` so a downstream distribution
 can plug in its own axis. Core runs filesystem.
 
-Covers every row in ``contracts/claim-sidecar.md`` "Reaper contract":
+The reaper contract, one row per branch — a claim is deleted whenever it can no longer be
+redeemed, and the bundle goes with it only when the claim was complete:
+
 - active claim (age < ttl) → skipped
 - expired + complete + inbox → bundle deleted + claim deleted
 - expired + incomplete → claim deleted only (bundle untouched)
