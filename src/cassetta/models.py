@@ -92,7 +92,6 @@ class SetupRequest(BaseModel):
 class KeyCreateRequest(BaseModel):
     host: str
     project: str
-    user_id: str | None = None
 
     @field_validator("host")
     @classmethod

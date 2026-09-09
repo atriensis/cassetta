@@ -6,6 +6,39 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.29.0] - 2026-09-09
+
+A field leaves a public request body, and a caller still sending it is unaffected. **Nothing an
+operator runs changes** — no environment variable, REST route, MCP tool, log field, or behaviour of
+the running server. The endpoint accepted this field without acting on it, and now accepts it
+without declaring it.
+
+### Removed
+
+- **`POST /keys` no longer declares `user_id` in its request body.** The field was accepted, handed
+  to the keystore, and ignored there — the filesystem keystore is single-user and has no per-key
+  owner to record, which its own docstring says and explains. A field on a public request body is a
+  compatibility promise, and this one had nothing behind it.
+
+  **A caller still sending `user_id` is unaffected. This is not a breaking change.** No request
+  model in this repository sets `extra="forbid"`, so Pydantic's default applies and an unrecognised
+  field is ignored rather than rejected: the same `201`, the same key, the same label as before, for
+  a value and for `null` alike. Nothing has to change in any client, on any schedule.
+
+  **The extension point is untouched.** `KeyStoreProtocol.create_key` still takes an optional owner
+  identifier, so a keystore that does key its records by owner has somewhere to put one. What ends
+  is this server advertising a field it cannot act on. (#36)
+
+### Added
+
+- **Two regression locks, one per half of the change above.** `tests/test_public_surface.py` fixes
+  the declared field set of the key-creation request to exactly `host` and `project`, so a public
+  request model growing another field with nothing behind it is a deliberate act with a red test in
+  front of it. `tests/test_keys.py` holds the compatibility claim rather than leaving it as a
+  sentence here: it sends a body that still carries `user_id`, as a value and as `null`, and
+  requires the key to be created. Each was seen failing before it was relied on — the second under
+  an injected `extra="forbid"`, which is the change it exists to stop. (#36)
+
 ## [0.28.4] - 2026-09-09
 
 Three families of untruth in documents a stranger reads. **Nothing an operator runs changes** — no

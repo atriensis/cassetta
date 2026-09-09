@@ -116,10 +116,7 @@ async def create_key(
 ) -> KeyCreateResponse:
     await _enforce(request, identity, f"keys:{body.label}", "create", metrics)
     try:
-        raw_key, info = await key_store.create_key(
-            body.label,
-            user_id=body.user_id,
-        )
+        raw_key, info = await key_store.create_key(body.label)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
 
