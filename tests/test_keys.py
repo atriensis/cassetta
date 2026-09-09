@@ -1,4 +1,47 @@
 import httpx
+import pytest
+
+
+@pytest.mark.parametrize("stale_value", ["user-123", None], ids=["set", "null"])
+async def test_a_key_request_carrying_an_unrecognised_field_is_still_accepted(
+    auth_client: tuple[httpx.AsyncClient, str],
+    stale_value: str | None,
+) -> None:
+    """A ``POST /keys`` body that still carries the retired owner field creates the key as before.
+
+    This request model used to declare ``user_id``, and the server ignored it — the only keystore
+    here is single-user and has no per-key owner to record. The field was removed rather than
+    deprecated, and this is the compatibility claim that came with the removal, written as a test
+    rather than as a sentence in the changelog.
+
+    It holds because no request model in this repository sets ``extra="forbid"``, so Pydantic's
+    default applies and an unrecognised field is ignored rather than rejected. That default is the
+    whole guarantee, and it is invisible in the source of the model — nothing at
+    ``src/cassetta/models.py`` says "and unknown fields are fine". Adding ``extra="forbid"`` to
+    ``KeyCreateRequest`` reads as tightening validation and would turn every caller written against
+    the old shape into a 422 on upgrade; this is what stands in the way of that.
+
+    Both values a caller could have sent are exercised. ``null`` was the documented way to say "no
+    owner" and reaches a different branch of a request body parser than a string does, so a guard
+    that checked one of them would only be watching half the callers it claims to protect.
+    """
+    client, token = auth_client
+    await client.post(
+        "/setup",
+        json={"host": "test", "project": "admin"},
+        headers={"X-Setup-Token": token},
+    )
+
+    response = await client.post(
+        "/keys",
+        json={"host": "test", "project": "home-pi", "user_id": stale_value},
+        headers={"X-Setup-Token": token},
+    )
+
+    assert response.status_code == 201, response.text
+    data = response.json()
+    assert data["label"] == "test:home-pi"
+    assert data["api_key"].startswith("cst_")
 
 
 class TestSetup:

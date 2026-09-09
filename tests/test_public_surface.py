@@ -82,6 +82,12 @@ three-digit number in a file's own name, with none of the ``brief``/``FR``/``SC`
 decoration that makes a number recognisable as a citation. What distinguishes it from a numbered
 document that legitimately lives here is where the number sits — see the guard for the argument.
 
+The seventeenth is not about the split either, and it is the only one whose subject is a *promise*
+rather than a leak. ``POST /keys`` advertised a field the one keystore in this repository accepts
+and ignores, so the request body was making a compatibility commitment with nothing behind it.
+Removing such a field costs one edit before publication and a deprecation cycle after, which is why
+the declared field set is fixed here rather than left to the next reviewer to notice.
+
 These are regression **locks**, not a one-off cleanup script: each must keep failing if what it
 describes comes back.
 """
@@ -94,7 +100,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from cassetta.models import SetupRequest
+from cassetta.models import KeyCreateRequest, SetupRequest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -303,6 +309,33 @@ def test_readme_quickstart_matches_api() -> None:
         f"but SetupRequest declares {sorted(SetupRequest.model_fields)}"
     )
     assert "label" not in payload, "`label` is a derived property of SetupRequest (host:project), never an input field"
+
+
+def test_the_key_creation_request_declares_only_what_this_server_reads() -> None:
+    """``POST /keys`` advertises exactly the two fields this server acts on.
+
+    A field on a public request body is a promise. This one carried a third — an owner identifier —
+    that the only keystore here accepts and ignores, because that backend is single-user and has no
+    per-key owner to record. No document mentioned it, nothing downstream read it, and a caller who
+    set it got the same key as a caller who did not.
+
+    The seam it hung from is real and stays. ``KeyStoreProtocol.create_key`` still takes an optional
+    owner identifier, so a keystore that *does* key its records by owner has somewhere to put one;
+    what is removed is the advertisement, not the extension point.
+
+    Two choices here are the guard rather than incidental. The field set is read off
+    ``model_fields``, so a rename cannot satisfy it the way a source-text scan could. And it is an
+    equality rather than a ban on one name: the defect was never that particular field, it was a
+    public request model growing one with nothing behind it, and an equality puts a red test in
+    front of the next.
+    """
+    declared = set(KeyCreateRequest.model_fields)
+
+    assert declared == {"host", "project"}, (
+        "the POST /keys request body declares fields beyond the two this server reads. Every field "
+        "on a public request body is a compatibility promise, and one the server cannot act on is a "
+        f"promise with nothing behind it. Declared: {sorted(declared)}"
+    )
 
 
 def test_deploy_files_present_and_single_package() -> None:
