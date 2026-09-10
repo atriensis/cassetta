@@ -1,8 +1,24 @@
 [project]
 name = "cassetta"
 dynamic = ["version"]
+description = "A lightweight file exchange bus for distributed AI agents"
+# The README is the description, so its links are written absolutely: on the index a relative link
+# resolves against the index's own URL. `tests/test_public_surface.py` holds both halves of that.
+readme = "README.md"
+authors = [{ name = "Evgeny Zhoga" }]
 requires-python = ">=3.13"
+# An SPDX expression, and the only statement of the licence: no classifier exists for it, so the list
+# below carries none. `tests/test_release_metadata.py` says why a `License ::` line would be worse.
 license = "FSL-1.1-ALv2"
+classifiers = [
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: File Sharing",
+    "Typing :: Typed",
+]
 # The client, and only the client. This is what an install without an extra gets: the three
 # libraries `src/cassetta/cli/` imports beyond the standard library and `cassetta.path_validation`.
 # A fourth entry here would mean the finding behind the split was wrong — it is a question to raise,
