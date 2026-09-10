@@ -29,6 +29,7 @@ Seven things are held here.
   would promise a page that does not exist; the old account is where this project *was*.
 * **The project declares what an index page shows** — a summary, the README as its description, an
   author and classifiers. Without them the upload succeeds and the page is blank below the title.
+  The author's address is none of those the repository asks readers to write to.
 * **No classifier makes a second statement about the licence.** The SPDX expression is the only one,
   and no ``License ::`` classifier exists that could agree with it.
 
@@ -382,6 +383,13 @@ _INDEX_PAGE_FIELDS = {
 # The README is the description. Written as a string for the reason ``_VERSION_SOURCE_PATH`` is.
 _README_PATH = "README.md"
 
+# The documents that ask a reader to send mail: vulnerability reports, signed CLAs. An address in them
+# is one where a missed message costs something, which is why none of them may be the address the
+# index page publishes. Read from the documents rather than restated, so a new address there is
+# covered the day it is written.
+_DOCUMENTS_THAT_ASK_FOR_MAIL = ("SECURITY.md", "CONTRIBUTING.md", "CLA.md")
+_EMAIL_ADDRESS_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
 
 def test_the_project_declares_what_an_index_page_shows() -> None:
     """``pyproject.toml`` declares every field an index renders below the title.
@@ -395,6 +403,11 @@ def test_the_project_declares_what_an_index_page_shows() -> None:
     description is ``README.md``, because that is the document this repository keeps true — a second
     description written for the index would be a second document to keep true, and the one nobody
     reads in review.
+
+    The author's address is held to what it is not. It is shown on the page and returned by the
+    index's public JSON, which makes it the most harvested address this project publishes, and a
+    published version keeps it permanently. So it is none of the addresses the repository asks
+    readers to write to.
     """
     project = _pyproject()["project"]
     assert isinstance(project, dict)
@@ -420,6 +433,20 @@ def test_the_project_declares_what_an_index_page_shows() -> None:
     authors = project["authors"]
     assert isinstance(authors, list) and all(isinstance(a, dict) and a.get("name") for a in authors), (
         f"every declared author must carry a name — an entry without one renders as nothing. Found: {authors!r}"
+    )
+
+    asked_for = {
+        address.lower()
+        for name in _DOCUMENTS_THAT_ASK_FOR_MAIL
+        for address in _EMAIL_ADDRESS_RE.findall((REPO_ROOT / name).read_text(encoding="utf-8"))
+    }
+    # Non-vacuity: those documents do give an address, so finding none means the pattern is wrong.
+    assert asked_for, f"found no email address in {', '.join(_DOCUMENTS_THAT_ASK_FOR_MAIL)}, but they give one"
+    published = sorted(str(a["email"]) for a in authors if str(a.get("email", "")).lower() in asked_for)
+    assert not published, (
+        "an author address is one the repository asks readers to write to. The index page and its public "
+        "JSON publish it permanently, so it must be an address where a missed message costs nothing:\n  "
+        + "\n  ".join(published)
     )
 
 

@@ -5,10 +5,11 @@
 # version that was just tagged. There is nothing this could usefully mean on its own, which is why it
 # carries no other trigger.
 #
-# It stops one step short of publishing, deliberately. The package name is unclaimed and nothing
-# carries this package, so a publish step would need a name, a credential and a decision this
-# repository has not taken. tests/test_workflows.py holds it to that, so taking the decision later is
-# an edit somebody makes on purpose rather than a drift.
+# It builds and checks; it does not publish, and it cannot. A called workflow can narrow the token
+# its caller grants but never widen it, so a job here could not obtain the identity token publishing
+# needs, and the index does not support a reusable workflow as a trusted publisher in any case. The
+# publish job is in tag.yml, after the call to this one, and it hands over the artifact uploaded
+# below. tests/test_workflows.py holds publishing to that one place.
 
 name: Release
 
@@ -74,8 +75,9 @@ jobs:
 
           printf 'dist/ carries %s, which is what was tagged\n' "$EXPECTED"
 
-      # Kept rather than sent anywhere. Retention is the default; a build artifact that outlived the
-      # question it answers would just be storage.
+      # What tag.yml's publish job hands to the index, once a reviewer approves the run — these bytes,
+      # which the step above checked against the tag, and never a second build. It downloads them by
+      # this name, so the two are renamed together; tests/test_workflows.py compares them.
       - uses: actions/upload-artifact@v7
         with:
           name: cassetta-${{ inputs.version }}

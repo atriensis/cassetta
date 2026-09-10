@@ -6,6 +6,53 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.30.0] - 2026-09-10
+
+A release can now leave this repository for the package index, and only once a person approves it.
+**Nothing an operator runs changes** — no environment variable, REST route, MCP tool, log field or
+behaviour of the running server. What changes is how a release leaves the repository, and what the
+package says about itself when it arrives.
+
+**The documented install stays on a git tag.** Merging this starts the first publish; it does not
+finish it. Until a person approves that run no index carries this package, so the install
+instructions in `docs/` keep describing the install that works today.
+
+### Added
+
+- **A release can reach PyPI, once a reviewer approves it.** `.github/workflows/tag.yml` gains a third
+  job after the release build. It downloads the distribution `release.yml` built and checked against
+  the tag in the same run — those bytes, never a second build — and hands it to the index by trusted
+  publishing: a short-lived OIDC token is exchanged at upload time, so no API token or repository
+  secret exists to leak. The job is bound to the `pypi` deployment environment, whose required
+  reviewer is the gate. The gate is deliberately not a condition in the workflow. A false condition
+  skips a job and the run goes green, while a job waiting for approval stays visibly waiting. A merge
+  that carries no new version skips the release, and the publish with it.
+
+- **The package declares what an index page shows.** `pyproject.toml` now gives a one-line summary
+  (the README's first sentence), `README.md` as the description, an author and eight classifiers. It
+  gives no `License ::` classifier: the licence is the SPDX expression `FSL-1.1-ALv2`, no classifier
+  exists for it, and any one that could be written would state a different licence beside it.
+
+- **Guards for all of it**, each seen failing before it was relied on. `tests/test_workflows.py` holds
+  publishing to that one job, bound to that environment, with no stored credential, and keeps the tag
+  lock off the job that waits; it replaces the guard that said no workflow publishes.
+  `tests/test_release_metadata.py` holds the index-page fields, the absent licence classifier, and an
+  author address that is none of the addresses this repository asks readers to write to.
+  `tests/test_public_surface.py` holds every README link absolute and follows each one back into the
+  tree, so the dangling-link check covers all twenty of them where it used to cover fifteen.
+
+### Changed
+
+- **`README.md`'s links are absolute.** On the index the README is the project description, rendered
+  on a page whose URL belongs to the index, so a relative link resolves there and leads nowhere.
+  Twenty targets now point into this repository on `main`. Their text and destinations are unchanged.
+
+- **The tag lock is held by the job that decides, not by the whole run.** `tag.yml`'s
+  `tag-on-merge` concurrency group moved from the workflow onto its `tag` job, unchanged. At workflow
+  level it would stay held while a publish waits for its reviewer, and GitHub cancels a pending run in
+  the group when the next one arrives, so a merge landing during the wait could lose its tag run. On
+  the job it is held for seconds.
+
 ## [0.29.0] - 2026-09-09
 
 A field leaves a public request body, and a caller still sending it is unaffected. **Nothing an

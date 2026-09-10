@@ -14,6 +14,13 @@
 # other workflow runs — GitHub's loop prevention — so a release workflow listening on `push: tags:`
 # would never fire, and would look correct in review. tests/test_workflows.py forbids that shape
 # repository-wide.
+#
+# Publishing is the last job here, and it waits for a person. It hands the index the artifact the
+# release workflow built and checked against the tag in this same run, and it starts only once a
+# reviewer approves the run in the `pypi` deployment environment. That approval is the gate, and it is
+# deliberately not in this file. The job lives here rather than in release.yml because a called
+# workflow can narrow the token its caller grants but never widen it, and the index does not support a
+# reusable workflow as a trusted publisher. So this file is the workflow registered with the index.
 
 name: Tag on merge
 
@@ -21,17 +28,9 @@ on:
   push:
     branches: [main]
 
-# Read by default; the one job that needs to write says so for itself.
+# Read by default; each job that needs more says so for itself.
 permissions:
   contents: read
-
-# Not keyed on the ref: every run of this workflow is on `main`, and the point is that two merges
-# landing seconds apart cannot both decide that a tag is missing. Cancelling is wrong here — a
-# cancelled run leaves a release untagged with nothing to report it, which is the failure this
-# workflow exists to prevent.
-concurrency:
-  group: tag-on-merge
-  cancel-in-progress: false
 
 jobs:
   tag:
@@ -39,6 +38,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Not keyed on the ref: every run of this workflow is on `main`, and the point is that two merges
+    # landing seconds apart cannot both decide that a tag is missing. Cancelling is wrong here — a
+    # cancelled tag job leaves a release untagged with nothing to report it, which is the failure this
+    # workflow exists to prevent.
+    #
+    # On this job rather than on the workflow, because the run ends in a job that waits for a reviewer.
+    # At workflow level the group would be held for the whole wait, and GitHub keeps one pending run
+    # per group, cancelling it when the next one arrives — so a merge landing during the wait could
+    # lose its tag run to the merge after it. Here the group is released before anything waits on a
+    # person.
+    concurrency:
+      group: tag-on-merge
+      cancel-in-progress: false
     outputs:
       version: ${{ steps.tag.outputs.version }}
       created: ${{ steps.tag.outputs.created }}
@@ -91,3 +103,30 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       version: ${{ needs.tag.outputs.version }}
+
+  publish:
+    name: Publish the release, once a reviewer approves
+    # `release` is what makes this the checked build. When the merge carried no new version `release`
+    # is skipped, and this job is skipped with it — the quiet no-op above, not a gate. `tag` is listed
+    # as well because the version is read from its outputs, and the `needs` context carries only the
+    # jobs named here.
+    needs: [tag, release]
+    runs-on: ubuntu-latest
+    # The gate: a reviewer on this environment approves the run before this job starts, and the name
+    # is also what the index checks in the token's claim. There is no `if:`. A false condition would
+    # skip the job and paint the run green, and a release that silently did not happen is the failure
+    # this whole composition is built to rule out.
+    environment: pypi
+    # Only what the OIDC exchange needs, and on this job alone. No token, no secret, no `password:` —
+    # the publish action trades a short-lived identity token for an upload credential on its own.
+    permissions:
+      id-token: write
+    steps:
+      # The bytes release.yml built and checked against the tag, under the name it uploaded them with.
+      # Nothing here checks the repository out, so there is nothing to build a second distribution from.
+      - uses: actions/download-artifact@v8
+        with:
+          name: cassetta-${{ needs.tag.outputs.version }}
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1

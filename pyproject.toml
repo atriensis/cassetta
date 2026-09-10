@@ -5,12 +5,17 @@ description = "A lightweight file exchange bus for distributed AI agents"
 # The README is the description, so its links are written absolutely: on the index a relative link
 # resolves against the index's own URL. `tests/test_public_surface.py` holds both halves of that.
 readme = "README.md"
-authors = [{ name = "Evgeny Zhoga" }]
+# The address is shown on the index page and returned by its public JSON API, which mirrors copy, so
+# it is the most harvested address this project publishes. It exists for this field alone. The
+# addresses that receive vulnerability reports and signed CLAs are where a missed message costs
+# something, and `tests/test_release_metadata.py` keeps them out of this line.
+authors = [{ name = "Evgeny Zhoga", email = "pypi@atriensis.ai" }]
 requires-python = ">=3.13"
 # An SPDX expression, and the only statement of the licence: no classifier exists for it, so the list
 # below carries none. `tests/test_release_metadata.py` says why a `License ::` line would be worse.
 license = "FSL-1.1-ALv2"
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Framework :: FastAPI",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
