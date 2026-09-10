@@ -614,9 +614,11 @@ def test_every_documented_capabilities_invocation_carries_a_key() -> None:
     )
 
 
-# A version printed inside a sample output. Not an install pin — `scripts/sync-docs-version.py` and
-# `make release-check` both match `cassetta.git@vX.Y.Z` and neither can see this shape, which is how
-# one line sat two releases behind while three separate checks reported the documents current.
+# A version printed inside a sample output. Until 0.28.3, `scripts/sync-docs-version.py` and
+# `make release-check` matched only the `cassetta.git@vX.Y.Z` install pins and could not see this
+# shape, which is how one line sat two releases behind while three separate checks reported the
+# documents current. The pins have since gone; this is now the only version literal the documents
+# keep.
 _SERVER_VERSION_RE = re.compile(r"Server version:\s*(\S+)")
 
 
@@ -624,8 +626,8 @@ def test_no_sample_output_names_a_version_other_than_the_current_one() -> None:
     """No sample output under ``docs/`` prints a ``Server version:`` that is not this release.
 
     Kept to that one shape deliberately. ``CHANGELOG.md``'s version literals are records of what
-    shipped and the install pins have their own guard (``tests/test_docs_version_pins.py``); widening
-    this one would either duplicate that guard or start rewriting a history.
+    shipped, and an install command may name no version at all (``tests/test_docs_install.py``);
+    widening this one would either duplicate that guard or start rewriting a history.
     """
     found: list[tuple[str, str]] = []
     for path in _markdown_files():
@@ -645,9 +647,9 @@ def test_no_sample_output_names_a_version_other_than_the_current_one() -> None:
     stale = [f"{where}: prints {version}, the release is {declared}" for where, version in found if version != declared]
 
     assert not stale, (
-        "a sample output names a release this repository is no longer on. Nothing else looks at this "
-        "shape — `scripts/sync-docs-version.py` rewrites install pins only — so it goes stale "
-        "silently and stays that way:\n  " + "\n  ".join(stale)
+        "a sample output names a release this repository is no longer on. A stale sample is just a "
+        "number in a code block, so nothing else reports it; run "
+        "`uv run python scripts/sync-docs-version.py`:\n  " + "\n  ".join(stale)
     )
 
 

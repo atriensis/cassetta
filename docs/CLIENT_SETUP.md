@@ -244,23 +244,32 @@ predicted.
 
 ## Installing the `cassetta` CLI
 
-**No package index carries Cassetta.** There is no `pip install cassetta`
-to run — the client is declared at `pyproject.toml` `[project.scripts]`
-and installed from the repository with `uv`, pinned to a release tag:
+The client is on PyPI as `cassetta`. Install it with `uv`:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.30.0
+uv tool install cassetta
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.30.0 cassetta --help
+uvx cassetta --help
 ```
 
+On the pip toolchain, `pipx install cassetta` is the persistent form, or
+`pip install cassetta` inside a virtual environment.
+
 Either way you get a `cassetta` executable with four subcommands:
-`upload`, `download`, `send` and `capabilities`. Pin the tag rather than
-tracking a branch: a client that quietly follows the default branch
-changes under you between runs, which makes every problem report a
-question about which revision was installed.
+`upload`, `download`, `send` and `capabilities`. **It is the client, and
+it needs a running Cassetta server.** `send` and `capabilities` talk to
+the server you name with `--url`; `upload` and `download` talk to URLs a
+server has already handed out. None of the four starts a server, and
+installing the client does not give you one: the server runs from this
+repository with Docker Compose, as the
+[README's quickstart](../README.md#quickstart-with-docker) sets it up, or
+it is one somebody else runs and has given you the URL of.
+
+The commands name no version, and need none. The index carries only
+releases, so an install without one takes the newest, which is the
+release these documents describe.
 
 ## Using `cassetta upload`
 
