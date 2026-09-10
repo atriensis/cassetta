@@ -25,7 +25,8 @@ stayed behind in the monorepo (``specs/…``, ``deploy/helm/…``) is just as br
 path, and reads to an outside contributor as a repository with missing parts. It reads ``src/``
 as well as prose, and extracts candidates by token rather than by quoting style — every pointer
 that outlived the split was written as an RST span or bare in a docstring, and its first version
-looked at neither.
+looked at neither. It also follows an absolute link back into this repository's tree to the path it
+names, for the reason the eighteenth gives.
 
 A fourth guard keeps the private half's environment variables out of ``.env.example``. Per
 Constitution V this repository has *no knowledge* of cloud features, so even a commented-out
@@ -88,6 +89,13 @@ and ignores, so the request body was making a compatibility commitment with noth
 Removing such a field costs one edit before publication and a deprecation cycle after, which is why
 the declared field set is fixed here rather than left to the next reviewer to notice.
 
+The eighteenth is about the README's second reader. ``README.md`` is also this package's description
+on the index, where a relative link resolves against the index's URL and leads nowhere, so every link
+in it names its own scheme. It is paired with the fifth, which follows an absolute link back to the
+path it names. Without that, writing the links absolutely would have taken every target out of the
+one guard that checks they lead anywhere, and left it green: the visible text of most of them is the
+path, and the text still resolves when the target does not.
+
 These are regression **locks**, not a one-off cleanup script: each must keep failing if what it
 describes comes back.
 """
@@ -98,6 +106,7 @@ import ipaddress
 import json
 import re
 import subprocess
+import tomllib
 from pathlib import Path
 
 from cassetta.models import KeyCreateRequest, SetupRequest
@@ -501,6 +510,18 @@ def _prose_files() -> list[Path]:
     return [REPO_ROOT / name for name in _SHIPPED_FILES] + sorted((REPO_ROOT / "docs").rglob("*.md"))
 
 
+def _repository_url() -> str:
+    """This repository's address, as its packaging metadata declares it.
+
+    Read rather than restated. The declaration is what a reader holding the package follows back to
+    the source, and ``tests/test_release_metadata.py`` already holds every declared link to it — a
+    second literal here would be a second place for the address to go stale, and a stale one would
+    not fail anything: the guards below would simply stop recognising links into this tree.
+    """
+    project = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    return str(project["urls"]["Repository"])
+
+
 def test_no_dangling_repo_links() -> None:
     """Every repository-relative pointer in shipped prose and source resolves to something present.
 
@@ -515,12 +536,29 @@ def test_no_dangling_repo_links() -> None:
     to be followed, not less. This guard's own docstring named ``specs/…`` as its quarry while
     its file set never looked at the one directory where every surviving ``specs/`` pointer
     lived.
+
+    An absolute link back into this repository's tree is a pointer too, and is followed to the path
+    it names. ``README.md`` writes every link that way, because it is also the package's description
+    on the index, where a relative one resolves against the index — and the token scan below never
+    sees a path inside a URL. Rewriting those links without this half left the guard green over a
+    target naming a file that does not exist: the visible text of most links is the same path, it
+    still resolved, and the scan was satisfied by the half of the link nobody follows. Following the
+    target reaches all twenty of the README's links, five more than the scan ever did — ``LICENSE``
+    and the other root-level documents sit under none of its roots. ``main`` is the only ref
+    followed: it is the tree this checkout becomes, and a link into any other ref cannot be checked
+    against it, so one is reported rather than skipped.
     """
     scanned = _pointer_files()
     # Non-vacuity: a mistyped root would otherwise make this guard silently green forever.
     assert len(scanned) >= 40, f"scanned only {len(scanned)} files — the pointer roots are wrong"
 
+    repository = _repository_url()
+    own_tree_link = re.compile(re.escape(repository) + r"/(?:blob|tree)/main/([\w./-]+)")
+    own_tree_prefixes = (f"{repository}/blob/", f"{repository}/tree/")
+
     dangling: list[str] = []
+    unfollowed: list[str] = []
+    followed = 0
     for doc in scanned:
         text = doc.read_text(encoding="utf-8")
         for match in _REPO_PATH_TOKEN_RE.finditer(text):
@@ -533,9 +571,92 @@ def test_no_dangling_repo_links() -> None:
                 continue
             dangling.append(f"{doc.relative_to(REPO_ROOT)} -> {token}")
 
+        links = list(own_tree_link.finditer(text))
+        followed += len(links)
+        for link in links:
+            if not (REPO_ROOT / link.group(1).rstrip(".,;:")).exists():
+                dangling.append(f"{doc.relative_to(REPO_ROOT)} -> {link.group(0)}")
+        # Every link into the tree must be one the pattern above could follow. Counted rather than
+        # matched a second way, so a shape it cannot read — another ref, an empty path — is named.
+        written = sum(text.count(prefix) for prefix in own_tree_prefixes)
+        if written != len(links):
+            unfollowed.append(f"{doc.relative_to(REPO_ROOT)}: {written} link(s) into the tree, {len(links)} on `main`")
+
+    # Non-vacuity for the second half: README.md links into this tree, so finding none means the
+    # pattern no longer recognises this repository's address.
+    assert followed, (
+        f"no link into this repository's tree ({repository}/blob/main/…) was found, though README.md "
+        "writes its links that way — the half of this guard that follows them is passing over nothing"
+    )
+
+    assert not unfollowed, (
+        "links into this repository's tree name a ref other than `main`, so this guard cannot check "
+        "them against the tree it runs in:\n  " + "\n  ".join(unfollowed)
+    )
+
     assert not dangling, (
         "shipped documentation points at paths that do not exist in this repository:\n  "
         + "\n  ".join(sorted(set(dangling)))
+    )
+
+
+# Link targets in a markdown document, by the three syntaxes that carry one: an inline link or image,
+# a reference definition, and the HTML attribute a README reaches for when it wants an image sized
+# or aligned. A link-shaped string inside fenced code is a shell example, not a link, so fences are
+# blanked before extraction — keeping their newlines, so a reported line is the line in the file.
+_FENCED_BLOCK_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+_INLINE_TARGET_RE = re.compile(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)")
+_REFERENCE_TARGET_RE = re.compile(r"^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)", re.MULTILINE)
+_HTML_TARGET_RE = re.compile(r"""\b(?:href|src)\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+
+# A target that names its own scheme resolves to the same place wherever it is rendered. Anything
+# else — a path, a root-relative path, a bare fragment — resolves against the page it appears on.
+_ABSOLUTE_TARGET_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+
+
+def test_the_readme_points_at_nothing_an_index_cannot_resolve() -> None:
+    """Every link target in ``README.md`` is absolute.
+
+    The README is two documents with one text. On the forge it is the repository's front page, and
+    ``docs/CONFIG.md`` resolves against the repository. On the package index it is the project's
+    description, rendered on a page whose URL belongs to the index — so the same target resolves
+    against the index and reaches its 404. Nothing reports that: the upload succeeds, the page
+    renders, and every pointer on it is broken for the one reader who has not cloned anything.
+
+    The rule is therefore the index's, because the index is the stricter reader: a target names its
+    own scheme. That rules out a bare fragment too, which resolves against whichever page renders
+    the README and so means one thing on the forge and whatever the index's anchors happen to be on
+    the other.
+
+    Writing the paths absolutely does not take them out of anyone's sight:
+    ``test_no_dangling_repo_links`` follows a link into this repository's tree back to the path it
+    names, and checks that path exists.
+    """
+    raw = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    text = _FENCED_BLOCK_RE.sub(lambda block: "\n" * block.group(0).count("\n"), raw)
+
+    inline = list(_INLINE_TARGET_RE.finditer(text))
+    # Non-vacuity, and a check on the extractor rather than a floor on the document: every `](` in
+    # the README's prose must have been read as a link. A count would re-encode today's README; this
+    # fails only when a link is written in a shape the pattern cannot read — which is the one way this
+    # guard could be green over a relative link.
+    written = text.count("](")
+    assert inline and len(inline) == written, (
+        f"README.md has {written} `](` sequence(s) outside fenced code, and the extractor read "
+        f"{len(inline)} link(s). A link is written in a shape this guard cannot read, so it goes unchecked"
+    )
+
+    targets = [*inline, *_REFERENCE_TARGET_RE.finditer(text), *_HTML_TARGET_RE.finditer(text)]
+    relative = sorted(
+        (text.count("\n", 0, match.start(1)) + 1, match.group(1))
+        for match in targets
+        if not _ABSOLUTE_TARGET_RE.match(match.group(1))
+    )
+    assert not relative, (
+        "README.md is also this package's description on the index, where a relative target resolves "
+        "against the index's own URL and leads nowhere. Write it absolutely — into this repository as "
+        f"{_repository_url()}/blob/main/<path> for a file, /tree/main/<path> for a directory:\n  "
+        + "\n  ".join(f"README.md:{line} -> {target}" for line, target in relative)
     )
 
 

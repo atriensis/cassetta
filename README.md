@@ -92,7 +92,7 @@ curl -fsS -H "Authorization: Bearer $API_KEY" \
 # a note from the quickstart
 ```
 
-See [docs/REST_API.md](docs/REST_API.md) for the envelope field by field.
+See [docs/REST_API.md](https://github.com/atriensis/cassetta/blob/main/docs/REST_API.md) for the envelope field by field.
 
 ### Check that all of the above actually works
 
@@ -148,17 +148,17 @@ twelve `cassetta_*` tools, from storing and listing files to sending a bundle to
 another agent's inbox and picking one up. Among them is the non-destructive
 `cassetta_peek` (and the matching `GET /.../peek` REST endpoints), which returns
 bundle metadata without consuming the bundle.
-[docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) lists every tool and what it does;
-[docs/REST_API.md](docs/REST_API.md) covers the REST equivalents.
+[docs/CLIENT_SETUP.md](https://github.com/atriensis/cassetta/blob/main/docs/CLIENT_SETUP.md) lists every tool and what it does;
+[docs/REST_API.md](https://github.com/atriensis/cassetta/blob/main/docs/REST_API.md) covers the REST equivalents.
 
 **Why not committed config?** Each (machine, project) should have its own API key
 for clean audit trails and per-machine revocation — so the registration is
 per-machine state, not something to check into a repository where the key would
-travel with it. [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) has the full
+travel with it. [docs/CLIENT_SETUP.md](https://github.com/atriensis/cassetta/blob/main/docs/CLIENT_SETUP.md) has the full
 rationale, the key labelling conventions, and troubleshooting.
 
 **Want the agent to configure itself?** Send your agent the contents of
-[docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) — it will ask you for the URL and the
+[docs/AGENT_SETUP.md](https://github.com/atriensis/cassetta/blob/main/docs/AGENT_SETUP.md) — it will ask you for the URL and the
 setup token, mint its own key, and run `claude mcp add` for you.
 
 > **Before exposing this server beyond `localhost`**, replace the
@@ -177,7 +177,7 @@ setup token, mint its own key, and run `claude mcp add` for you.
 ## Configuration
 
 All configuration is read from environment variables. `.env.example` is a
-copyable starting point and [docs/CONFIG.md](docs/CONFIG.md) is the full
+copyable starting point and [docs/CONFIG.md](https://github.com/atriensis/cassetta/blob/main/docs/CONFIG.md) is the full
 reference. The table below is the short list — the variables most deployments
 touch, not all of them:
 
@@ -224,7 +224,7 @@ a Raspberry Pi at home, a $5 VPS, an old laptop, or a corporate sandbox.
    `name:16001` and needs that spelling listed — usually alongside the bare name.
 5. Run `docker compose up -d`.
 
-Everything else has a working default. [docs/CONFIG.md](docs/CONFIG.md) is the
+Everything else has a working default. [docs/CONFIG.md](https://github.com/atriensis/cassetta/blob/main/docs/CONFIG.md) is the
 full reference — every variable the server reads, its default, and its effect —
 and a test keeps it in step with the source in both directions.
 
@@ -344,30 +344,30 @@ the new image will be used.
 
 Everything under `docs/`, and what each file answers:
 
-- [docs/CONFIG.md](docs/CONFIG.md) — every environment variable the server reads,
+- [docs/CONFIG.md](https://github.com/atriensis/cassetta/blob/main/docs/CONFIG.md) — every environment variable the server reads,
   its default and its effect. The one to open when something will not start.
-- [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) — connecting an MCP agent by hand:
+- [docs/CLIENT_SETUP.md](https://github.com/atriensis/cassetta/blob/main/docs/CLIENT_SETUP.md) — connecting an MCP agent by hand:
   minting a key, registering the server, the `cassetta` CLI, troubleshooting.
-- [docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) — the same steps written as
+- [docs/AGENT_SETUP.md](https://github.com/atriensis/cassetta/blob/main/docs/AGENT_SETUP.md) — the same steps written as
   instructions to paste into an agent, plus how an agent sends and receives.
-- [docs/REST_API.md](docs/REST_API.md) — the REST surface: credentials, every
+- [docs/REST_API.md](https://github.com/atriensis/cassetta/blob/main/docs/REST_API.md) — the REST surface: credentials, every
   endpoint, two worked workflows.
-- [docs/GLOSSARY.md](docs/GLOSSARY.md) — the project's vocabulary, and what is
+- [docs/GLOSSARY.md](https://github.com/atriensis/cassetta/blob/main/docs/GLOSSARY.md) — the project's vocabulary, and what is
   and is not part of this repository.
-- [docs/LICENSE_FAQ.md](docs/LICENSE_FAQ.md) — what the licence lets you do, in
+- [docs/LICENSE_FAQ.md](https://github.com/atriensis/cassetta/blob/main/docs/LICENSE_FAQ.md) — what the licence lets you do, in
   plain terms.
-- [docs/adr/](docs/adr/) — the architecture decisions and why they were taken.
+- [docs/adr/](https://github.com/atriensis/cassetta/tree/main/docs/adr) — the architecture decisions and why they were taken.
 
 ## Changes, contributions, security
 
-- [CHANGELOG.md](CHANGELOG.md) — what changed in each released version, and whether it affects you.
-- [CONTRIBUTING.md](CONTRIBUTING.md) — how a change gets in, and the agreement it needs first.
-- [SECURITY.md](SECURITY.md) — where to report a vulnerability, and which versions are covered.
+- [CHANGELOG.md](https://github.com/atriensis/cassetta/blob/main/CHANGELOG.md) — what changed in each released version, and whether it affects you.
+- [CONTRIBUTING.md](https://github.com/atriensis/cassetta/blob/main/CONTRIBUTING.md) — how a change gets in, and the agreement it needs first.
+- [SECURITY.md](https://github.com/atriensis/cassetta/blob/main/SECURITY.md) — where to report a vulnerability, and which versions are covered.
 
 ## License
 
 Cassetta is licensed under the [Functional Source License, Version 1.1,
-ALv2 Future License](LICENSE) (FSL-1.1-ALv2).
+ALv2 Future License](https://github.com/atriensis/cassetta/blob/main/LICENSE) (FSL-1.1-ALv2).
 
 You can use, modify, and self-host Cassetta freely, including inside a
 company. The only restriction is competing use: you may not make Cassetta
@@ -377,8 +377,8 @@ offers the same or substantially similar functionality. That last limb is
 about functionality rather than service shape — a competing product is as
 much a competing use as a competing managed service.
 
-[docs/LICENSE_FAQ.md](docs/LICENSE_FAQ.md) explains all of this at length;
-[LICENSE](LICENSE) is what governs.
+[docs/LICENSE_FAQ.md](https://github.com/atriensis/cassetta/blob/main/docs/LICENSE_FAQ.md) explains all of this at length;
+[LICENSE](https://github.com/atriensis/cassetta/blob/main/LICENSE) is what governs.
 
 The license automatically converts to [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 two years after each version's release date.

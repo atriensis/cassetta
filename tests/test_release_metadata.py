@@ -12,7 +12,7 @@ is no second one to disagree — but "is there still only one".
 Sibling in spirit to ``test_public_surface.py``: the same idea that a rule worth keeping is a rule
 a test holds, rather than one a checklist asks about.
 
-Five things are held here.
+Seven things are held here.
 
 * **The changelog's shape.** Sections are unique and newest-first. A duplicated version makes "the
   top section" and "the section for this version" two different things, which is exactly the
@@ -27,6 +27,11 @@ Five things are held here.
 * **Every declared project link names this repository**, and none names a package index or the
   personal account this project used to live under. The package is not published, so an index link
   would promise a page that does not exist; the old account is where this project *was*.
+* **The project declares what an index page shows** — a summary, the README as its description, an
+  author and classifiers. Without them the upload succeeds and the page is blank below the title.
+  The author's address is none of those the repository asks readers to write to.
+* **No classifier makes a second statement about the licence.** The SPDX expression is the only one,
+  and no ``License ::`` classifier exists that could agree with it.
 
 The version comparison is on integer triples throughout, never on strings. ``"0.9.0" > "0.26.2"``
 lexicographically, and a guard that sorted that way would call a correct changelog broken the first
@@ -360,6 +365,129 @@ def test_project_urls_all_name_this_repository() -> None:
 
     assert not strays, (
         f"declared project links do not point into this repository ({_REPOSITORY_URL}):\n  " + "\n  ".join(strays)
+    )
+
+
+# What an index renders from ``[project]``, and what its page loses when the field is missing. The
+# name and the version are not here: without them there is no page at all, so nobody needs a test to
+# notice. Everything below them is blank without complaint — which is what this table is for.
+_INDEX_PAGE_FIELDS = {
+    "description": "the one-line summary under the title, which is also what a search result shows",
+    "readme": "the page body, everything below the summary",
+    "authors": "who the page says wrote this",
+    "classifiers": "the sidebar a reader scans for Python versions, framework and subject",
+    "license": "the licence the sidebar names",
+    "requires-python": "the Python versions an installer will accept",
+}
+
+# The README is the description. Written as a string for the reason ``_VERSION_SOURCE_PATH`` is.
+_README_PATH = "README.md"
+
+# The documents that ask a reader to send mail: vulnerability reports, signed CLAs. An address in them
+# is one where a missed message costs something, which is why none of them may be the address the
+# index page publishes. Read from the documents rather than restated, so a new address there is
+# covered the day it is written.
+_DOCUMENTS_THAT_ASK_FOR_MAIL = ("SECURITY.md", "CONTRIBUTING.md", "CLA.md")
+_EMAIL_ADDRESS_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
+
+def test_the_project_declares_what_an_index_page_shows() -> None:
+    """``pyproject.toml`` declares every field an index renders below the title.
+
+    A package that declares a name, a version and nothing else still uploads, and its page is blank
+    below the title: no summary, no description, no author, an empty sidebar. Nothing reports it —
+    the upload succeeds and the page renders. The first reader to notice is the first reader.
+
+    Two fields are held to a shape as well as to presence. The summary is one line, because the core
+    metadata field it becomes is one line and a second one does not survive the trip. And the
+    description is ``README.md``, because that is the document this repository keeps true — a second
+    description written for the index would be a second document to keep true, and the one nobody
+    reads in review.
+
+    The author's address is held to what it is not. It is shown on the page and returned by the
+    index's public JSON, which makes it the most harvested address this project publishes, and a
+    published version keeps it permanently. So it is none of the addresses the repository asks
+    readers to write to.
+    """
+    project = _pyproject()["project"]
+    assert isinstance(project, dict)
+
+    missing = sorted(f"{field} — {loses}" for field, loses in _INDEX_PAGE_FIELDS.items() if not project.get(field))
+    assert not missing, (
+        "pyproject.toml does not declare what an index page shows, so the page is blank where each of "
+        "these would be:\n  " + "\n  ".join(missing)
+    )
+
+    summary = project["description"]
+    assert isinstance(summary, str) and "\n" not in summary.strip(), (
+        f"the summary must be a single line — it becomes a one-line metadata field. Found: {summary!r}"
+    )
+
+    readme = project["readme"]
+    readme_file = readme.get("file") if isinstance(readme, dict) else readme
+    assert readme_file == _README_PATH, (
+        f"the package description must be {_README_PATH}, the document this repository keeps true. Found: {readme!r}"
+    )
+    assert (REPO_ROOT / _README_PATH).is_file(), f"{_README_PATH} is declared as the description but is missing"
+
+    authors = project["authors"]
+    assert isinstance(authors, list) and all(isinstance(a, dict) and a.get("name") for a in authors), (
+        f"every declared author must carry a name — an entry without one renders as nothing. Found: {authors!r}"
+    )
+
+    asked_for = {
+        address.lower()
+        for name in _DOCUMENTS_THAT_ASK_FOR_MAIL
+        for address in _EMAIL_ADDRESS_RE.findall((REPO_ROOT / name).read_text(encoding="utf-8"))
+    }
+    # Non-vacuity: those documents do give an address, so finding none means the pattern is wrong.
+    assert asked_for, f"found no email address in {', '.join(_DOCUMENTS_THAT_ASK_FOR_MAIL)}, but they give one"
+    published = sorted(str(a["email"]) for a in authors if str(a.get("email", "")).lower() in asked_for)
+    assert not published, (
+        "an author address is one the repository asks readers to write to. The index page and its public "
+        "JSON publish it permanently, so it must be an address where a missed message costs nothing:\n  "
+        + "\n  ".join(published)
+    )
+
+
+def test_no_licence_classifier_contradicts_the_licence_expression() -> None:
+    """No trove classifier makes a second statement about the licence.
+
+    ``license = "FSL-1.1-ALv2"`` is an SPDX expression, and under PEP 639 the expression *is* the
+    licence statement; ``License ::`` classifiers are deprecated alongside it. That would be a style
+    point if a classifier could say the same thing, but none can: there is no classifier for this
+    licence. So any ``License ::`` line names either a different licence or a category, and the index
+    shows it in the sidebar next to the expression.
+
+    The one somebody reaches for is Apache, because the licence converts to Apache 2.0 — two years
+    after each version's release. Before that, which is the whole life of a release anyone is
+    deciding whether to adopt, it is false, and it is false in the direction that matters: it tells a
+    reader planning a competing product that nothing forbids it.
+
+    Hence the rule is "none", not "none that contradicts": with no classifier for this licence, every
+    one that could be written is either that contradiction or a deprecated way of not saying it.
+    """
+    project = _pyproject()["project"]
+    assert isinstance(project, dict)
+
+    expression = project.get("license")
+    assert isinstance(expression, str) and expression, (
+        "pyproject.toml declares no licence expression — `license` must be an SPDX expression string, "
+        f"the PEP 639 form this guard is written against. Found: {expression!r}"
+    )
+
+    classifiers = project.get("classifiers")
+    # Non-vacuity: with no classifiers at all, "none of them is a licence classifier" holds trivially.
+    assert isinstance(classifiers, list) and classifiers, (
+        "pyproject.toml declares no classifiers, so this guard has nothing to read. The index page "
+        "guard above requires them; if they were removed on purpose, remove this guard with them"
+    )
+
+    licence_classifiers = sorted(c for c in classifiers if isinstance(c, str) and c.startswith("License ::"))
+    assert not licence_classifiers, (
+        f"the licence is the expression {expression!r}, and no classifier exists for it — so a "
+        "`License ::` classifier states a different licence, or a category, beside it on the index "
+        "page:\n  " + "\n  ".join(licence_classifiers)
     )
 
 
