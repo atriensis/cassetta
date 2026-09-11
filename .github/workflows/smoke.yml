@@ -1,11 +1,25 @@
-# Weekly proof that the container this repository ships still boots and serves traffic.
+# Proof that the container this repository ships builds, boots and serves traffic: on every pull
+# request to `main`, every week, and by hand.
 #
-# Deliberately off the merge path. Building an image and starting a stack is far too expensive to
-# run on every pull request; the change flow here is low and history is linear and squash-merged,
-# so a weekly signal is enough to identify which recent merge broke it.
+# This used to stay off the merge path, for two reasons. Neither holds.
+#
+# "Building an image and starting a stack is too expensive to run on every pull request." Measured on
+# this repository's hosted runners, on the run that proved 0.30.1: each of the two jobs below took
+# 19 s, and the test suite in ci.yml, which already gates every merge, took 93 s. They run in parallel
+# with it, so they add close to nothing to a pull request's wait, and standard hosted runners cost
+# nothing on a public repository.
+#
+# "A weekly signal is enough to identify which recent merge broke it." That is an argument about
+# finding the culprit, not about stopping it. tag.yml tags a merge that carries a new version, so that
+# merge is a release the moment it lands. 0.30.0 shipped an image that did not build, and the weekly
+# run would have said so four days later, about a tag that was already published.
+#
+# The schedule stays, and it runs whether or not anything has landed. The Dockerfile names its base
+# images by tag, not by digest, so the build can break on a `main` nobody has touched, and a run on an
+# unchanged `main` is exactly the run that catches it.
 #
 # The shell lives in scripts/smoke.sh rather than in this file, so a contributor can run exactly
-# what the schedule runs against their own clone.
+# what this workflow runs against their own clone.
 #
 # It runs twice, against bind mounts owned two different ways. The second run is the only thing in
 # this repository that exercises the case a hosted runner's own user id conceals; see the comment on
@@ -14,6 +28,15 @@
 name: Smoke
 
 on:
+  # No `paths` filter, on purpose. A filter that forgot one of the image's inputs would let a change
+  # to it through unbuilt, and a workflow a filter skips leaves its required checks pending, so the
+  # pull request waits on them forever.
+  #
+  # `pull_request`, never `pull_request_target`. A pull request from a fork runs its own code here, and
+  # `pull_request` gives that code a read-only token and no secrets, which is all the smoke needs.
+  # `pull_request_target` would hand it a token that can write to this repository.
+  pull_request:
+    branches: [main]
   schedule:
     # Mondays, off the hour on purpose: scheduled runs at minute zero are heavily contended on
     # the platform and get delayed, sometimes substantially.
@@ -24,71 +47,22 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request supersedes the run on the older one, and that run is cancelled, as in
+# ci.yml. A scheduled or dispatched run is left to finish, because its result is the reason it was
+# started, and a cancelled run has none.
 concurrency:
   group: smoke-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Both jobs are meant to be required checks on `main`, under these names. Branch protection requires a
+# check by name, and a renamed job never reports under the old one, so every pull request would wait
+# on it forever.
+#
+# Neither job carries a condition or waits on another. A job skipped by a condition reports success,
+# even as a required check, so a pull request would merge on a green smoke that never built anything.
 jobs:
-  changes:
-    name: Anything landed since the last green run?
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      # For the Actions API query below.
-      actions: read
-    outputs:
-      should_run: ${{ steps.decide.outputs.should_run }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          # The commit count below needs history to count over.
-          fetch-depth: 0
-
-      - id: decide
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-
-          decide() {
-              printf 'should_run=%s — %s\n' "$1" "$2"
-              echo "should_run=$1" >>"$GITHUB_OUTPUT"
-          }
-
-          # Key on the last *successful* run rather than on a calendar window, so a run that
-          # fails and is fixed ten days later still measures from the right place. The run
-          # executing this query cannot match it: it is in_progress, not success.
-          query="repos/${GITHUB_REPOSITORY}/actions/workflows/smoke.yml/runs?status=success&branch=main&per_page=1"
-
-          if baseline="$(gh api "$query" --jq '.workflow_runs[0].head_sha // ""')"; then
-              api_reachable=true
-          else
-              api_reachable=false
-              baseline=""
-          fi
-
-          # Every unknown below resolves to "run". A wrong "run" costs one unnecessary run; a
-          # wrong "skip" is silent and can keep skipping forever, which is the failure nobody
-          # notices.
-          if [ "$api_reachable" = false ]; then
-              decide true "the Actions API could not be queried; running rather than skipping blind"
-          elif [ -z "$baseline" ]; then
-              decide true "no successful run of this workflow exists yet"
-          elif ! git cat-file -e "${baseline}^{commit}" 2>/dev/null; then
-              decide true "baseline ${baseline} is not in the fetched history (rewritten, or older than the checkout)"
-          else
-              landed="$(git rev-list --count "${baseline}..HEAD")"
-              if [ "$landed" -gt 0 ]; then
-                  decide true "${landed} commit(s) landed since ${baseline}"
-              else
-                  decide false "nothing has landed since ${baseline}"
-              fi
-          fi
-
   smoke:
     name: Container smoke
-    needs: changes
-    if: needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -99,8 +73,6 @@ jobs:
 
   smoke-foreign-uid:
     name: Container smoke, bind mounts owned by another uid
-    needs: changes
-    if: needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -120,7 +92,7 @@ jobs:
       # belongs to the runner again.
       #
       # Both ownership cases are kept because they fail for different reasons. Deleting either loses
-      # a signal, and deleting this one returns the weekly run to passing by coincidence.
+      # a signal, and deleting this one returns this workflow to passing by coincidence.
       - name: Hand the bind-mount sources to a uid that is not the runner's
         run: |
           set -euo pipefail

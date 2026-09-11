@@ -10,8 +10,6 @@ given::
 
 The dependency layer above that step passes ``--no-install-project``, never builds the wheel, and went
 on succeeding, which is why the break sat halfway down the build rather than at its first line.
-Building an image is the weekly smoke run's job and not the per-change gate's, by the decision written
-at the top of ``ci.yml``, so the break reached a tag before anything built one.
 
 **This holds a property, not a filename.** The files are derived from ``pyproject.toml`` the way the
 build backend derives them:

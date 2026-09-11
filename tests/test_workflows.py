@@ -4,7 +4,7 @@ A workflow is the one kind of code in this repository that cannot be run before 
 gets exactly one review, from a reader, and then it runs for real. So the properties that a reader
 would have to hold in their head are held here instead.
 
-Six of them.
+Nine of them.
 
 **Every workflow parses.** Cheap, and the only thing between a mis-indented key and a workflow that
 silently never runs.
@@ -39,6 +39,22 @@ that group would stay held for as long as a reviewer takes. GitHub keeps one pen
 cancels it when the next one arrives, so a merge landing during the wait could lose its tag run. On
 the ``tag`` job the group is held for seconds.
 
+**The image is built before the merge, on every pull request to ``main``.** A merge that carries a new
+version is a release the moment it lands, and ``smoke.yml`` is the only thing that builds the image. So
+it starts on every pull request to ``main``, with no path filter, and nothing in it carries a condition
+or waits on another job. The failure being ruled out is a false green, not a red: a job skipped by a
+condition reports success, even as a required check. A path filter fails the other way, and leaves
+the check pending forever. And the two jobs keep the names branch protection is meant to require.
+
+**The weekly run does not ask whether anything landed.** The image's base images are named by tag, so
+the build can break on a ``main`` nobody touched. The scheduled run on an unchanged ``main`` is the one
+that catches it, and a gate on commits since the last green run used to skip exactly that run.
+
+**No workflow runs a pull request's code with a writable token.** ``pull_request``, never
+``pull_request_target``, which would hand a fork's code a token that can write to this repository. And
+every workflow a pull request starts asks for ``contents: read`` and nothing more, because on a pull
+request from a branch of this repository the token carries whatever the workflow asks for.
+
 Two things about how this is written.
 
 *Triggers are read through one helper.* PyYAML implements YAML **1.1**, in which the bare token `on`
@@ -55,6 +71,7 @@ able to write.
 from __future__ import annotations
 
 import re
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
@@ -66,6 +83,7 @@ _WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 
 _TAG_WORKFLOW = _WORKFLOWS / "tag.yml"
 _RELEASE_WORKFLOW = _WORKFLOWS / "release.yml"
+_SMOKE_WORKFLOW = _WORKFLOWS / "smoke.yml"
 
 # ci.yml, smoke.yml, tag.yml, release.yml. Non-vacuity: a scan over an empty directory is green.
 _KNOWN_WORKFLOW_COUNT = 4
@@ -103,6 +121,19 @@ _CREDENTIAL_KEY_FRAGMENTS = ("password", "token")
 # `${{ inputs.version }}` in a called workflow, so a value it names can be resolved through the
 # caller's `with:`.
 _INPUT_REFERENCE = re.compile(r"\$\{\{\s*inputs\.([\w-]+)\s*\}\}")
+
+# The branch every pull request here merges into, and so the one whose pull requests build the image.
+_DEFAULT_BRANCH = "main"
+
+# The smoke jobs, by the names branch protection is meant to require them under. A check is required by
+# name, and a renamed job never reports under the old one, so every pull request would wait on it forever.
+_SMOKE_JOB_NAMES = ("Container smoke", "Container smoke, bind mounts owned by another uid")
+
+# Trigger keys that start a workflow on some pull requests and not others, by the files they change.
+_PATH_FILTERS = ("paths", "paths-ignore")
+
+# All that a workflow running a pull request's code may ask for: reading the repository.
+_READ_ONLY = {"contents": "read"}
 
 
 def _workflow_files() -> list[Path]:
@@ -270,6 +301,59 @@ def _normalised_dir(path: Any) -> str:
     """A directory as a workflow writes it, without the spellings that name the same place."""
     text = str(path).strip().rstrip("/")
     return text[2:] if text.startswith("./") else text or "."
+
+
+def _as_list(value: Any) -> list[Any]:
+    """A YAML value that may be written as one item or as a list, as a list."""
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def _admits(trigger: dict[str, Any], branch: str) -> bool:
+    """Whether a pull-request trigger's branch filters let a pull request into ``branch`` start the run.
+
+    ``branches`` admits a branch one of its patterns matches, and every branch when it is absent;
+    ``branches-ignore`` turns away a branch one of its patterns matches. Negated ``!`` patterns are not
+    modelled, and no workflow here writes one.
+    """
+    wanted = trigger.get("branches")
+    if wanted is not None and not any(fnmatchcase(branch, str(pattern)) for pattern in _as_list(wanted)):
+        return False
+    return not any(fnmatchcase(branch, str(pattern)) for pattern in _as_list(trigger.get("branches-ignore")))
+
+
+def _gates(document: dict[str, Any]) -> list[str]:
+    """Every condition and dependency in a workflow that can stop a job, or a step in one, from running.
+
+    A job's ``if:`` can skip it, and so can ``needs:``, which skips the job when the one it waits for
+    fails or is skipped. A skipped job reports success. A step's ``if:`` can skip the smoke inside a job
+    that then reports success all the same. Either way a required check passes over a build that never
+    happened.
+    """
+    found: list[str] = []
+    for job_id, job in _jobs(document).items():
+        if "if" in job:
+            found.append(f"{job_id}: if: {job['if']!r}")
+        if _needs(job):
+            found.append(f"{job_id}: needs: {_needs(job)}")
+        for number, step in enumerate(_steps(job), start=1):
+            if "if" in step:
+                described = str(step.get("name") or step.get("run") or step.get("uses") or "").strip()
+                first_line = described.partition("\n")[0][:60]
+                found.append(f"{job_id} → step {number} ({first_line!r}): if: {step['if']!r}")
+    return found
+
+
+def _grants_only_reading_contents(permissions: Any) -> bool:
+    """Whether a job's ``permissions:`` grants nothing beyond reading the repository.
+
+    The mapping form, with every scope ``none`` or ``contents: read``. The shorthands ``read-all`` and
+    ``write-all`` grant every scope at once, so neither qualifies.
+    """
+    if not isinstance(permissions, dict):
+        return False
+    return all(level == "none" or (scope, level) == ("contents", "read") for scope, level in permissions.items())
 
 
 def test_every_workflow_parses() -> None:
@@ -522,4 +606,131 @@ def test_the_tag_lock_is_not_held_while_a_publish_waits() -> None:
         f"another job in {_TAG_WORKFLOW.name} holds the `{_TAG_LOCK['group']}` group as well: {holders}. On a "
         "job that waits for a reviewer it is held for the whole wait, which is what moving it off the "
         "workflow was for"
+    )
+
+
+def test_smoke_runs_on_every_pull_request_to_main() -> None:
+    """``smoke.yml`` starts on every pull request to ``main``, and every job in it runs there.
+
+    A merge that carries a new version is a release the moment it lands, and this workflow is the only
+    thing that builds the image, so a pull request that breaks the build has to be told before it
+    merges. Four ways to stop telling it, each of which reads innocently in review:
+
+    * no ``pull_request`` trigger, or one whose branch filters turn ``main`` away;
+    * a path filter. A workflow a filter skips leaves its required checks pending, so the pull request
+      waits forever, and a filter that forgot one of the image's inputs lets a change to it through
+      unbuilt;
+    * a condition or a dependency on a job, or a condition on a step. A job skipped by a condition
+      reports *success*, so a required check passes on a pull request where nothing was built;
+    * a renamed job. Branch protection requires a check by name, and a renamed job never reports under
+      the old one.
+    """
+    document = _load(_SMOKE_WORKFLOW)
+    triggers = _triggers(document)
+
+    assert "pull_request" in triggers, (
+        f"{_SMOKE_WORKFLOW.name} does not start on `pull_request`, so a pull request that breaks the image "
+        "merges without being told, and a merge that carries a version is a release. Found triggers: "
+        f"{sorted(str(name) for name in triggers)}"
+    )
+    trigger = triggers["pull_request"] or {}
+    assert isinstance(trigger, dict), f"{_SMOKE_WORKFLOW.name}: `pull_request` has an unexpected shape: {trigger!r}"
+    assert _admits(trigger, _DEFAULT_BRANCH), (
+        f"{_SMOKE_WORKFLOW.name}'s `pull_request` trigger turns pull requests into `{_DEFAULT_BRANCH}` away: "
+        f"branches = {trigger.get('branches')!r}, branches-ignore = {trigger.get('branches-ignore')!r}"
+    )
+
+    filters = {key: trigger[key] for key in _PATH_FILTERS if key in trigger}
+    assert not filters, (
+        f"{_SMOKE_WORKFLOW.name}'s `pull_request` trigger filters by path: {filters!r}. A pull request the filter "
+        "skips leaves the required smoke checks pending forever, and a filter that forgot one of the image's "
+        "inputs lets a change to it through unbuilt"
+    )
+
+    names = {str(job.get("name", job_id)) for job_id, job in _jobs(document).items()}
+    renamed = [name for name in _SMOKE_JOB_NAMES if name not in names]
+    assert not renamed, (
+        f"{_SMOKE_WORKFLOW.name} has no job named {renamed}. Branch protection requires the smoke checks by "
+        f"name, and a job that no longer carries it never reports, so every pull request waits on it. "
+        f"Found: {sorted(names)}"
+    )
+
+    gates = _gates(document)
+    assert not gates, (
+        f"something in {_SMOKE_WORKFLOW.name} can keep the smoke from running on a pull request. A job skipped "
+        "by a condition reports success, so a required check would pass where nothing was built:\n  "
+        + "\n  ".join(gates)
+    )
+
+
+def test_the_weekly_smoke_runs_whether_or_not_anything_landed() -> None:
+    """``smoke.yml`` still runs on its schedule and by hand, and nothing in it asks whether anything landed.
+
+    The ``Dockerfile`` names its base images by tag, not by digest, so the build can break on a ``main``
+    nobody has touched. A scheduled run on an unchanged ``main`` is exactly the run that notices, and a
+    gate on commits since the last green run skipped exactly that run, reporting success as it did. So
+    the schedule stays, the hand-started trigger stays, and no job or step carries a condition or waits
+    on another.
+    """
+    document = _load(_SMOKE_WORKFLOW)
+    triggers = _triggers(document)
+
+    crons = [entry.get("cron") for entry in _as_list(triggers.get("schedule")) if isinstance(entry, dict)]
+    assert crons and all(crons), (
+        f"{_SMOKE_WORKFLOW.name} has no schedule to run on. A base image named by tag can break the build "
+        f"without a commit landing, and only a scheduled run sees that. Found: {triggers.get('schedule')!r}"
+    )
+    assert "workflow_dispatch" in triggers, (
+        f"{_SMOKE_WORKFLOW.name} can no longer be started by hand. "
+        f"Found triggers: {sorted(str(name) for name in triggers)}"
+    )
+
+    gates = _gates(document)
+    assert not gates, (
+        f"something in {_SMOKE_WORKFLOW.name} decides whether the smoke runs. On the schedule, that lets a run "
+        "on an unchanged `main` skip, and a skipped job reports success, which is how a base image that moved "
+        "goes unnoticed:\n  " + "\n  ".join(gates)
+    )
+
+
+def test_no_workflow_runs_pull_request_code_with_a_writable_token() -> None:
+    """No workflow starts on ``pull_request_target``, and every workflow ``pull_request`` starts can only read.
+
+    A pull request from a fork runs its own code: the smoke checks it out and runs its script. Under
+    ``pull_request`` that code gets a read-only token and no secrets. Under ``pull_request_target`` it
+    would get a token with write access to this repository. The smoke needs neither a writable token nor
+    a secret, so nothing listens on the second.
+
+    For a pull request from a branch of this repository, ``pull_request`` gives the token whatever the
+    workflow asks for. So each workflow it starts asks for ``contents: read`` and nothing more: at the
+    top, where it covers every job, and in any job that sets its own.
+    """
+    documents = {path: _load(path) for path in _workflow_files()}
+    on_pull_requests = sorted(path for path, document in documents.items() if "pull_request" in _triggers(document))
+
+    # Non-vacuity: smoke.yml does start on pull requests, so a lookup that did not find it is broken,
+    # and the checks below would pass over nothing.
+    assert _SMOKE_WORKFLOW in on_pull_requests, (
+        f"{_SMOKE_WORKFLOW.name} is not among the workflows `pull_request` starts: "
+        f"{[path.name for path in on_pull_requests]}"
+    )
+
+    targets = sorted(path.name for path, document in documents.items() if "pull_request_target" in _triggers(document))
+    assert not targets, (
+        f"a workflow starts on `pull_request_target`: {targets}. It runs with a token that can write to this "
+        "repository, and whatever it checks out from the pull request runs with that token. Use `pull_request`"
+    )
+
+    widened = []
+    for path in on_pull_requests:
+        document = documents[path]
+        if document.get("permissions") != _READ_ONLY:
+            widened.append(f"{path.name}: permissions = {document.get('permissions')!r}")
+        for job_id, job in _jobs(document).items():
+            if "permissions" in job and not _grants_only_reading_contents(job["permissions"]):
+                widened.append(f"{path.name} → {job_id}: permissions = {job['permissions']!r}")
+    assert not widened, (
+        f"a workflow that runs a pull request's code asks for more than {_READ_ONLY!r}. On a pull request from "
+        "a branch of this repository the token carries what the workflow asks for, and a workflow that asks "
+        "for nothing gets the repository's default, which can be write:\n  " + "\n  ".join(widened)
     )
