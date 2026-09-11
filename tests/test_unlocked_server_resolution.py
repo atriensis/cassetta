@@ -1,6 +1,6 @@
 """The only check here that exercises what an installing user actually gets.
 
-Every other gate in this repository runs against `uv.lock`, which pins `mcp==1.27.0`. A stranger
+Every other gate in this repository runs against `uv.lock`, which pins one `mcp` release. A stranger
 running `pip install "cassetta[server]"` has no lock file: they get whatever the index resolves
 today. Until `0.28.1` that was `mcp 2.2.0`, where `FastMCP` was renamed to `MCPServer` and
 `mcp.server.fastmcp` — which `src/cassetta/mcp_server.py` imports — no longer exists. Resolution

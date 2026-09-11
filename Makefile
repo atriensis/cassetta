@@ -1,16 +1,18 @@
 # Release consistency, and nothing else.
 #
-# This repository declares its version once, in the package itself. Three things are derived from
-# that declaration, and any of them can be forgotten in a bump: the changelog section recording what
-# shipped, the install commands the documents hand a reader, and the sample of what
-# `cassetta capabilities` prints. All three defects are only visible after the tag is public, which
-# is the point at which they are expensive — and the last two are worse than the first, because a pin
-# one release behind still resolves and still installs working code, and a stale sample output is
-# just a number in a code block. Nothing reports either.
+# This repository declares its version once, in the package itself. Two things are derived from that
+# declaration, and either can be forgotten in a bump: the changelog section recording what shipped,
+# and the sample of what `cassetta capabilities` prints. Both defects are only visible after the tag
+# is public, which is the point at which they are expensive — and the second is worse than the first,
+# because a stale sample output is just a number in a code block. Nothing reports it.
 #
-# The changelog is still written by hand. The other two have machinery —
-# scripts/sync-docs-version.py rewrites both — so what this target checks for them is that somebody
-# ran it.
+# There used to be a third: the install commands the documents hand a reader, pinned to a release
+# tag. They install from the package index now, with no version at all, so no pin is left to fall
+# behind, and tests/test_docs_install.py holds that none comes back. A branch here still comparing
+# pins would find nothing, and would refuse every release on the absence.
+#
+# The changelog is still written by hand. The sample output has machinery —
+# scripts/sync-docs-version.py rewrites it — so what this target checks for it is that somebody ran it.
 #
 # `release-check` answers, in one command, whether the tree is internally consistent as a release.
 #
@@ -43,29 +45,12 @@ release-check:
 		echo "  describing the version before it." >&2; \
 		exit 1; \
 	fi; \
-	pins="$$(grep -rhoE 'cassetta\.git@v[0-9]+\.[0-9]+\.[0-9]+' '$(DOCS)' | sed 's/.*@v//' | sort -u)"; \
-	if [ -z "$$pins" ]; then \
-		echo "release-check: no documented install pin found under $(DOCS)/." >&2; \
-		echo "  Nothing to compare means nothing to disagree — which is not the same" >&2; \
-		echo "  as agreement. Either the install instructions have gone, or this" >&2; \
-		echo "  check no longer recognises them." >&2; \
-		exit 1; \
-	fi; \
-	stale="$$(printf '%s\n' "$$pins" | grep -vx "$$version" || true)"; \
-	if [ -n "$$stale" ]; then \
-		echo "release-check: the documented install commands pin another release." >&2; \
-		echo "  $(PACKAGE_INIT) declares  $$version" >&2; \
-		echo "  $(DOCS)/ pins             $$(printf '%s' "$$stale" | tr '\n' ' ')" >&2; \
-		echo "  A stale pin installs working code, so nobody finds out." >&2; \
-		echo "  Fix with: python scripts/sync-docs-version.py" >&2; \
-		exit 1; \
-	fi; \
 	samples="$$(grep -rhoE 'Server version: *[0-9]+\.[0-9]+\.[0-9]+' '$(DOCS)' | sed 's/.*: *//' | sort -u)"; \
 	if [ -z "$$samples" ]; then \
 		echo "release-check: no documented sample output found under $(DOCS)/." >&2; \
 		echo "  \`cassetta capabilities\` prints \"Server version: X.Y.Z\", and the" >&2; \
-		echo "  documented sample of it is the one version literal no install-pin" >&2; \
-		echo "  check can see. Nothing to compare is not agreement." >&2; \
+		echo "  documented sample of it is the one version literal the documents" >&2; \
+		echo "  carry. Nothing to compare is not agreement." >&2; \
 		exit 1; \
 	fi; \
 	stale="$$(printf '%s\n' "$$samples" | grep -vx "$$version" || true)"; \
@@ -77,4 +62,4 @@ release-check:
 		echo "  Fix with: python scripts/sync-docs-version.py" >&2; \
 		exit 1; \
 	fi; \
-	echo "release-check: $$version — the declared version, $(CHANGELOG), the $(DOCS)/ install pins and the $(DOCS)/ sample output all agree"
+	echo "release-check: $$version — the declared version, $(CHANGELOG) and the $(DOCS)/ sample output all agree"

@@ -182,7 +182,7 @@ so exporting `CASSETTA_API_KEY` does nothing for it.
 
 ```
 $ cassetta capabilities --url http://localhost:16001 --api-key "$API_KEY"
-Server version: 0.30.0
+Server version: 0.30.1
 Schema version: 1
 Supported modes: inline, batch, reference
 Features: peek, batch_upload, reference_download, rest_send_init
