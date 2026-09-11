@@ -13,7 +13,7 @@ install the client from the package index. **Nothing an operator configures chan
 environment variable, REST route, MCP tool or log field, and no behaviour of the running server. What
 changes is the set of dependency versions the image installs, and where the documents send a reader
 for the client. A deployment built from an earlier tag keeps the old versions until its image is
-rebuilt, and for `0.30.0` there was no image to keep: it did not build.
+rebuilt, and for `0.30.0` there was no image to keep: it did not build. (#38)
 
 ### Security
 
@@ -29,11 +29,11 @@ rebuilt, and for `0.30.0` there was no image to keep: it did not build.
   its own. The image is what carried the old ones, because `Dockerfile` installs the lock exactly.
 
   **Nothing else in the lock moves.** The re-lock is by package, not wholesale, so the only versions
-  that change are these eight, and the change can be read as a security fix. The dependency floors in `[project]` stay where they are:
-  they say what this code is compatible with, not what is currently safe. The matching eight lines in
-  `pyproject.toml`'s `[tool.uv] constraint-dependencies` move with the lock — `uv.lock` records that
-  block as its manifest constraints, so the lock cannot move a package the block still pins — and no
-  other line of that block moves.
+  that change are these eight, and the change can be read as a security fix. The dependency floors in
+  `[project]` stay where they are: they say what this code is compatible with, not what is currently
+  safe. The matching eight lines in `pyproject.toml`'s `[tool.uv] constraint-dependencies` move with
+  the lock — `uv.lock` records that block as its manifest constraints, so the lock cannot move a
+  package the block still pins — and no other line of that block moves. (#38)
 
 ### Changed
 
@@ -46,20 +46,20 @@ rebuilt, and for `0.30.0` there was no image to keep: it did not build.
   repository's own process: the tag is placed at the merge, the publish waits for its reviewer, and
   for that whole window the pinned version is not on the index yet. `tests/test_docs_install.py`
   holds both rules: no install command under `docs/` or in `README.md` names a version, whichever
-  installer it uses, and no document denies the index.
+  installer it uses, and no document denies the index. (#38)
 
 - **Every place that installs from the index says what it installs.** The package is the `cassetta`
   command-line client. All four of its commands talk to a Cassetta server, and installing the client
   does not give you one. `README.md` is the project's page on the index, where an install command is
   printed above everything it says, so it now says this before the Docker Compose quickstart, and
-  says the server is what the rest of it sets up.
+  says the server is what the rest of it sets up. (#38)
 
 - **The install-pin machinery is retired.** With no version in any install command, nothing is left
   for it to keep current. `scripts/sync-docs-version.py` rewrites only the `Server version:` sample
   output, and `make release-check` compares the declared version with `CHANGELOG.md` and that sample
   alone: its branch extracting install pins would have found none and refused every release.
   `CHANGELOG.md` still stays outside anything that rewrites version literals, which
-  `tests/test_docs_version_pins.py` now holds against the set the generator actually rewrites.
+  `tests/test_docs_version_pins.py` now holds against the set the generator actually rewrites. (#38)
 
 ### Fixed
 
@@ -83,7 +83,7 @@ rebuilt, and for `0.30.0` there was no image to keep: it did not build.
   `tests/test_container_build.py` fails the pull request that breaks this again. It derives from
   `pyproject.toml` every file the build backend reads, the declared readme and the licence file, and
   requires each to be copied into that stage before the package is installed, and not left out of the
-  build context by `.dockerignore`.
+  build context by `.dockerignore`. (#38)
 
 ## [0.30.0] - 2026-09-10
 
