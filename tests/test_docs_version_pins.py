@@ -1,32 +1,27 @@
-"""Guard: every documented install command pins the release this repository is on.
+"""Guard: what rewrites version literals in the documents, and what it must never touch.
 
-No index carries this package, so the documents install it from the repository, pinned to a release
-tag — and they say why, at length: a client that follows the default branch changes under you
-between runs. The advice is right, and it is exactly what makes the pin dangerous to leave alone.
+This file used to hold a third guard, and its name still says so. While no index carried this
+package, the documents installed it from the repository pinned to a release tag, and a guard here
+held every pin to the declared version: a stale pin resolves, installs working code, and reports
+nothing. The package is on the index now, and the documents install it from there with no version at
+all. A pin cannot go stale if there is none, so that guard retired, and ``tests/test_docs_install.py``
+holds the rule that replaced it: no install command names a version.
 
-**A stale pin does not fail.** It resolves, it installs, and the code it installs works. The reader
-following the instruction gets a release that is not the one the documents around it describe, and
-nothing anywhere says so. That is the whole reason this is a test rather than a convention: the
-defect has no symptom, so it can only be caught by looking.
+Two things stay, because the shape they serve stays. ``cassetta capabilities`` prints
+``Server version: X.Y.Z``, the documents show a sample of it, and ``scripts/sync-docs-version.py``
+keeps that sample current. ``tests/test_docs_examples.py`` says when it is stale; the generator is the
+half that fixes it, and it is exercised here.
 
-It has already happened. Six pins named ``v0.26.4`` across three documents while the repository was
-on ``0.26.5``; the release went out and the documented command went a version stale in the same
-merge, silently.
-
-``scripts/sync-docs-version.py`` is the other half. This guard says what is wrong; that script fixes
-it, and is idempotent so that running it is never a decision.
-
-**``CHANGELOG.md`` is outside this and must stay outside.** Its version literals are records of what
-shipped — a statement about the past, not a reference to the present. Rewriting one would not fix a
-stale pin, it would falsify the record. Today the changelog is excluded because it lives at the
-repository root rather than under ``docs/``, which is geography rather than a decision; the second
-test here turns it into a decision, so a later widening of the scan cannot quietly take it in.
+**``CHANGELOG.md`` is outside the generator and must stay outside.** Its version literals are records
+of what shipped — a statement about the past, not a reference to the present. Rewriting one would not
+fix a stale sample, it would falsify the record. Today the changelog is excluded because it lives at
+the repository root rather than under ``docs/``, which is geography rather than a decision; the first
+test here turns it into a decision, so a later widening of the generator cannot quietly take it in.
 """
 
 from __future__ import annotations
 
 import importlib.util
-import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -37,100 +32,8 @@ import cassetta
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-_DOCS = REPO_ROOT / "docs"
 _CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 _GENERATOR = REPO_ROOT / "scripts" / "sync-docs-version.py"
-
-# A repository install reference, in the one shape the documents use:
-#
-#   uv tool install git+https://github.com/atriensis/cassetta.git@v0.26.6
-#   uvx --from git+https://github.com/atriensis/cassetta.git@v0.26.6 cassetta --help
-#
-# Anchored on `git+https://` at one end and `cassetta.git@v` at the other, so it matches a *pinned
-# install reference* and not any other place a version-shaped string might appear. Prose that
-# mentions a version is not a pin, and rewriting it would be an edit nobody asked for.
-_PIN_RE = re.compile(r"git\+https://\S*?cassetta\.git@v(?P<version>\d+\.\d+\.\d+)")
-
-# What exists today. Non-vacuity: a scan that finds nothing is green, and would stay green if the
-# pattern stopped matching, if `docs/` moved, or if the install instructions were deleted outright.
-_KNOWN_PIN_COUNT = 6
-
-
-def _scanned_files() -> list[Path]:
-    """Every file under ``docs/``, in a stable order.
-
-    Every file rather than every ``*.md``: a pin in a shell snippet or an included fragment installs
-    the same wrong version as a pin in prose, and the reader cannot tell which kind of file they
-    copied it from.
-    """
-    return sorted(path for path in _DOCS.rglob("*") if path.is_file())
-
-
-def _pins() -> list[tuple[Path, int, str]]:
-    """Every documented install pin: its file, its line number, and the version it names."""
-    found = []
-    for path in _scanned_files():
-        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-            for match in _PIN_RE.finditer(line):
-                found.append((path, lineno, match.group("version")))
-    return found
-
-
-def test_every_documented_install_pins_the_declared_version() -> None:
-    """Every ``@vX.Y.Z`` in a repository install reference under ``docs/`` is the current release."""
-    assert _DOCS.is_dir(), "docs/ is missing — it is where a reader is sent to install this"
-
-    pins = _pins()
-    assert len(pins) >= _KNOWN_PIN_COUNT, (
-        f"found {len(pins)} documented install pin(s), expected at least {_KNOWN_PIN_COUNT}. Either "
-        "the install instructions have been removed from the documentation, or this guard has "
-        "stopped recognising them — and a guard that recognises nothing passes over anything"
-    )
-
-    declared = cassetta.__version__
-
-    stale = [
-        f"{path.relative_to(REPO_ROOT)}:{lineno}: pins v{version}, the release is {declared}"
-        for path, lineno, version in pins
-        if version != declared
-    ]
-
-    assert not stale, (
-        "documented install commands pin a release this repository is no longer on. A stale pin "
-        "installs working code, so nobody finds out; run `uv run python scripts/sync-docs-version.py`:\n  "
-        + "\n  ".join(stale)
-    )
-
-
-def test_the_changelog_is_not_scanned() -> None:
-    """``CHANGELOG.md`` is outside the scanned set, and stays outside.
-
-    Not a formality. Every version literal in that file is a heading recording a release that
-    happened, and the guard above would call each of them stale the moment it could see them — after
-    which the obvious fix is to make them all say the current version, which turns a history into a
-    file that says the same thing eleven times.
-
-    Written as a test rather than a comment because the exclusion is currently an accident of where
-    the file lives, and an accident is not a decision anyone can be held to.
-    """
-    assert _CHANGELOG.is_file(), "CHANGELOG.md is missing — it is the record this guard must not touch"
-
-    scanned = {path.resolve() for path in _scanned_files()}
-    assert _CHANGELOG.resolve() not in scanned, (
-        "CHANGELOG.md has come inside the scan. Its version literals record what shipped; holding "
-        "them to the current release would not correct a stale pin, it would rewrite the history"
-    )
-
-
-# --- the fix half -------------------------------------------------------------------------------
-#
-# The two guards above say what is stale. ``scripts/sync-docs-version.py`` is what makes it current,
-# and until 0.28.3 it could only see one of the two shapes they check — so the sample-output guard
-# added in 0.28.2 had no fix half at all, and the next bump would have been repaired by hand.
-#
-# The script is exercised here, beside the guards it serves, rather than in a file of its own: a fix
-# half that drifts from its detect half is the defect both exist to prevent, and keeping them in one
-# file is the cheapest way to notice.
 
 
 def _generator() -> ModuleType:
@@ -163,8 +66,38 @@ def _generator() -> ModuleType:
     return module
 
 
+def test_the_changelog_is_outside_what_the_generator_rewrites() -> None:
+    """``CHANGELOG.md`` is not among the files ``scripts/sync-docs-version.py`` rewrites, and stays out.
+
+    Not a formality. Every version literal in that file records a release that happened. A generator
+    that could reach it would treat each one as stale the moment it matched, and the obvious repair
+    turns a history into a file that says the same version eleven times.
+
+    Held against the set the generator itself answers with, not against a copy of it kept here. The
+    copy used to be the pin guard's scan, and that guard is gone. Only the generator rewrites
+    anything, so its set is the one that has to leave the changelog out.
+    """
+    assert _CHANGELOG.is_file(), "CHANGELOG.md is missing — it is the record the generator must not touch"
+
+    rewritten = {path.resolve() for path in _generator().documents()}
+    # Non-vacuity: an empty set leaves out the changelog along with everything else.
+    assert rewritten, "the generator reports no documents to rewrite, so the exclusion below proves nothing"
+
+    assert _CHANGELOG.resolve() not in rewritten, (
+        "CHANGELOG.md has come inside the generator's reach. Its version literals record what shipped; "
+        "holding them to the current release would not correct a stale sample, it would rewrite the history"
+    )
+
+
+# --- the fix half -------------------------------------------------------------------------------
+#
+# ``tests/test_docs_examples.py`` says when the sample output is stale. ``scripts/sync-docs-version.py``
+# is what makes it current, and until 0.28.3 it could not see that shape at all — the sample-output
+# guard added in 0.28.2 had no fix half, and the next bump would have been repaired by hand.
+
+
 def test_the_generator_rewrites_a_sample_output_version() -> None:
-    """The substitution updates an install pin and a ``Server version:`` sample in one pass.
+    """The substitution updates a ``Server version:`` sample and nothing around it.
 
     Asserted on a string rather than on ``docs/``. The rewrite is the only interesting thing the
     script does; reading files and deciding whether to write them are not, and a test that had to
@@ -179,7 +112,7 @@ def test_the_generator_rewrites_a_sample_output_version() -> None:
     stale = (
         "Install it:\n"
         "\n"
-        "    uv tool install git+https://github.com/atriensis/cassetta.git@v0.1.2\n"
+        "    uv tool install cassetta\n"
         "\n"
         "Then ask the server what it supports:\n"
         "\n"
@@ -190,15 +123,15 @@ def test_the_generator_rewrites_a_sample_output_version() -> None:
 
     rewritten = generator.rewrite(stale, "9.9.9")
 
-    assert "cassetta.git@v9.9.9" in rewritten, "the install pin was not rewritten"
     assert "Server version: 9.9.9" in rewritten, (
         "the `Server version:` sample was not rewritten. It is the shape `tests/test_docs_examples.py` "
         "holds to the declared version, and a guard whose fix half cannot see it is repaired by hand"
     )
     assert "0.1.2" not in rewritten, f"a stale version survived the rewrite:\n{rewritten}"
 
-    # Everything that is not a version is left exactly as it was found. A generator that reformats
-    # what it touches makes its own diffs unreadable, which is how a wrong one survives review.
+    # Everything that is not a version is left exactly as it was found, the install command included.
+    # A generator that reformats what it touches makes its own diffs unreadable, which is how a wrong
+    # one survives review.
     assert rewritten == stale.replace("0.1.2", "9.9.9")
 
     # Idempotence, at the level of the substitution: the property the whole script rests on.
@@ -209,12 +142,12 @@ def test_the_generator_rewrites_a_sample_output_version() -> None:
 
 
 def test_the_generator_refuses_when_it_finds_no_sample_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A ``docs/`` tree with install pins but no sample output is a failure, not a success.
+    """A ``docs/`` tree with install instructions but no sample output is a failure, not a success.
 
-    This mirrors the refusal the script already has for finding no pins, and the reason is the one
-    written in its own docstring: **nothing to compare is not agreement**. A documentation tree that
-    had lost its sample output would otherwise satisfy this generator by having nothing to be wrong
-    about, and the guard in ``tests/test_docs_examples.py`` would go quiet for the same reason.
+    The reason is the one written in the script's own docstring: **nothing to compare is not
+    agreement**. A documentation tree that had lost its sample output would otherwise satisfy this
+    generator by having nothing to be wrong about, and the guard in ``tests/test_docs_examples.py``
+    would go quiet for the same reason.
 
     It also mirrors the non-vacuity control that guard carries, so the detect half and the fix half
     refuse for the same reason rather than for two reasons that could drift apart.
@@ -222,17 +155,14 @@ def test_the_generator_refuses_when_it_finds_no_sample_output(tmp_path: Path, mo
     generator = _generator()
 
     # Written at the declared version rather than a stale one, on purpose: this test is about what
-    # the script does when a *shape* is absent, and a tree needing no rewrite keeps it to that
+    # the script does when the shape is absent, and a tree needing no rewrite keeps it to that
     # question. It also leaves the script with nothing to write, which matters when the tree it is
     # pointed at is a temporary directory outside the repository.
     current = cassetta.__version__
 
     docs = tmp_path / "docs"
     docs.mkdir()
-    (docs / "INSTALL.md").write_text(
-        f"    uv tool install git+https://github.com/atriensis/cassetta.git@v{current}\n",
-        encoding="utf-8",
-    )
+    (docs / "INSTALL.md").write_text("    uv tool install cassetta\n", encoding="utf-8")
 
     monkeypatch.setattr(generator, "DOCS", docs)
 
@@ -243,8 +173,10 @@ def test_the_generator_refuses_when_it_finds_no_sample_output(tmp_path: Path, mo
     )
 
     # Non-vacuity: the same tree with a sample output present must succeed, or the assertion above
-    # would pass on a script that refuses every temporary tree for some unrelated reason.
+    # would pass on a script that refuses every temporary tree for some unrelated reason. The tree
+    # still carries no install pin, and the script used to refuse such a tree for that alone.
     (docs / "CAPABILITIES.md").write_text(f"Server version: {current}\n", encoding="utf-8")
     assert generator.main() == 0, (
-        "the generator refused a tree carrying both shapes, so the refusal above proves nothing"
+        "the generator refused a tree carrying a sample output and an unpinned install. Either it "
+        "still asks for a pin, which no document carries any more, or the refusal above proves nothing"
     )

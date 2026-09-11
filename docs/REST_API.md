@@ -263,20 +263,21 @@ MCP.
 
 ### Installing it
 
-**There is no package on PyPI or any other index**, so there is nothing to `pip install`. Install
-from the repository with `uv`, pinned to a release tag:
+The client is on PyPI as `cassetta`, and installs from there with no version named. The index carries
+only releases, so this takes the newest, which is the release these documents describe:
 
 ```bash
 # Persistent — for a machine that will use the client repeatedly.
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.30.0
+uv tool install cassetta
 
 # One-off — runs the command and leaves nothing installed.
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.30.0 cassetta --help
+uvx cassetta --help
 ```
 
-Pin the tag rather than tracking a branch. A client that silently follows the default branch changes
-under you between one run and the next, which turns every report into a question about which revision
-was in play.
+What this installs is the command-line client. Every command below talks to a running Cassetta server
+and does nothing without one; the server is the service this document describes, deployed from this
+repository with Docker Compose. [CLIENT_SETUP.md](CLIENT_SETUP.md#installing-the-cassetta-cli) has the
+same install for the pip toolchain.
 
 ### The commands
 

@@ -28,8 +28,14 @@ WORKDIR /app
 COPY pyproject.toml uv.lock LICENSE ./
 RUN uv sync --locked --no-dev --extra server --no-install-project --no-editable
 
-# Project layer.
+# Project layer. README.md is copied here, beside the source, because pyproject declares
+# `readme = "README.md"` and the build backend reads it into the wheel's metadata: without it the
+# sync below fails with "Readme file does not exist". The dependency layer never builds the project
+# and does not need it, and copying it there would re-resolve and re-download the dependency set on
+# every README edit. tests/test_container_build.py holds that every file the wheel build reads
+# arrives before this sync.
 COPY src ./src
+COPY README.md ./
 RUN uv sync --locked --no-dev --extra server --no-editable
 
 

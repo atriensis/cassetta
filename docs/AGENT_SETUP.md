@@ -267,24 +267,23 @@ returns the batch branch instead:
 You cannot feed the bytes back through MCP in this mode. Shell out to
 the `cassetta upload` CLI.
 
-**If `cassetta` is not on `$PATH`, install it first.** There is no
-package on PyPI or any other index — the client lives in the Cassetta
-repository and is installed from it with `uv`, pinned to a release tag:
+**If `cassetta` is not on `$PATH`, install it first.** It is on PyPI as
+`cassetta`, and you install it with `uv`:
 
 ```bash
-uv tool install git+https://github.com/atriensis/cassetta.git@v0.30.0
+uv tool install cassetta
 ```
 
 Or run it without installing anything:
 
 ```bash
-uvx --from git+https://github.com/atriensis/cassetta.git@v0.30.0 \
-  cassetta upload --url ... --token ... <files>
+uvx cassetta upload --url ... --token ... <files>
 ```
 
-Tell the human which of the two you used. Do not invent a `pip install`
-line: nothing publishes this package, so one would fail. With the client
-available, the upload is:
+This is the command-line client, and it needs a running Cassetta server:
+the one whose URL the human gave you in Step 0, which the `upload_url`
+above already points at. Tell the human which of the two commands you
+used. With the client available, the upload is:
 
 ```bash
 cassetta upload \

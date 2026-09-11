@@ -6,6 +6,85 @@ The format follows the Keep a Changelog convention; the project follows Semantic
 entry cites the pull request that landed the change. The two oldest releases predate this
 repository's pull-request history and cite none.
 
+## [0.30.1] - 2026-09-11
+
+The container image stops carrying eight dependencies with known advisories, and the documents
+install the client from the package index. **Nothing an operator configures changes** — no
+environment variable, REST route, MCP tool or log field, and no behaviour of the running server. What
+changes is the set of dependency versions the image installs, and where the documents send a reader
+for the client. A deployment built from an earlier tag keeps the old versions until its image is
+rebuilt, and for `0.30.0` there was no image to keep: it did not build. (#38)
+
+### Security
+
+- **`uv.lock` moves eight packages, each to the first release that fixes a known advisory against
+  it:** `cryptography` 46.0.6 → 50.0.0, `idna` 3.11 → 3.15, `mcp` 1.27.0 → 1.28.1,
+  `pydantic-settings` 2.13.1 → 2.14.2, `pyjwt` 2.12.1 → 2.13.0, `pytest` 9.0.2 → 9.0.3,
+  `python-multipart` 0.0.22 → 0.0.31 and `starlette` 1.0.0 → 1.3.1. `starlette` and
+  `python-multipart` are the layer that parses incoming requests; `pytest` is a development
+  dependency and never reached the image.
+
+  An install from the index was not held back: the published requirements are floors, apart from
+  `mcp<2`, every fixed release falls inside them, and a fresh install resolves to fixed versions on
+  its own. The image is what carried the old ones, because `Dockerfile` installs the lock exactly.
+
+  **Nothing else in the lock moves.** The re-lock is by package, not wholesale, so the only versions
+  that change are these eight, and the change can be read as a security fix. The dependency floors in
+  `[project]` stay where they are: they say what this code is compatible with, not what is currently
+  safe. The matching eight lines in `pyproject.toml`'s `[tool.uv] constraint-dependencies` move with
+  the lock — `uv.lock` records that block as its manifest constraints, so the lock cannot move a
+  package the block still pins — and no other line of that block moves. (#38)
+
+### Changed
+
+- **The documents install the client from the package index, with no version.**
+  `docs/CLIENT_SETUP.md`, `docs/AGENT_SETUP.md` and `docs/REST_API.md` installed it from this
+  repository with `uv`, pinned to a release tag, and said no index carried the package. They now say
+  `uv tool install cassetta` and `uvx cassetta …`, and `CLIENT_SETUP.md` adds one line for the pip
+  toolchain. The index carries only releases, so an install that names no version takes the newest,
+  which is the release the documents describe. A pinned index command would also break on this
+  repository's own process: the tag is placed at the merge, the publish waits for its reviewer, and
+  for that whole window the pinned version is not on the index yet. `tests/test_docs_install.py`
+  holds both rules: no install command under `docs/` or in `README.md` names a version, whichever
+  installer it uses, and no document denies the index. (#38)
+
+- **Every place that installs from the index says what it installs.** The package is the `cassetta`
+  command-line client. All four of its commands talk to a Cassetta server, and installing the client
+  does not give you one. `README.md` is the project's page on the index, where an install command is
+  printed above everything it says, so it now says this before the Docker Compose quickstart, and
+  says the server is what the rest of it sets up. (#38)
+
+- **The install-pin machinery is retired.** With no version in any install command, nothing is left
+  for it to keep current. `scripts/sync-docs-version.py` rewrites only the `Server version:` sample
+  output, and `make release-check` compares the declared version with `CHANGELOG.md` and that sample
+  alone: its branch extracting install pins would have found none and refused every release.
+  `CHANGELOG.md` still stays outside anything that rewrites version literals, which
+  `tests/test_docs_version_pins.py` now holds against the set the generator actually rewrites. (#38)
+
+### Fixed
+
+- **The container image did not build at `0.30.0`, and builds again.** The deployment `README.md`
+  documents, `docker compose up -d` from a clone, failed at the `v0.30.0` tag and on `main` since,
+  partway through building the image:
+
+  ```
+  OSError: Readme file does not exist: README.md
+  ```
+
+  `0.30.0` gave `[project]` a `readme`, for the package's page on the index, and `Dockerfile` never
+  copied `README.md` into the stage that installs the package. That stage installs the dependencies
+  first, without the package, and never reads the readme, so that step went on succeeding. The next
+  step builds this package's wheel, and the build backend validates every metadata field on the way.
+  `0.29.0`, which declares no readme, still builds. No pull-request check builds an image; the weekly
+  smoke run does, and its last run came before the merge.
+
+  `Dockerfile` now copies `README.md` beside the source, for the step that builds the wheel and not
+  the dependency step before it, so editing the README does not re-download the dependency set.
+  `tests/test_container_build.py` fails the pull request that breaks this again. It derives from
+  `pyproject.toml` every file the build backend reads, the declared readme and the licence file, and
+  requires each to be copied into that stage before the package is installed, and not left out of the
+  build context by `.dockerignore`. (#38)
+
 ## [0.30.0] - 2026-09-10
 
 A release can now leave this repository for the package index, from the workflow that tags it.

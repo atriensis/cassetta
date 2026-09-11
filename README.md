@@ -31,6 +31,12 @@ and a synced directory does not do that.
 
 The rest of this document is how to run it.
 
+> **Arrived from PyPI?** `pip install cassetta` installs the `cassetta`
+> command-line client. It talks to a running Cassetta server and does nothing
+> without one, and that server is what the rest of this README sets up, with
+> Docker Compose. Installing and using the client is covered in
+> [docs/CLIENT_SETUP.md](https://github.com/atriensis/cassetta/blob/main/docs/CLIENT_SETUP.md#installing-the-cassetta-cli).
+
 ## Quickstart with Docker
 
 You will need Docker and Docker Compose v2.

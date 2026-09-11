@@ -25,8 +25,9 @@ Seven things are held here.
 * **``release-check`` reads that one place.** Its recipe is shell, so it cannot import anything and
   cannot be caught by the rest of this file; what it *reads* is asserted by shape instead.
 * **Every declared project link names this repository**, and none names a package index or the
-  personal account this project used to live under. The package is not published, so an index link
-  would promise a page that does not exist; the old account is where this project *was*.
+  personal account this project used to live under. The table is what a reader holding the built
+  package follows to find the source, and an index link leads to the index, not to the source; the
+  old account is where this project *was*.
 * **The project declares what an index page shows** — a summary, the README as its description, an
   author and classifiers. Without them the upload succeeds and the page is blank below the title.
   The author's address is none of those the repository asks readers to write to.
@@ -232,7 +233,7 @@ def test_the_version_is_declared_in_exactly_one_place() -> None:
 
 
 def test_release_check_reads_the_package_module() -> None:
-    """``make release-check`` reads the one version site, and compares the documented pins.
+    """``make release-check`` reads the one version site, and compares the documents against it.
 
     Asserted by shape rather than by running it, and the reason is the recipe's whole purpose: it is
     shell so that it works in a clean clone where no virtual environment exists, which is the state
@@ -242,8 +243,9 @@ def test_release_check_reads_the_package_module() -> None:
     So this holds the three things a wrong recipe would get wrong, and the operator runs it for real:
     it reads the package module, it no longer extracts a version out of ``pyproject.toml`` (the site
     that no longer has one — a recipe still reading it would find nothing and would have to either
-    fail always or, worse, silently treat "no version" as "nothing to compare"), and it checks the
-    documented install pins, which is the surface that went stale unnoticed and prompted all this.
+    fail always or, worse, silently treat "no version" as "nothing to compare"), and it looks at
+    ``docs/``. The install pins that went stale unnoticed and prompted all this are gone, and
+    ``tests/test_docs_install.py`` keeps them gone; what the documents still carry is a sample output.
     """
     assert _MAKEFILE.is_file(), "Makefile is missing — it is what a release is checked with"
     recipe = _MAKEFILE.read_text(encoding="utf-8")
@@ -273,8 +275,8 @@ def test_release_check_reads_the_package_module() -> None:
     )
 
     assert "docs" in recipe, (
-        "the release check does not look at docs/. The documented install pins are the surface that "
-        "went a release stale without anyone noticing, which is the defect this check exists to catch"
+        "the release check does not look at docs/. The documented sample output is the version literal "
+        "the documents carry, and a stale one is a number in a code block that nothing else reports"
     )
 
 
@@ -325,18 +327,18 @@ def test_release_check_compares_the_sample_output_version() -> None:
         "literal in docs/ that no install-pin check can see — which is exactly how it went stale"
     )
 
-    # A comparison that cannot fail on absence is not a comparison. The recipe already has this
-    # branch for pins, and the reason is written into it: nothing to compare is not agreement.
+    # A comparison that cannot fail on absence is not a comparison: nothing to compare is not agreement.
     assert "no documented sample output" in recipe, (
         "the release check has no branch for finding *no* sample output under docs/. Without it a "
         "documentation tree that had lost the sample satisfies this check by having nothing to be "
-        "wrong about — the same silence the pin branch above already refuses"
+        "wrong about"
     )
 
-    # The pin comparison is not replaced by the new one; both shapes go stale independently.
-    assert "cassetta\\.git@v" in recipe, (
-        "the release check no longer extracts the documented install pins. The sample output is a "
-        "second shape to compare, not a substitute for the first"
+    # The install commands name no version (``tests/test_docs_install.py`` holds that), so there is no
+    # pin to compare. A branch still extracting one finds nothing, and refuses every tree on the absence.
+    assert "cassetta\\.git@v" not in recipe, (
+        "the release check extracts documented install pins again. The documents install from the "
+        "index with no version, so a pin branch has nothing to find and refuses every release"
     )
 
     success = _release_check_success_line()
@@ -344,8 +346,9 @@ def test_release_check_compares_the_sample_output_version() -> None:
         "the release check's success line does not mention the sample output, so it goes on claiming "
         f"agreement about a narrower set than it now checks. Found:\n  {success.strip()}"
     )
-    assert "pins" in success, (
-        f"the release check's success line no longer mentions the install pins it compares. Found:\n  {success.strip()}"
+    assert "pins" not in success, (
+        "the release check's success line claims agreement about install pins, and the documents carry "
+        f"none for it to have compared. Found:\n  {success.strip()}"
     )
 
 
@@ -495,9 +498,9 @@ def test_project_urls_name_no_index_and_no_previous_account() -> None:
     """No declared project link names a package index or the account this project has moved off.
 
     The mirror of the guard above, and it fails for different reasons, which is why it is a separate
-    test. An index link promises a page that does not exist — this package is not published, and a
-    link that 404s is worse than an absent one, because it reads as a distribution channel. A link
-    under the previous personal account points at where this project used to be.
+    test. An index link leads to the index, not to the source: this table is what a reader holding
+    the built package follows to find the source, and the index is only where the package came from.
+    A link under the previous personal account points at where this project used to be.
 
     ``test_public_surface.py`` rejects that account across shipped prose; this rejects it in the
     packaging metadata, which is not prose and which travels inside the built wheel.
@@ -513,6 +516,6 @@ def test_project_urls_name_no_index_and_no_previous_account() -> None:
     )
 
     assert not offenders, (
-        "declared project links name a package index this project does not publish to, or the "
-        "account it has moved off:\n  " + "\n  ".join(offenders)
+        "declared project links name a package index, which leads a reader to the index rather than to "
+        "the source, or the account this project has moved off:\n  " + "\n  ".join(offenders)
     )

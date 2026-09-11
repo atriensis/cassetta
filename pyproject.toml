@@ -42,7 +42,7 @@ dependencies = [
 # `mcp` is capped because 2.x renamed `FastMCP` to `MCPServer` and moved it: `src/cassetta/mcp_server.py`
 # imports `mcp.server.fastmcp`, which does not exist there. Until 0.28.1 this list said `mcp>=1.12`
 # with no upper bound, so `pip install "cassetta[server]"` resolved a server that could not start —
-# invisible to every gate here, because `uv.lock` pins 1.27.0, and visible to everyone installing
+# invisible to every gate here, because `uv.lock` pins an older release, and visible to everyone installing
 # from an index. `<2` is the bound the SDK's own error message names. It is the only cap in this
 # list: every other dependency was measured at its newest release and passes.
 #
@@ -120,9 +120,12 @@ path = "src/cassetta/__init__.py"
 packages = ["src/cassetta"]
 
 [tool.uv]
-# The split reproduces the monorepo's known-good resolution verbatim; upgrading
-# these is a separate task and deliberately not part of the move. Constraints
-# bind resolution only — they are not dependencies and never reach wheel metadata.
+# Every dependency `uv.lock` resolves, pinned `==` to the version the lock holds, line for line.
+# `uv.lock` records this block as its manifest constraints, so the lock moves a package only when its
+# line here moves with it. The block began as the resolution this code was split out with, copied
+# verbatim. 0.30.1 moved eight lines, each to the first release that fixes a security advisory
+# against it, and no other. A line moves as a deliberate change of its own, never as a side effect of
+# another. Constraints bind resolution only — they are not dependencies and never reach wheel metadata.
 constraint-dependencies = [
     "annotated-doc==0.0.4",
     "annotated-types==0.7.0",
@@ -133,7 +136,7 @@ constraint-dependencies = [
     "click==8.3.1",
     "colorama==0.4.6",
     "coverage==7.13.5",
-    "cryptography==46.0.6",
+    "cryptography==50.0.0",
     "deprecated==1.3.1",
     "fastapi==0.135.3",
     "h11==0.16.0",
@@ -141,14 +144,14 @@ constraint-dependencies = [
     "httptools==0.7.1",
     "httpx==0.28.1",
     "httpx-sse==0.4.3",
-    "idna==3.11",
+    "idna==3.15",
     "iniconfig==2.3.0",
     "jsonschema==4.26.0",
     "jsonschema-specifications==2025.9.1",
     "librt==0.8.1",
     "limits==5.8.0",
     "markdown-it-py==4.0.0",
-    "mcp==1.27.0",
+    "mcp==1.28.1",
     "mdurl==0.1.2",
     "mypy==1.20.0",
     "mypy-extensions==1.1.0",
@@ -158,15 +161,15 @@ constraint-dependencies = [
     "pycparser==3.0",
     "pydantic==2.12.5",
     "pydantic-core==2.41.5",
-    "pydantic-settings==2.13.1",
+    "pydantic-settings==2.14.2",
     "pygments==2.20.0",
-    "pyjwt==2.12.1",
-    "pytest==9.0.2",
+    "pyjwt==2.13.0",
+    "pytest==9.0.3",
     "pytest-asyncio==1.3.0",
     "pytest-cov==7.1.0",
     "pytest-randomly==4.1.0",
     "python-dotenv==1.2.2",
-    "python-multipart==0.0.22",
+    "python-multipart==0.0.31",
     "pywin32==311",
     "pyyaml==6.0.3",
     "referencing==0.37.0",
@@ -176,7 +179,7 @@ constraint-dependencies = [
     "shellingham==1.5.4",
     "slowapi==0.1.9",
     "sse-starlette==3.3.4",
-    "starlette==1.0.0",
+    "starlette==1.3.1",
     "typer==0.24.1",
     "typing-extensions==4.15.0",
     "typing-inspection==0.4.2",
