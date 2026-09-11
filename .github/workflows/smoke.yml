@@ -41,7 +41,8 @@ on:
     # Mondays, off the hour on purpose: scheduled runs at minute zero are heavily contended on
     # the platform and get delayed, sometimes substantially.
     - cron: "17 6 * * 1"
-  # So the first proof that any of this works does not have to wait up to a week.
+  # For a run neither trigger above would start: `main` between Mondays, when one of the base
+  # images the Dockerfile names has moved, or a branch that is not yet a pull request.
   workflow_dispatch:
 
 permissions:

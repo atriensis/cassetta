@@ -95,13 +95,15 @@ uv run ruff check
 uv run mypy
 uv run pytest
 uv run pytest -p randomly
+./scripts/smoke.sh
 ```
 
 The randomised-order run is not optional. Every test must pass in isolation and under any ordering;
 a test that depends on state another test left behind is a defect in this project, not a quirk.
 
-To check a change end to end against a real container, `scripts/smoke.sh` builds the image, brings
-the stack up and walks the quickstart over HTTP.
+`./scripts/smoke.sh` checks a change end to end against a real container: it builds the image,
+brings the stack up and walks the quickstart over HTTP. Continuous integration runs it on every
+pull request. Running it locally takes Docker with Compose v2, curl, openssl and python3.
 
 ## What lands in the changelog
 
