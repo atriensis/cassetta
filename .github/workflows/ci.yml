@@ -1,8 +1,11 @@
 # Continuous integration for every pull request, and for the default branch itself.
 #
 # This workflow carries exactly the gates a contributor already runs locally, and nothing more.
-# It is meant to be cheap enough to require on every merge, so anything that builds an image or
-# starts a stack belongs in the weekly smoke workflow instead — never here.
+# Building the image and walking the quickstart against it is smoke.yml's job, and that runs on every
+# pull request too, in parallel with this one. Measured on the run that proved 0.30.1, each smoke job
+# took 19 s where the test suite here took 93 s, so the image adds close to nothing to a pull request's
+# wait. It stays a workflow of its own because it also runs on a schedule, to catch a base image that
+# moved under a `main` nobody touched.
 
 name: CI
 
