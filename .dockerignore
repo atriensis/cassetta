@@ -1,6 +1,6 @@
-# Build context = the repository root. Only `pyproject.toml`, `uv.lock`, `LICENSE`, `src/` and
-# `scripts/docker-entrypoint.sh` are actually COPYed by the Dockerfile, but keeping the context
-# small speeds every build and keeps a stray `.env` from ever reaching the daemon.
+# Build context = the repository root. Only `pyproject.toml`, `uv.lock`, `LICENSE`, `README.md`,
+# `src/` and `scripts/docker-entrypoint.sh` are actually COPYed by the Dockerfile, but keeping the
+# context small speeds every build and keeps a stray `.env` from ever reaching the daemon.
 #
 # `scripts/` is therefore not excluded below, and must not become excluded: the entrypoint is the
 # container's first process.

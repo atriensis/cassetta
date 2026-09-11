@@ -13,7 +13,7 @@ install the client from the package index. **Nothing an operator configures chan
 environment variable, REST route, MCP tool or log field, and no behaviour of the running server. What
 changes is the set of dependency versions the image installs, and where the documents send a reader
 for the client. A deployment built from an earlier tag keeps the old versions until its image is
-rebuilt.
+rebuilt, and for `0.30.0` there was no image to keep: it did not build.
 
 ### Security
 
@@ -60,6 +60,30 @@ rebuilt.
   alone: its branch extracting install pins would have found none and refused every release.
   `CHANGELOG.md` still stays outside anything that rewrites version literals, which
   `tests/test_docs_version_pins.py` now holds against the set the generator actually rewrites.
+
+### Fixed
+
+- **The container image did not build at `0.30.0`, and builds again.** The deployment `README.md`
+  documents, `docker compose up -d` from a clone, failed at the `v0.30.0` tag and on `main` since,
+  partway through building the image:
+
+  ```
+  OSError: Readme file does not exist: README.md
+  ```
+
+  `0.30.0` gave `[project]` a `readme`, for the package's page on the index, and `Dockerfile` never
+  copied `README.md` into the stage that installs the package. That stage installs the dependencies
+  first, without the package, and never reads the readme, so that step went on succeeding. The next
+  step builds this package's wheel, and the build backend validates every metadata field on the way.
+  `0.29.0`, which declares no readme, still builds. No pull-request check builds an image; the weekly
+  smoke run does, and its last run came before the merge.
+
+  `Dockerfile` now copies `README.md` beside the source, for the step that builds the wheel and not
+  the dependency step before it, so editing the README does not re-download the dependency set.
+  `tests/test_container_build.py` fails the pull request that breaks this again. It derives from
+  `pyproject.toml` every file the build backend reads, the declared readme and the licence file, and
+  requires each to be copied into that stage before the package is installed, and not left out of the
+  build context by `.dockerignore`.
 
 ## [0.30.0] - 2026-09-10
 
